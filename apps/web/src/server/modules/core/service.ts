@@ -1,5 +1,6 @@
 import 'server-only';
-import { appendAudit, schema, verifyPassword, withSystem, withTenant, type Tx } from '@medhub/db';
+import { appendAudit, schema, withSystem, withTenant, type Tx } from '@medhub/db';
+import { verifyPassword } from '@medhub/db/password';
 import { AppError, normalizeTenantCode, uuidv7, type DeviceKind } from '@medhub/shared';
 import { and, eq } from 'drizzle-orm';
 import { database } from '../../platform/db';

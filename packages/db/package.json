@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./schema": "./src/schema/index.ts",
-    "./seeds/platform/plans.json": "./seeds/platform/plans.json"
+    "./seeds/platform/plans.json": "./seeds/platform/plans.json",
+    "./password": "./src/password.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

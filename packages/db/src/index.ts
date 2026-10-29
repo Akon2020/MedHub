@@ -4,4 +4,4 @@ export * from './context';
 export * from './guards';
 export * from './rls';
 export * as schema from './schema';
-export * from './password';
+export * from './jobs';

@@ -47,7 +47,7 @@ await build({
   outfile: join(root, 'public', 'sw.js'),
   bundle: true,
   minify: true,
-  format: 'esm',
+  format: 'iife',
   target: 'es2020',
   define: { 'self.__SW_MANIFEST': JSON.stringify(manifest) },
   logLevel: 'warning',
