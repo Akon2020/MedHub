@@ -2,7 +2,7 @@
 
 ## 1. Principes
 
-1. **Sobre et professionnel** : fond clair, une couleur d'accent (bleu sombre), gris pour la structure, rouge, orange et vert réservés aux états (alerte, attention, succès). Pas de dégradés ni d'illustrations décoratives. Mode sombre facultatif (phase 2).
+1. **Sobre et professionnel** : fond clair brumeux (`#f3f8f9`), une couleur d'accent **teal profond** (`#0f6b6b`, nuances `#6aafba`, `#b4dadd`, `#a9c1ba`), encre `#0d1d1d`, gris ardoise pour la structure, rouge, orange et vert réservés aux états (alerte, attention, succès), bleu réservé à la synchronisation en cours. Effets de verre dépoli, bandes verticales lumineuses et dégradés doux **uniquement** sur les pages publiques et l'écran de connexion ; les écrans opérationnels (`/app`) restent sobres : cartes blanches, fond clair, aucun effet de flou coûteux pour le matériel d'entrée de gamme. Polices : Sora (titres) et Plus Jakarta Sans (texte), auto-hébergées par `next/font`. Mode sombre facultatif (phase 2). Décision du porteur du projet du 29/10/2026, voir `docs/avancement.md`.
 2. **Lisible sur matériel d'entrée de gamme** : texte de base 15 px minimum (16 px sur tablette), contraste WCAG AA, zones tactiles de 44 px minimum.
 3. **Rapide à saisir** : navigation complète au clavier, raccourcis, champs pré-remplis, valeurs favorites, saisie numérique adaptée sur tablette (`inputMode="decimal"`).
 4. **Un écran, une tâche** : chaque rôle a un écran d'accueil centré sur sa file de travail.
