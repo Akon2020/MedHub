@@ -79,7 +79,7 @@ export const COMMANDS = {
     entity: 'vital_sign',
     kind: 'append',
     payloadSchema: vitalSignRecordPayload,
-    permission: 'vital_sign:record',
+    permission: 'vital_sign:create',
     onlineOnly: false,
     check: (p) => {
       const result = checkVitalPlausibility(p);

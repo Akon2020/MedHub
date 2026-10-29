@@ -7,3 +7,4 @@ export * from './modules';
 export * from './money';
 export * from './tenant-code';
 export * from './uuid';
+export * from './permissions';

@@ -8,7 +8,7 @@ import { MemoryClientStore, MemoryServerStore } from '../src/testing';
 export const ALL_PERMISSIONS = new Set([
   'patient:create',
   'patient:update',
-  'vital_sign:record',
+  'vital_sign:create',
   'stock:move',
 ]);
 
