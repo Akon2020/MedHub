@@ -1,0 +1,11 @@
+node_modules
+.next
+dist
+coverage
+pnpm-lock.yaml
+packages/db/migrations/meta
+apps/web/public/sw.js
+docs
+AGENTS.md
+CLAUDE.md
+*.md

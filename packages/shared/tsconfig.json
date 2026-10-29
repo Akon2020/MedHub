@@ -1,0 +1,4 @@
+{
+  "extends": "@medhub/config/tsconfig.base.json",
+  "include": ["src"]
+}
