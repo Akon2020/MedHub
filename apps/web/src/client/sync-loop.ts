@@ -18,7 +18,7 @@ const BACKOFF_MS = [2_000, 5_000, 15_000, 60_000, 300_000];
 const VISIBLE_INTERVAL_MS = 30_000;
 const HIDDEN_INTERVAL_MS = 300_000;
 const CLOCK_SKEW_MS = 5 * 60 * 1000;
-const LOCK_NAME = 'medhub-sync';
+export const SYNC_LOCK_NAME = 'medhub-sync';
 
 /**
  * Drives synchronisation: on network return, on a timer, when the tab becomes
@@ -132,7 +132,7 @@ export class SyncLoop {
 
   private async withLock<T>(fn: () => Promise<T>): Promise<T | undefined> {
     if (typeof navigator !== 'undefined' && 'locks' in navigator) {
-      return navigator.locks.request(LOCK_NAME, { ifAvailable: true }, async (lock) =>
+      return navigator.locks.request(SYNC_LOCK_NAME, { ifAvailable: true }, async (lock) =>
         lock ? fn() : undefined,
       );
     }

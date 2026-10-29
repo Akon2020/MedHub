@@ -26,6 +26,7 @@ import {
   type ReactNode,
 } from 'react';
 import { apiFetch } from './api';
+import { installTestHook } from './e2e-hook';
 import { clearIdentity, readIdentity, type StoredIdentity } from './identity';
 import { SyncLoop, type SyncStatus } from './sync-loop';
 import { HttpSyncTransport } from './transport';
@@ -133,7 +134,14 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
       setRevision((r) => r + 1);
     });
     session.loop.start();
+    const uninstall = installTestHook({
+      client: session.client,
+      store: session.unlocked.store,
+      db: session.unlocked.db,
+      device: session.device,
+    });
     return () => {
+      uninstall();
       unsubscribe();
       session.loop.stop();
     };

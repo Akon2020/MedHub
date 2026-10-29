@@ -9,3 +9,6 @@ docs
 AGENTS.md
 CLAUDE.md
 *.md
+.next-e2e
+test-results
+playwright-report

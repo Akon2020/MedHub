@@ -20,6 +20,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  // The E2E bench builds into its own directory so it never mixes with a release build.
+  distDir: process.env.NEXT_DIST_DIR ?? '.next',
   outputFileTracingRoot: resolve(here, '../..'),
   reactStrictMode: true,
   poweredByHeader: false,

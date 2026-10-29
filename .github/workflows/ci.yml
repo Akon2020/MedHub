@@ -95,3 +95,53 @@ jobs:
         with:
           name: medhub-release
           path: release/*.tar.gz
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: verify
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://medhub_app:ci_password@localhost:5432/medhub_e2e
+      MEDHUB_SESSION_SECRET: ci-only-session-secret-not-used-in-production-0000
+      MEDHUB_BASE_URL: http://localhost:3100
+      MEDHUB_SEED_PASSWORD: ci-demo-password-0000
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Prepare database
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -c "CREATE ROLE medhub_app LOGIN PASSWORD 'ci_password' NOSUPERUSER NOBYPASSRLS;"
+          psql -h localhost -U postgres -c "CREATE DATABASE medhub_e2e OWNER medhub_app;"
+          psql -h localhost -U postgres -d medhub_e2e -c "CREATE EXTENSION IF NOT EXISTS pg_trgm; CREATE EXTENSION IF NOT EXISTS unaccent;"
+      - name: Migrate and seed the fictitious demo structure
+        run: pnpm db:migrate && pnpm db:seed
+      - name: Install Chromium
+        run: pnpm --filter @medhub/web exec playwright install --with-deps chromium
+      - name: Two-browser offline bench and screen scenarios
+        run: pnpm --filter @medhub/web exec playwright test --project=chromium
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: apps/web/test-results

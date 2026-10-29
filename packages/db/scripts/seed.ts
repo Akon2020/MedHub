@@ -38,16 +38,22 @@ const DEMO_USERS: {
   { username: 'caisse', displayName: 'Héritier Mwamba', title: null, roles: ['cashier'] },
 ];
 
-export async function seedDemo(url: string, password: string): Promise<{ tenantId: string }> {
+export type SeedTenant = typeof DEMO_TENANT;
+
+export async function seedDemo(
+  url: string,
+  password: string,
+  structure: SeedTenant = DEMO_TENANT,
+): Promise<{ tenantId: string }> {
   const { pool, db } = createDb(url, 2);
   try {
     const existing = await withSystem(db, (tx) =>
-      tx.select().from(tenant).where(eq(tenant.code, DEMO_TENANT.code)),
+      tx.select().from(tenant).where(eq(tenant.code, structure.code)),
     );
     const tenantId = existing[0]?.id ?? uuidv7();
     if (!existing[0]) {
       await withSystem(db, (tx) =>
-        tx.insert(tenant).values({ id: tenantId, ...DEMO_TENANT, status: 'active' }),
+        tx.insert(tenant).values({ id: tenantId, ...structure, status: 'active' }),
       );
     }
 
@@ -145,9 +151,20 @@ if (isMain) {
       `MEDHUB_SEED_PASSWORD absent : mot de passe généré pour les comptes de démonstration : ${password}`,
     );
   }
-  seedDemo(url, password)
+  // --tenant CODE seeds an additional fictitious structure (used by the end-to-end bench).
+  const flag = process.argv.indexOf('--tenant');
+  const code = flag > 0 ? process.argv[flag + 1] : undefined;
+  const structure: SeedTenant = code
+    ? {
+        code,
+        legalName: 'Structure de test E2E',
+        displayName: 'Structure de test E2E',
+        type: 'hospital',
+      }
+    : DEMO_TENANT;
+  seedDemo(url, password, structure)
     .then(() => {
-      console.warn(`Structure de démonstration prête : code ${DEMO_TENANT.code}.`);
+      console.warn(`Structure de démonstration prête : code ${structure.code}.`);
       console.warn(
         `Comptes : ${DEMO_USERS.map((u) => u.username).join(', ')} (mot de passe MEDHUB_SEED_PASSWORD).`,
       );
