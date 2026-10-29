@@ -190,7 +190,7 @@ pnpm --filter @medhub/web start
 | `pnpm format` | Reformate le code avec Prettier |
 | `pnpm test` | Tests unitaires et d'intégration |
 | `pnpm test:props` | Banc de synchronisation de 500 opérations et tests de propriétés |
-| `pnpm test:e2e` | Playwright (à compléter, voir section 11) |
+| `pnpm test:e2e` | Playwright : page publique, banc hors connexion à deux navigateurs, saisie hors connexion depuis l'écran (section 6.1) |
 | `pnpm db:generate` | Génère une migration SQL depuis le schéma Drizzle (à relire avant commit) |
 | `pnpm db:migrate` | Applique les migrations, la RLS et les triggers |
 | `pnpm db:seed` | Charge la structure de démonstration fictive |
@@ -212,6 +212,22 @@ Avant de considérer une tâche terminée : `pnpm typecheck && pnpm lint && pnpm
 | Isolation | `packages/db/test/isolation` | RLS activée et forcée partout, lecture, modification et insertion croisées refusées, aucune ligne sans contexte, gardes d'ajout seul, détection d'une altération du journal d'audit |
 | Intégration | `apps/web/test/integration` | Banc à deux postes contre PostgreSQL réel |
 | Worker | `apps/worker/test` | Cron, exécution, reprise, lettre morte |
+
+### 6.1 Tests de bout en bout (Playwright)
+
+Une seule fois, installez le navigateur de test :
+
+```bash
+pnpm --filter @medhub/web exec playwright install chromium
+```
+
+Puis lancez :
+
+```bash
+pnpm test:e2e
+```
+
+Playwright construit l'application dans `apps/web/.next-e2e` avec le point d'accroche de test activé (`NEXT_PUBLIC_MEDHUB_E2E=1`), la sert sur le port 3100 et crée une structure fictive neuve (`TST-BNC-NNNN`) dans `medhub_dev`, puis ouvre deux navigateurs indépendants (Accueil et Infirmier). Prérequis : `pnpm db:migrate` fait et `MEDHUB_SEED_PASSWORD` présent dans `.env.local`. La suite dure environ 8 minutes, build compris. Les structures `TST-BNC-...` sont des données de test fictives ; elles s'accumulent dans `medhub_dev` (MedHub ne supprime jamais de données automatiquement). Ce build de test ne doit jamais être déployé : `pnpm release` utilise uniquement `.next`.
 
 ## 7. Organisation du code
 
@@ -278,7 +294,6 @@ Le script fait une sauvegarde `pg_dump`, applique les migrations, bascule le lie
 ## 11. Ce qui reste à faire et décisions attendues
 
 Pour clore J0 :
-- banc Playwright à deux navigateurs avec coupures (`context.setOffline`), puis `pnpm exec playwright install` sur votre poste ;
 - liste de contrôle cPanel sur l'hébergement réel et premier déploiement ;
 - votre validation de la décision d'architecture et des écarts listés dans `docs/avancement.md`.
 

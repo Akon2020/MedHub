@@ -4,7 +4,7 @@ Tenu à jour par Claude Code à la fin de chaque session de travail. Le porteur 
 
 ## État courant
 
-- Jalon en cours : **J0 Fondations**, S1 réalisée, prototype de synchronisation S2 et S3 livré et validé en tests automatisés. Reste à faire pour clore J0 : liste de contrôle cPanel sur l'hébergement réel, banc Playwright à deux navigateurs avec `context.setOffline`, jeton hors connexion et jeton de licence (prévus en S5 mais utiles au prototype), validation de la décision d'architecture par le porteur du projet.
+- Jalon en cours : **J0 Fondations**, S1 réalisée, prototype de synchronisation S2 et S3 livré et validé en tests automatisés. Le banc Playwright à deux navigateurs passe. Reste à faire pour clore J0 : liste de contrôle cPanel sur l'hébergement réel et premier déploiement, validation de la décision d'architecture par le porteur du projet. Le jeton hors connexion et le jeton de licence restent prévus en S5.
 - Dernière mise à jour : 29/10/2026
 - Version déployée : aucune
 - Branche de travail : `develop`
@@ -18,7 +18,8 @@ Tenu à jour par Claude Code à la fin de chaque session de travail. Le porteur 
 | Convergence des bases | Atteint | Bases locales des deux postes identiques à la base serveur, solde de stock égal à la somme des mouvements ; propriété vérifiée sur 15 graines aléatoires |
 | Même banc contre PostgreSQL réel | Atteint | `apps/web/test/integration/sync-postgres.test.ts` (160 opérations, RLS, triggers, audit chaîné intact) |
 | Aucun nom en clair dans IndexedDB | Atteint | `packages/local-db/test/local-db.test.ts` inspecte le contenu brut de toutes les tables |
-| Banc Playwright à deux navigateurs | À faire | Configuration non encore écrite |
+| Banc Playwright à deux navigateurs réels | Atteint | `apps/web/e2e/sync-bench.spec.ts` sur un build de production et une structure neuve à chaque passe : 500 opérations (226 enregistrements, 96 modifications, 178 constantes), 109 cycles de synchronisation coupés par `context.setOffline`, 38 réponses de push perdues après validation serveur ; zéro rejet, zéro doublon, postes identiques au serveur, aucun nom en clair dans IndexedDB |
+| Saisie hors connexion depuis l'écran | Atteint | Même fichier : patient enregistré par le formulaire sans réseau, conservé après un rechargement complet, puis synchronisé |
 
 ## Résultats de la liste de contrôle cPanel
 
@@ -50,6 +51,7 @@ Environnement de développement constaté sur le poste du porteur du projet : Wi
 | 29/10/2026 | `docs/04-modele-donnees.md` | Colonne `patient.field_meta` (horloge HLC et version par champ) pour la stratégie `field_merge` | À valider |
 | 29/10/2026 | `docs/05-roles-permissions.md` | Permission `device:register` ajoutée au catalogue (enregistrement d'un poste) et donnée aux rôles modèles | À valider |
 | 29/10/2026 | `docs/02-offline-sync.md` section 8 | Périmètre de synchronisation : toute la structure pour l'instant, filtrée par permission de lecture par entité (`sync_scope_rule` en S6) | Temporaire |
+| 30/10/2026 | `docs/10-tests-qualite.md` section 1 | Banc Playwright exécuté sur un build de production dédié (`.next-e2e`) plutôt que sur le serveur de développement, service worker bloqué | À valider |
 | 29/10/2026 | `docs/09-hebergement-deploiement.md` section 8 | Développement sur PostgreSQL local (Docker absent du poste) ; `infra/docker` reste fourni | Constat |
 
 ## Marqueurs `TODO(medhub-decision)` ouverts
@@ -83,6 +85,21 @@ J0 (en cours) : le risque principal, la synchronisation, est couvert par trois n
 
 ## Journal des sessions
 
+### 29/10/2026 (suite)
+
+Travail réalisé :
+- Banc Playwright à deux navigateurs réels (poste Accueil et poste Infirmier), connexion et activation par les écrans, coupures réseau, réponses perdues, vérification directe de la base serveur sous RLS.
+- Point d'accroche de test `window.__medhubTest`, compilé uniquement quand `NEXT_PUBLIC_MEDHUB_E2E=1` ; le banc tourne sur un build de production séparé (`.next-e2e`) car le serveur de développement recompile sous charge et rendait le banc instable.
+- Job `e2e` ajouté à la CI.
+
+Constats :
+- Le verrouillage automatique après 5 minutes d'inactivité ferme bien la session pendant un long traitement sans interaction ; le banc simule l'activité clavier et redemande le PIN si besoin (compté dans le résumé).
+- **Risque de performance** : un nouveau poste télécharge toute la structure (périmètre complet tant que `sync_scope_rule` n'existe pas). Sur la structure de démonstration, qui grossissait de 200 patients à chaque passe, le banc est passé de 5 à plus de 10 minutes. Le banc utilise désormais une structure neuve par passe (`TST-BNC-NNNN`, créée par `pnpm db:seed --tenant`), et le périmètre de synchronisation de `docs/02-offline-sync.md` section 8 (patients du jour, des 7 jours, du service, favoris) devient prioritaire en S6.
+- **Point ouvert** : une fois sur une dizaine de passes, une requête de connexion est restée 20 s sans réponse du serveur de production (abandonnée par le délai du client, aucune erreur dans les journaux serveur). Non reproduit sur 12 connexions consécutives mesurées entre 0,06 et 0,28 s. Le banc réessaie une fois et l'affiche ; à instrumenter en S4 (durée des requêtes, attente du pool et des verrous consultatifs d'audit).
+- Le point d'accroche de test attend le verrou Web Locks de la boucle de synchronisation, sinon un cycle demandé pendant un cycle automatique rendait la main sans rien faire.
+
+Tests passés : sur les trois dernières passes complètes de la suite Playwright (4 scénarios, structure neuve à chaque fois), deux sont entièrement vertes ; la troisième a échoué à la connexion initiale (point ouvert ci-dessus), avant toute opération. `pnpm typecheck`, `pnpm lint`, `pnpm test`.
+
 ### 29/10/2026
 
 Travail réalisé :
@@ -99,7 +116,6 @@ Travail réalisé :
 Tests passés : `pnpm typecheck`, `pnpm lint`, `pnpm test` (41 tests), `pnpm db:test-isolation` (71 tests), `pnpm test:props`, `pnpm build`. Parcours vérifié dans le navigateur : connexion `accueil`, activation, enregistrement d'un patient, synchronisation, refus correct de l'enregistrement de constantes pour le rôle Accueil.
 
 Prochaines étapes :
-1. Banc Playwright à deux navigateurs avec coupures (`context.setOffline`) pour clore J0.
-2. Liste de contrôle cPanel sur l'hébergement retenu et premier déploiement « bonjour ».
-3. S4 : 2FA TOTP, limitation de débit en base, règles d'IP, `requirePermission` généralisé par route, en-têtes CSP avec nonces.
-4. S5 : jeton hors connexion et jeton de licence (JWS Ed25519), révocation d'appareil, configuration versionnée.
+1. Liste de contrôle cPanel sur l'hébergement retenu et premier déploiement « bonjour ».
+2. S4 : 2FA TOTP, limitation de débit en base, règles d'IP, `requirePermission` généralisé par route, en-têtes CSP avec nonces.
+3. S5 : jeton hors connexion et jeton de licence (JWS Ed25519), révocation d'appareil, configuration versionnée.
