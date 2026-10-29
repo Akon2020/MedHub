@@ -53,7 +53,8 @@ export type MetaRecord =
   | { key: 'pin'; value: WrappedSecret }
   | { key: 'recovery'; value: WrappedSecret }
   | { key: 'device'; value: { deviceId: string; deviceCode: string; enc: Ciphertext } }
-  | { key: 'failedPins'; value: number };
+  | { key: 'failedPins'; value: number }
+  | { key: `counter:${string}`; value: number };
 
 export class MedHubLocalDb extends Dexie {
   entities!: Table<EntityRecord, string>;
@@ -74,6 +75,20 @@ export class MedHubLocalDb extends Dexie {
       meta: 'key',
     });
   }
+}
+
+/**
+ * Atomic local counter used by offline numbering (MRN, receipts). It advances
+ * before the number is used, so a failure can leave a gap but never a duplicate.
+ */
+export async function nextCounter(db: MedHubLocalDb, name: string): Promise<number> {
+  const key = `counter:${name}` as const;
+  return db.transaction('rw', db.meta, async () => {
+    const row = await db.meta.get(key);
+    const next = (row && typeof row.value === 'number' ? row.value : 0) + 1;
+    await db.meta.put({ key, value: next });
+    return next;
+  });
 }
 
 /** One database per structure and per user (docs/02-offline-sync.md section 2). */

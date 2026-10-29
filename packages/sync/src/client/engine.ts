@@ -213,16 +213,13 @@ export class SyncClient {
       });
       if (batch.length === 0) return summary;
 
-      let response: PushResponse;
-      try {
-        response = await this.opts.transport.push({
-          deviceId: this.opts.identity.deviceId,
-          schemaVersion: SYNC_SCHEMA_VERSION,
-          ops: batch.map((item) => item.op),
-        });
-      } catch (error) {
-        throw error instanceof NetworkError ? error : new NetworkError(String(error));
-      }
+      // Transport errors propagate as is: NetworkError means retry later, anything
+      // else (authentication, revoked device) needs the caller's attention.
+      const response: PushResponse = await this.opts.transport.push({
+        deviceId: this.opts.identity.deviceId,
+        schemaVersion: SYNC_SCHEMA_VERSION,
+        ops: batch.map((item) => item.op),
+      });
       summary.sent += batch.length;
 
       await this.opts.store.transaction(async (tx) => {
@@ -268,15 +265,10 @@ export class SyncClient {
     let lookback = true;
     for (;;) {
       const state = await this.opts.store.transaction((tx) => tx.getSyncState());
-      let response: PullResponse;
-      try {
-        response = await this.opts.transport.pull(state.cursor, {
-          limit: DEFAULT_PULL_LIMIT,
-          lookback,
-        });
-      } catch (error) {
-        throw error instanceof NetworkError ? error : new NetworkError(String(error));
-      }
+      const response: PullResponse = await this.opts.transport.pull(state.cursor, {
+        limit: DEFAULT_PULL_LIMIT,
+        lookback,
+      });
       lookback = false;
 
       await this.opts.store.transaction(async (tx) => {

@@ -79,3 +79,24 @@ describe('stock', () => {
     ).toBe(67);
   });
 });
+
+describe('numbering', () => {
+  it('formats offline-safe numbers', async () => {
+    const { formatNumber, isOfflineSafeTemplate, DEFAULT_MRN_TEMPLATE } = await import('./index');
+    expect(
+      formatNumber(DEFAULT_MRN_TEMPLATE, { prefix: 'KIN', device: 'AB', year: 2026, seq: 42 }),
+    ).toBe('KIN-AB-26-00042');
+    expect(isOfflineSafeTemplate('{SITE}-{YYYY}-{SEQ:6}')).toBe(false);
+    expect(isOfflineSafeTemplate(DEFAULT_MRN_TEMPLATE)).toBe(true);
+  });
+});
+
+describe('age', () => {
+  it('computes completed years and estimated birth dates', async () => {
+    const { ageInYears, birthDateFromEstimatedAge } = await import('./index');
+    const now = new Date('2026-10-29T10:00:00Z');
+    expect(ageInYears('1990-10-30', now)).toBe(35);
+    expect(ageInYears('1990-10-29', now)).toBe(36);
+    expect(birthDateFromEstimatedAge(35, now)).toBe('1991-01-01');
+  });
+});

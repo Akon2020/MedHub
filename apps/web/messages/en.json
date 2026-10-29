@@ -1,0 +1,438 @@
+{
+  "meta": {
+    "title": "MedHub, the health information system that never stops",
+    "description": "Patient records, consultation, cashier, pharmacy and laboratory for health facilities, even without a connection."
+  },
+  "common": {
+    "appName": "MedHub",
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back",
+    "retry": "Retry",
+    "close": "Close",
+    "language": "Language",
+    "fr": "Français",
+    "en": "English",
+    "optional": "optional",
+    "fictitiousData": "Fictitious data",
+    "years": "{count, plural, one {# year} other {# years}}",
+    "never": "never"
+  },
+  "public": {
+    "nav": {
+      "features": "Features",
+      "modules": "Modules",
+      "why": "Benefits",
+      "pricing": "Pricing",
+      "signIn": "Sign in",
+      "openMenu": "Open menu"
+    },
+    "hero": {
+      "badge": "Built for the DRC, in French and English",
+      "titleA": "The health system",
+      "titleB": "that never stops",
+      "subtitle": "Front desk, consultation, cashier, pharmacy and laboratory on a single platform. Every workstation keeps working without a network and syncs as soon as the connection returns.",
+      "ctaPrimary": "Access my facility",
+      "ctaSecondary": "Explore the modules"
+    },
+    "preview": {
+      "title": "Facility dashboard",
+      "subtitle": "Overview of the day",
+      "search": "Search a patient, a record…",
+      "queue": "Queue",
+      "triage": "Triage",
+      "consultation": "Consultation",
+      "cashier": "Cashier",
+      "inQueue": "Waiting",
+      "inProgress": "In progress",
+      "done": "Completed",
+      "offline": "Offline",
+      "pendingOps": "{count} operations pending",
+      "activity": "Activity this week",
+      "temperature": "Temperature",
+      "lastVitals": "Latest vital signs"
+    },
+    "pillars": {
+      "eyebrow": "How MedHub helps",
+      "title": "A tool designed for the field",
+      "subtitle": "Unstable power, intermittent network, mixed hardware: MedHub is built for these conditions from day one.",
+      "offline": {
+        "title": "Always available",
+        "text": "Registration, consultation, cashier and dispensing work without a connection. Nothing is lost, nothing is typed twice."
+      },
+      "record": {
+        "title": "Longitudinal record",
+        "text": "Allergies, history, medications and vital signs on a single screen at every consultation."
+      },
+      "finance": {
+        "title": "Secured revenue",
+        "text": "Immutable invoices and cash movements, amounts in USD and CDF, discrepancies detected the same day."
+      },
+      "config": {
+        "title": "Configurable without code",
+        "text": "Roles, prices, contracts, forms and printed documents are set in the interface."
+      }
+    },
+    "facts": {
+      "offline": "of critical functions usable offline",
+      "currencies": "currencies handled natively: USD and CDF",
+      "languages": "interface languages: French and English",
+      "isolation": "facilities isolated by the database itself"
+    },
+    "modules": {
+      "eyebrow": "Core modules",
+      "title": "One platform for the whole facility",
+      "subtitle": "Enable the modules you need, from the neighbourhood pharmacy to the multi-site hospital.",
+      "learnMore": "Sign in to try it",
+      "patients": {
+        "tab": "Patients",
+        "title": "Front desk and patient record",
+        "text": "Typo-tolerant search, quick registration in under a minute, duplicate detection and a patient card with QR code.",
+        "points": [
+          "Offline search",
+          "Duplicate detection",
+          "Patient card",
+          "Coverage and contracts"
+        ]
+      },
+      "clinical": {
+        "tab": "Consultation",
+        "title": "Consultation and prescribing",
+        "text": "Triage, vital signs with plausibility checks, signed notes, coded diagnoses and prescribing with alerts.",
+        "points": [
+          "Vital signs and charts",
+          "Signed notes",
+          "Prescription alerts",
+          "Configurable forms"
+        ]
+      },
+      "billing": {
+        "tab": "Cashier",
+        "title": "Billing and cashier",
+        "text": "Basket fed by the acts performed, patient and third-party shares, multi-currency payments and cash closing.",
+        "points": [
+          "USD and CDF",
+          "Contracts and packages",
+          "Credit notes and discounts",
+          "Closing with discrepancies"
+        ]
+      },
+      "pharmacy": {
+        "tab": "Pharmacy",
+        "title": "Pharmacy and stock",
+        "text": "Dispensing linked to prescriptions, stock computed from movements, lots and expiry dates tracked.",
+        "points": [
+          "First expired, first out",
+          "Stock-out alerts",
+          "Inventories",
+          "Controlled products"
+        ]
+      },
+      "lab": {
+        "tab": "Laboratory",
+        "title": "Laboratory",
+        "text": "Orders, specimen collection, result entry and validation, critical values flagged immediately.",
+        "points": ["Labels and specimens", "Two-level validation", "Reference ranges", "Reports"]
+      }
+    },
+    "why": {
+      "eyebrow": "Key benefits",
+      "title": "Why facilities choose MedHub",
+      "items": {
+        "integrated": {
+          "title": "Integrated patient record",
+          "text": "Information entered once feeds the invoice, the stock and the reports."
+        },
+        "workflows": {
+          "title": "Configurable workflows",
+          "text": "Each facility sets its roles, prices and forms without development."
+        },
+        "billing": {
+          "title": "Stock and billing linked",
+          "text": "Dispensing takes the stock out and adds the invoice line automatically."
+        },
+        "security": {
+          "title": "Security and traceability",
+          "text": "Hash-chained audit log, traced emergency access, encrypted data on every workstation."
+        },
+        "hosting": {
+          "title": "Realistic hosting",
+          "text": "Runs on standard cPanel hosting and moves to a dedicated server without a rewrite."
+        }
+      }
+    },
+    "pricing": {
+      "eyebrow": "Pricing",
+      "title": "Simple, predictable pricing",
+      "subtitle": "No upfront investment, a monthly subscription sized to your facility.",
+      "monthly": "Monthly",
+      "annual": "Annual",
+      "annualNote": "2 months free",
+      "perMonth": "/month",
+      "perYear": "/year",
+      "from": "From",
+      "quote": "On quote",
+      "choose": "Choose this plan",
+      "contact": "Contact us",
+      "popular": "Most popular",
+      "disclaimer": "Indicative values in US dollars, confirmed at subscription. Congolese franc equivalent at the daily rate."
+    },
+    "cta": {
+      "title": "Ready to get your facility running?",
+      "subtitle": "A health post can be operational in less than five working days.",
+      "button": "Access my facility"
+    },
+    "footer": {
+      "tagline": "Local-first health information system for health facilities.",
+      "rights": "© {year} MedHub. All rights reserved.",
+      "product": "Product",
+      "access": "Access",
+      "signIn": "Sign in",
+      "status": "Service status"
+    }
+  },
+  "auth": {
+    "title": "Sign in to your facility",
+    "subtitle": "Enter your facility code, then your credentials.",
+    "tenantCode": "Facility code",
+    "tenantCodeHint": "Example: HOP-KIN-0042. It is remembered on this workstation.",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "offline": "No connection: the first sign-in on a workstation must be online. If this workstation is already activated, unlock it with your PIN.",
+    "unlockInstead": "Unlock with my PIN",
+    "secureNote": "Encrypted connection. No password is stored on this workstation.",
+    "sideTitle": "Your facility, even without a network",
+    "sideText": "Once this workstation is activated, front desk, consultation and cashier keep working during outages.",
+    "pinSetup": {
+      "title": "Activate this workstation",
+      "subtitle": "Choose a PIN of at least 6 digits. It unlocks your data on this workstation, even offline.",
+      "pin": "PIN",
+      "pinConfirm": "Confirm PIN",
+      "deviceName": "Workstation name",
+      "deviceNamePlaceholder": "Example: Front desk 1",
+      "deviceKind": "Device type",
+      "kinds": {
+        "desktop": "Desktop computer",
+        "laptop": "Laptop",
+        "tablet": "Tablet",
+        "phone": "Phone"
+      },
+      "submit": "Activate workstation",
+      "submitting": "Activating…",
+      "tooShort": "The PIN must have at least 6 digits.",
+      "mismatch": "The two PINs do not match."
+    },
+    "recovery": {
+      "title": "Recovery code",
+      "text": "Write this code down and keep it safe. It recovers unsent operations if the PIN is forgotten. It will not be shown again.",
+      "print": "Print",
+      "confirm": "I have stored this code safely",
+      "continue": "Open MedHub"
+    },
+    "unlock": {
+      "title": "Workstation locked",
+      "subtitle": "Enter your PIN to continue.",
+      "pin": "PIN",
+      "submit": "Unlock",
+      "wrong": "Wrong PIN. {remaining, plural, one {# attempt left} other {# attempts left}}.",
+      "blocked": "Too many attempts. Use your recovery code or sign in online.",
+      "wiped": "Too many attempts: local data on this workstation was erased. Sign in online.",
+      "useRecovery": "Use the recovery code",
+      "recoveryCode": "Recovery code",
+      "newPin": "New PIN",
+      "recover": "Recover",
+      "recoveryFailed": "Wrong recovery code.",
+      "switchUser": "Switch user",
+      "noLocal": "This workstation is not activated for this user yet. Sign in online."
+    },
+    "errors": {
+      "AUTH_INVALID_CREDENTIALS": "Wrong username or password.",
+      "AUTH_ACCOUNT_LOCKED": "Account temporarily locked after several failures. Try again later.",
+      "AUTH_TENANT_UNKNOWN": "Unknown facility code.",
+      "AUTH_TENANT_SUSPENDED": "This facility is suspended. Contact your administrator.",
+      "VALIDATION_FAILED": "Check the fields you entered.",
+      "RATE_LIMITED": "Too many attempts. Wait a minute.",
+      "NETWORK": "The server cannot be reached. Check the connection.",
+      "UNKNOWN": "An unexpected error occurred."
+    }
+  },
+  "app": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "clinical": "Clinical",
+      "patients": "Patients",
+      "consultations": "Consultations",
+      "appointments": "Appointments and queues",
+      "diagnostics": "Diagnostics",
+      "laboratory": "Laboratory",
+      "operations": "Operations",
+      "pharmacy": "Pharmacy and stock",
+      "finance": "Finance",
+      "billing": "Billing and cashier",
+      "contracts": "Contracts",
+      "system": "System",
+      "settings": "Settings",
+      "diagnostic": "Diagnostics",
+      "collapse": "Collapse menu",
+      "expand": "Expand menu",
+      "soon": "soon"
+    },
+    "header": {
+      "search": "Search a patient (name, phone, record)…",
+      "lock": "Lock workstation",
+      "signOut": "Sign out",
+      "diagnostic": "Diagnostics",
+      "menu": "Menu"
+    },
+    "training": "Training database"
+  },
+  "sync": {
+    "online": "Connected",
+    "syncing": "Syncing",
+    "offline": "Offline",
+    "attention": "Attention needed",
+    "lastSync": "Last sync: {time}",
+    "pending": "{count, plural, =0 {No pending operation} one {# pending operation} other {# pending operations}}",
+    "rejected": "{count, plural, one {# rejected operation} other {# rejected operations}}",
+    "conflicts": "{count, plural, one {# conflict to review} other {# conflicts to review}}",
+    "clock": "This workstation's clock seems behind.",
+    "syncNow": "Sync now",
+    "openDiagnostic": "Open diagnostics",
+    "never": "never"
+  },
+  "dashboard": {
+    "greeting": "Hello {name}",
+    "subtitle": "Overview of the activity recorded on this workstation",
+    "cards": {
+      "patients": "Patients on this workstation",
+      "registeredToday": "Registered today",
+      "vitalsToday": "Vital signs today",
+      "pending": "Pending operations"
+    },
+    "registrations": "Registrations over the last 7 days",
+    "registrationsHint": "Data present on this workstation",
+    "recent": "Recent patients",
+    "viewAll": "View all",
+    "empty": "No patient on this workstation yet.",
+    "quick": "Quick actions",
+    "newPatient": "New patient",
+    "searchPatient": "Search a patient",
+    "openDiagnostic": "Sync status",
+    "milestone": "J0 prototype: patients, vital signs and stock work offline. Other modules arrive according to the roadmap."
+  },
+  "patients": {
+    "title": "Patients",
+    "subtitle": "Search and registration, online or offline",
+    "searchPlaceholder": "Name, phone or record number",
+    "new": "New patient",
+    "empty": "No patient found.",
+    "emptyHint": "Register a first patient: it is available immediately, even offline.",
+    "results": "{count, plural, =0 {No result} one {# patient} other {# patients}}",
+    "columns": {
+      "name": "Patient",
+      "mrn": "Record",
+      "sex": "Sex",
+      "age": "Age",
+      "phone": "Phone",
+      "status": "Sync"
+    },
+    "sex": { "M": "Male", "F": "Female", "U": "Unspecified" },
+    "state": { "synced": "Synced", "pending": "Pending", "rejected": "Rejected" },
+    "form": {
+      "title": "Quick registration",
+      "subtitle": "The rest of the record can be completed later.",
+      "familyName": "Family name",
+      "middleName": "Middle name",
+      "givenName": "Given name",
+      "sex": "Sex",
+      "birthDate": "Date of birth",
+      "age": "or estimated age (years)",
+      "phone": "Phone",
+      "submit": "Register patient",
+      "success": "Patient registered. Record {mrn}.",
+      "required": "This field is required.",
+      "phoneInvalid": "Invalid phone number.",
+      "deviceMissing": "This workstation is not activated: the record cannot be numbered."
+    }
+  },
+  "patient": {
+    "back": "Back to patients",
+    "notFound": "This patient is not on this workstation.",
+    "identity": "Identity",
+    "mrn": "Record",
+    "born": "Born on {date}",
+    "estimated": "estimated age",
+    "vitals": {
+      "title": "Vital signs",
+      "record": "Record a vital sign",
+      "code": "Measure",
+      "value": "Value",
+      "measuredAt": "Measured at",
+      "empty": "No vital sign recorded.",
+      "superseded": "corrected",
+      "correct": "Correct",
+      "correcting": "Correcting the measure of {date}",
+      "override": "Unusual value: state a reason to confirm",
+      "overridePlaceholder": "Example: measured twice",
+      "saved": "Vital sign recorded.",
+      "codes": {
+        "temp": "Temperature",
+        "pulse": "Pulse",
+        "sbp": "Systolic pressure",
+        "dbp": "Diastolic pressure",
+        "rr": "Respiratory rate",
+        "spo2": "Oxygen saturation",
+        "weight": "Weight",
+        "height": "Height",
+        "head_circ": "Head circumference",
+        "muac": "Mid-upper arm circumference",
+        "glucose": "Blood glucose",
+        "pain": "Pain",
+        "diuresis": "Diuresis"
+      }
+    },
+    "history": "History",
+    "trend": "Temperature trend"
+  },
+  "diagnostic": {
+    "title": "Workstation diagnostics",
+    "subtitle": "Sync and local database status",
+    "device": "Workstation",
+    "deviceCode": "Workstation code",
+    "pending": "Waiting to be sent",
+    "rejected": "Rejected",
+    "conflicts": "Conflicts",
+    "lastSync": "Last sync",
+    "lastServer": "Last known server time",
+    "storage": "Storage used",
+    "storageUnknown": "Unknown on this browser",
+    "network": "Network",
+    "online": "Online",
+    "offline": "Offline",
+    "forceSync": "Force a sync",
+    "rejectedTitle": "Rejected operations",
+    "rejectedEmpty": "No rejected operation.",
+    "reason": "Reason",
+    "command": "Command",
+    "version": "Application version"
+  },
+  "comingSoon": {
+    "title": "{module} is coming soon",
+    "text": "This module is planned in the roadmap ({week}). The offline foundations it relies on are already in place.",
+    "back": "Back to the dashboard"
+  },
+  "offlineOnly": {
+    "title": "Available online only",
+    "text": "Reconnect this workstation to the network to access this screen."
+  },
+  "errors": {
+    "PERMISSION_DENIED": "You are not allowed to perform this action.",
+    "VALIDATION_FAILED": "Some information is invalid.",
+    "DPI_VITAL_IMPLAUSIBLE": "Value outside plausible limits: a reason is required.",
+    "NOT_FOUND": "Item not found.",
+    "UNKNOWN": "An unexpected error occurred."
+  }
+}

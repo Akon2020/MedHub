@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./schema": "./src/schema/index.ts"
+    "./schema": "./src/schema/index.ts",
+    "./seeds/platform/plans.json": "./seeds/platform/plans.json"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

@@ -1,0 +1,14 @@
+{
+  "name": "MedHub",
+  "short_name": "MedHub",
+  "description": "Système d'information de santé local-first",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f8f9",
+  "theme_color": "#0f6b6b",
+  "lang": "fr",
+  "icons": [
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

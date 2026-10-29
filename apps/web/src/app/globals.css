@@ -1,0 +1,156 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/*
+ * MedHub palette: deep teal accent, mist backgrounds, ink text.
+ * Red, orange, green and blue are reserved for states (alert, warning,
+ * success, synchronisation in progress).
+ */
+:root {
+  --background: #f3f8f9;
+  --foreground: #0d1d1d;
+  --card: #ffffff;
+  --card-foreground: #0d1d1d;
+  --popover: #ffffff;
+  --popover-foreground: #0d1d1d;
+  --primary: #0f6b6b;
+  --primary-hover: #0b5656;
+  --primary-foreground: #ffffff;
+  --secondary: #e8f2f3;
+  --secondary-foreground: #123333;
+  --muted: #eef4f5;
+  --muted-foreground: #5d6a78;
+  --accent: #dcecee;
+  --accent-foreground: #0d3f40;
+  --teal-soft: #b4dadd;
+  --teal-mid: #6aafba;
+  --sage: #a9c1ba;
+  --slate: #425658;
+  --border: #e1eaec;
+  --input: #d5e2e4;
+  --ring: #2f8f92;
+  --success: #15803d;
+  --success-soft: #dcfce7;
+  --warning: #c2410c;
+  --warning-soft: #ffedd5;
+  --danger: #dc2626;
+  --danger-soft: #fee2e2;
+  --info: #2563eb;
+  --info-soft: #dbeafe;
+  --radius: 0.875rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-teal-soft: var(--teal-soft);
+  --color-teal-mid: var(--teal-mid);
+  --color-sage: var(--sage);
+  --color-slate-ink: var(--slate);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 6px);
+  --radius-2xl: calc(var(--radius) + 12px);
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-heading), var(--font-body), ui-sans-serif, sans-serif;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    font-size: 15px;
+    -webkit-text-size-adjust: 100%;
+  }
+  @media (min-width: 768px) and (max-width: 1279px) {
+    html {
+      font-size: 16px;
+    }
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+}
+
+@layer components {
+  /* Frosted panel used on public pages and the sign-in screen only. */
+  .glass {
+    background: linear-gradient(135deg, rgb(255 255 255 / 0.78), rgb(255 255 255 / 0.52));
+    border: 1px solid rgb(255 255 255 / 0.7);
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.9) inset,
+      0 18px 50px -24px rgb(15 107 107 / 0.35);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+  }
+
+  /* Vertical light stripes of the hero backdrop. */
+  .hero-backdrop {
+    background-color: #cfe7ea;
+    background-image:
+      repeating-linear-gradient(
+        90deg,
+        rgb(255 255 255 / 0) 0,
+        rgb(255 255 255 / 0) 54px,
+        rgb(255 255 255 / 0.45) 58px,
+        rgb(255 255 255 / 0) 66px
+      ),
+      radial-gradient(120% 80% at 50% 0%, #eef8f9 0%, #cbe6e9 55%, #9fd0d5 100%);
+  }
+
+  .page-backdrop {
+    background:
+      radial-gradient(80% 60% at 0% 0%, rgb(180 218 221 / 0.55), transparent 60%),
+      radial-gradient(70% 60% at 100% 100%, rgb(106 175 186 / 0.35), transparent 60%),
+      var(--background);
+  }
+
+  .card-surface {
+    @apply rounded-xl border border-border bg-card shadow-[0_1px_2px_rgb(13_29_29/0.04),0_8px_24px_-16px_rgb(13_29_29/0.12)];
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
