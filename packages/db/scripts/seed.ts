@@ -6,7 +6,7 @@ import { createDb } from '../src/client';
 import { withSystem, withTenant } from '../src/context';
 import { hashPassword } from '../src/password';
 import { role, rolePermission, site, tenant, userAccount, userRole } from '../src/schema';
-import { requireEnv } from './env';
+import { isMainModule, requireEnv } from './env';
 
 /**
  * Fictitious demonstration structure (docs/00-cadrage.md section 7). Every name
@@ -135,7 +135,7 @@ export async function seedDemo(url: string, password: string): Promise<{ tenantI
   }
 }
 
-const isMain = process.argv[1]?.replace(/\\/g, '/').endsWith('scripts/seed.ts');
+const isMain = isMainModule(import.meta.url);
 if (isMain) {
   const url = requireEnv('DATABASE_URL');
   let password = process.env.MEDHUB_SEED_PASSWORD;

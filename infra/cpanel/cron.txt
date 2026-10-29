@@ -1,0 +1,7 @@
+# cPanel "Cron Jobs" entries. Replace <account> and the node path noted during the day-one checklist
+# (Setup Node.js App shows it, for example /home/<account>/nodevenv/medhub/22/bin/node).
+
+* * * * *   /path/to/node /home/<account>/medhub/current/worker/index.js tick >> /home/<account>/medhub/shared/logs/worker.log 2>&1
+15 2 * * *  /home/<account>/medhub/current/scripts/backup.sh daily >> /home/<account>/medhub/shared/logs/backup.log 2>&1
+30 3 * * 0  /home/<account>/medhub/current/scripts/backup.sh weekly >> /home/<account>/medhub/shared/logs/backup.log 2>&1
+45 3 1 * *  /home/<account>/medhub/current/scripts/backup.sh monthly >> /home/<account>/medhub/shared/logs/backup.log 2>&1

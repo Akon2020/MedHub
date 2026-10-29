@@ -2,7 +2,7 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { createDb } from '../src/client';
 import { ensureGuards } from '../src/guards';
 import { ensureRls } from '../src/rls';
-import { migrationsFolder, requireEnv } from './env';
+import { isMainModule, migrationsFolder, requireEnv } from './env';
 import { seedReferenceData } from './reference-data';
 
 export async function runMigrations(url: string): Promise<void> {
@@ -43,7 +43,7 @@ export async function runMigrations(url: string): Promise<void> {
   }
 }
 
-const isMain = process.argv[1]?.replace(/\\/g, '/').endsWith('scripts/migrate.ts');
+const isMain = isMainModule(import.meta.url);
 if (isMain) {
   const url = process.argv.includes('--test')
     ? requireEnv('TEST_DATABASE_URL')
