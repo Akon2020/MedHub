@@ -328,6 +328,10 @@ Menu **Paramètres** (permission `configuration:read`, administrateur de structu
 - La licence reflète pour l'instant l'état de la structure (essai, actif, retard, lecture seule, suspendu) ; les plans et abonnements arrivent avec le super-admin (S14). Un bandeau signale le retard, la lecture seule ou la suspension ; l'accès d'urgence et l'export ne sont jamais bloqués.
 - **Paramètres, Appareils** (permission `device:read`, action `device:revoke` avec confirmation du second facteur) : liste des postes, dernière synchronisation, version ; **Retirer** (poste remplacé, avec option « envoyer une dernière fois les opérations en attente ») ou **Déclarer perdu** (sessions fermées immédiatement). Au contact suivant avec le serveur, le poste **efface ses données locales** et la page de connexion explique pourquoi.
 
+### Configuration versionnée (postes et sécurité)
+
+**Paramètres, Postes et sécurité** (`/app/parametres/synchronisation`) : durée de l'accès hors connexion (14 jours par défaut, 1 à 30), verrouillage automatique (5 minutes), essais de code PIN (10), validité de la confirmation des changements sensibles (15 minutes). Chaque changement est d'abord un **brouillon** (permission `configuration:edit`), puis une **publication** (`configuration:publish`) ; la version précédente est archivée et peut être restaurée en brouillon. Une version publiée n'est jamais modifiée (trigger PostgreSQL). Les postes reçoivent les valeurs publiées avec leurs jetons, à la synchronisation suivante.
+
 ### Thème sombre
 
 Sélecteur Système, Clair ou Sombre en haut des pages publiques et de la connexion, dans le menu utilisateur et dans « Mon compte ». Le choix est propre au poste (cookie `medhub_theme`) ; « Système » suit le réglage du téléphone ou de l'ordinateur.

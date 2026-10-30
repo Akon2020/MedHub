@@ -74,7 +74,8 @@ Consignes reçues et appliquées pendant les sessions :
 | `65c6e36` | 30/10/2026 | `feat(core)` : 2FA TOTP, codes de secours, limitation de débit, règles d'IP, événements de sécurité, CSP à nonce, écran « Mon compte », mesure de la durée des requêtes (S4, première partie) |
 | `3a832e5` | 30/10/2026 | `docs` : ce document, avancement S4, guide |
 | `74fb052` et précédent | 30/10/2026 | S4, seconde partie : organisation (structure, sites, services), confirmation par second facteur (step-up) avec rotation de session, détection des connexions inhabituelles, journal de sécurité de la structure |
-| (S5, appareils) | 30/10/2026 | `feat(core)` : jetons hors connexion et de licence signés Ed25519, retrait et perte d'appareil, effacement à distance |
+| `5bffff0` et précédent | 30/10/2026 | `feat(core)` : jetons hors connexion et de licence signés Ed25519, retrait et perte d'appareil, effacement à distance (S5) |
+| (S5, configuration) | 30/10/2026 | `feat(core)` : configuration versionnée (`config_entry`, brouillon, publication, archivage, restauration), réglages de sécurité des postes appliqués hors connexion |
 
 ---
 
@@ -146,6 +147,7 @@ Code pur, sans Node.js, DOM ni Dexie, utilisé à l'identique par le client et l
 - `phar/stock.ts` : solde = somme des mouvements, alerte de stock négatif.
 - `core/numbering.ts` : numérotation hors connexion sans collision (`{PREFIX}-{DEVICE}-{YY}-{SEQ:5}` par défaut, configurable).
 - `core/organization.ts` (S4) : schémas Zod partagés du profil de structure (nom usuel, raison sociale, langue, devise USD ou CDF, fuseau Kinshasa ou Lubumbashi, contact, adresse congolaise : province, ville ou territoire, commune, quartier, avenue), des sites (code de 3 lettres immuable) et des services (code de 2 à 8 caractères, type clinique, technique, administratif, pharmacie, laboratoire ou caisse) ; règle « au moins un site actif » ; liste des champs réellement modifiés pour l'audit.
+- `core/config-schemas.ts` (S5) : registre des réglages simples avec schéma Zod et valeur par défaut documentée (`security.offline_token_days` 14, `security.auto_lock_minutes` 5, `security.pin_max_attempts` 10, `security.step_up_minutes` 15), résolution des valeurs publiées (valeur invalide ramenée au défaut), part de configuration utile aux postes.
 - `core/license.ts` (S5) : « maintenant » jamais antérieur à la dernière heure serveur connue, état de l'accès hors connexion (valide, expire dans moins de 3 jours, expiré ; 14 jours par défaut, 30 au plus) et phase de licence (normale, retard, lecture seule, suspendue) calculée hors connexion à partir des dates du jeton.
 - `core/sign-in-risk.ts` (S4) : signature d'appareil (navigateur et système) et détection des connexions inhabituelles (nouvel appareil, horaire éloigné de toutes les connexions habituelles dans le fuseau de la structure, à partir de 10 connexions d'historique). Utilisé par le serveur et par l'écran « Mon compte ».
 
@@ -171,11 +173,11 @@ Code pur, sans Node.js, DOM ni Dexie, utilisé à l'identique par le client et l
 
 ## 8. `packages/db` : base PostgreSQL, sécurité et migrations
 
-### 8.1 Schéma (28 tables)
+### 8.1 Schéma (29 tables)
 
 | Domaine | Tables |
 | --- | --- |
-| Plateforme et organisation | `tenant`, `site`, `department` (S4), `person_global` (point d'accroche du dossier partagé phase 2), `permission` (catalogue), `platform_audit_log` |
+| Plateforme et organisation | `tenant`, `site`, `department` (S4), `config_entry` (S5, configuration versionnée), `person_global` (point d'accroche du dossier partagé phase 2), `permission` (catalogue), `platform_audit_log` |
 | Identité | `user_account` (dont, depuis S4, `mfa_secret_enc`, `mfa_enabled_at`, `mfa_last_step`), `role`, `role_permission`, `user_role`, `session` (dont, depuis S4, `mfa_verified_at` et `rotated_from`), `mfa_recovery_code` (S4) |
 | Traçabilité | `audit_log` (chaîné par hachage), `data_access_log` |
 | Appareils et numérotation | `device` (dont, depuis S5, `revoked_at`, `revoked_by`, `allow_final_push`), `number_series` |
@@ -189,13 +191,13 @@ Colonnes communes, index composites commençant par `tenant_id`, contraintes `ch
 
 ### 8.2 Isolation des structures
 
-- `rls.ts` (`ensureRls`) : après chaque migration, **toute** table possédant `tenant_id` (sauf `job`) reçoit `ENABLE` et `FORCE ROW LEVEL SECURITY`, la politique `tenant_isolation` (`tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid`) et la politique `platform_scope` en lecture seule. Aucune table ne peut être oubliée. 18 tables protégées aujourd'hui.
+- `rls.ts` (`ensureRls`) : après chaque migration, **toute** table possédant `tenant_id` (sauf `job`) reçoit `ENABLE` et `FORCE ROW LEVEL SECURITY`, la politique `tenant_isolation` (`tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid`) et la politique `platform_scope` en lecture seule. Aucune table ne peut être oubliée. 19 tables protégées aujourd'hui.
 - Les tables de plateforme de S4 (`rate_limit`, `ip_rule`, `security_event`) n'ont volontairement pas de colonne `tenant_id` (elles protègent la plateforme avant qu'une structure soit connue) ; elles utilisent `target_tenant_id`.
 - `context.ts` : `withTenant` (transaction avec `set_config(..., true)` de la structure, de l'utilisateur et de l'appareil), `withPlatformScope` (lecture seule, réservée à `server/platform` et `sadm`), `withSystem` (tables de plateforme).
 
 ### 8.3 Ajout seul et immuabilité
 
-`guards.ts` installe des triggers PostgreSQL : `DELETE` interdit sur `vital_sign`, `stock_movement`, `op_log`, `audit_log`, `change_log`, `data_access_log`, `platform_audit_log`, `security_event`, `patient` ; `UPDATE` interdit sur les journaux, les mouvements et `security_event` ; sur `vital_sign`, seules les métadonnées de remplacement peuvent changer.
+`guards.ts` installe des triggers PostgreSQL : `DELETE` interdit sur `vital_sign`, `stock_movement`, `op_log`, `audit_log`, `change_log`, `data_access_log`, `platform_audit_log`, `security_event`, `patient` ; `UPDATE` interdit sur les journaux, les mouvements et `security_event` ; sur `vital_sign`, seules les métadonnées de remplacement peuvent changer ; sur `config_entry` (S5), seul un brouillon peut être modifié ou supprimé, une version publiée ne peut que passer à l'état archivé.
 
 ### 8.4 Audit chaîné
 
@@ -212,6 +214,7 @@ Colonnes communes, index composites commençant par `tenant_id`, contraintes `ch
 
 - `migrations/0000_init.sql` : schéma initial.
 - `migrations/0001_s4_mfa_security.sql` : colonnes 2FA de `user_account`, tables `mfa_recovery_code`, `rate_limit`, `ip_rule`, `security_event` et leurs index.
+- `migrations/0004_s5_configuration.sql` : table `config_entry` et index partiels (un seul brouillon et une seule version publiée par clé).
 - `migrations/0003_s5_devices.sql` : colonnes de retrait des appareils.
 - `migrations/0002_s4_organization.sql` : table `department`, colonnes `session.mfa_verified_at` et `session.rotated_from`.
 - `scripts/migrate.ts` : extensions, migrations Drizzle, `ensureRls`, `ensureGuards`, données de référence. Option `--test` pour la base de test.
@@ -264,6 +267,7 @@ Colonnes communes, index composites commençant par `tenant_id`, contraintes `ch
 | `/app/compte` | En ligne seulement (S4) | Mon compte : double authentification, sessions ouvertes, apparence (thème et langue) |
 | `/app/parametres` | En ligne seulement (S4) | Accueil des paramètres filtré par permission : organisation, journal de sécurité, Mon compte ; utilisateurs, rôles, appareils et référentiels annoncés pour S5 |
 | `/app/parametres/organisation` | En ligne seulement (S4) | Profil de la structure, sites (ajout, modification, désactivation), services par site |
+| `/app/parametres/synchronisation` | En ligne seulement (S5) | Postes et sécurité : réglages versionnés (brouillon, publication, historique, restauration) |
 | `/app/parametres/appareils` | En ligne seulement (S5) | Postes de la structure : utilisateur, dernière synchronisation, version, état ; retrait (avec dernier envoi autorisé ou non) et déclaration de perte ; recommandation de chiffrement des disques |
 | `/app/parametres/securite` | En ligne seulement (S4) | Journal de sécurité de la structure : connexions inhabituelles, tentatives excessives, blocages, changements de 2FA |
 
@@ -294,6 +298,7 @@ Toutes les routes passent par `defineRoute` (`server/platform/http.ts`) : identi
 | `POST /api/v1/auth/logout` | Révocation de la session |
 | `GET /api/v1/auth/me` | Profil, structure, site, permissions |
 | `POST /api/v1/devices/register` | Enregistrement du poste (clé publique Ed25519, code d'appareil à deux lettres) ; depuis S5, renvoie aussi le jeton hors connexion, le jeton de licence, les clés publiques et l'heure serveur |
+| `GET /api/v1/config`, `POST /api/v1/config/draft`, `.../discard`, `.../publish`, `.../restore` | Configuration versionnée (`configuration:read`, `configuration:edit`, `configuration:publish`, step-up) (S5) |
 | `POST /api/v1/devices/tokens` | Renouvellement des jetons d'un poste actif de l'utilisateur (S5) |
 | `GET /api/v1/devices`, `POST /api/v1/devices/revoke` | Liste des postes (`device:read`) ; retrait ou perte (`device:revoke` et step-up) (S5) |
 | `POST /api/v1/sync/push`, `GET /api/v1/sync/pull`, `GET /api/v1/sync/status` | Synchronisation |
@@ -316,6 +321,7 @@ Toutes les routes passent par `defineRoute` (`server/platform/http.ts`) : identi
 - `platform/tenant.ts` : résolution unique de la structure depuis la session signée (jamais depuis le corps, l'URL ou un en-tête).
 - `platform/logger.ts` (pino, JSON), `platform/telemetry.ts` (interface `Telemetry`, adaptateur interne, emplacement pour l'adaptateur Batela).
 - `platform/mfa.ts`, `platform/ip.ts`, `platform/security.ts` : voir section 13.
+- `modules/core/configuration.ts` (S5) : lecture des valeurs publiées (`loadConfig`), brouillon, publication avec audit `config_publish` (ancienne et nouvelle valeur), archivage, restauration en brouillon ; `requireRecentStepUp` lit la fenêtre de confirmation dans la configuration. La durée du jeton hors connexion et la configuration remise aux postes en dépendent.
 - `platform/tokens.ts` (S5) : émission des jetons avec `MEDHUB_SIGNING_*` (`SIGNING_KEY_MISSING` si absentes), clés publiques acceptées (actuelle et `MEDHUB_SIGNING_PREVIOUS_KEYS`), licence calquée sur l'état de la structure et ouvrant tous les modules MVP tant que les abonnements n'existent pas.
 - `platform/session.ts` (S5) : `sessionDeviceRevoked` ; `platform/tenant.ts` répond `DEVICE_REVOKED` au lieu de `UNAUTHENTICATED` quand la session a été fermée par le retrait de son poste, pour que le poste s'efface au lieu de demander une connexion.
 - `modules/sync` (S5) : un poste retiré avec dernier envoi autorisé peut encore pousser ; tout autre contact d'un poste retiré ou perdu ferme ses sessions et répond `DEVICE_REVOKED`.
@@ -439,16 +445,17 @@ Réponse au point ouvert de J0 (une connexion restée 20 s sans réponse) : chaq
 | `packages/shared` | UUID, HLC, argent, codes | 9 tests verts |
 | `packages/domain` | Commandes, recherche, plausibilité, stock, numérotation | 10 tests verts |
 | `packages/db` (unitaires) | Hachage d'audit | 2 tests verts |
-| `packages/db` (isolation, `pnpm db:test-isolation`) | RLS activée et forcée partout, une fabrique par table, lectures, mises à jour et insertions croisées refusées, triggers, chaîne d'audit | **79 tests verts** (71 avant S4, puis `mfa_recovery_code` et `department`) |
+| `packages/db` (isolation, `pnpm db:test-isolation`) | RLS activée et forcée partout, une fabrique par table, lectures, mises à jour et insertions croisées refusées, triggers, chaîne d'audit | **83 tests verts** (71 avant S4, puis `mfa_recovery_code`, `department` et `config_entry`) |
 | `packages/local-db` | Chiffrement, PIN, récupération, absence de nom en clair | 5 tests verts |
 | `packages/sync` | Banc de propriétés : 500 opérations, deux postes, coupures, réponses perdues, doublons absorbés | 11 tests verts |
-| `apps/worker` | Analyseur cron, tick, reprises, lettres mortes | 3 tests verts (budget du tick porté à 20 s dans le test : il échouait sous forte charge) |
+| `apps/worker` | Analyseur cron, tick, reprises, lettres mortes | 3 tests verts (le test des deux ticks réels dispose de 60 s : il dépassait les 5 s par défaut de Vitest quand toutes les suites tournent ensemble) |
 | `apps/web` (unitaires, S4) | Correspondance d'adresses et décisions d'IP, chiffrement du secret, TOTP sans rejeu, codes de secours, défis signés | 11 tests verts |
 | `apps/web` (intégration PostgreSQL) | Synchronisation réelle (160 opérations, RLS, triggers, audit) ; 2FA de bout en bout (rôle non privilégié, configuration imposée, code faux, rejeu refusé, code de secours à usage unique, désactivation refusée par le rôle, chaîne d'audit intacte, limitation de débit et événement) | 7 tests verts (23 au total pour `apps/web` avec l'organisation et les tests unitaires) |
 | Playwright `sync-bench.spec.ts` | Deux navigateurs réels, 500 opérations, coupures, réponses perdues | 500 opérations (226 enregistrements, 96 modifications, 178 constantes), 109 cycles coupés, 41 réponses perdues ; zéro rejet, zéro doublon, convergence, aucun nom en clair |
 | Playwright `sync-bench.spec.ts` (second scénario) | Enregistrement hors connexion par le formulaire, rechargement, synchronisation | Vert |
 | Playwright `public.spec.ts` | Page publique vers connexion ; bouton désactivé hors connexion ; projet tablette | Vert |
 | Playwright `mfa.spec.ts` (S4) | Configuration imposée de la 2FA à l'écran, codes de secours, seconde connexion avec code faux puis bon code, activation du poste, « Mon compte » en thème sombre, création d'un site, modification après expiration de la preuve avec boîte de step-up, **effacement à distance** d'une tablette déclarée perdue (second navigateur : identité et IndexedDB vides, message sur la page de connexion) ; CSP à nonce neuf | 2 tests verts (2,3 min et 0,2 s) |
+| `apps/web` intégration configuration (S5) | Valeurs par défaut, validation, brouillon par un rédacteur et publication refusée sans `configuration:publish`, archivage, trigger d'immuabilité (modification et suppression refusées), restauration, jeton de 21 jours après publication, fenêtre de step-up configurée, audit chaîné | 5 tests verts (32 au total pour `apps/web`) |
 | `packages/sync` jetons (S5) | Signature et vérification, rotation des clés, `kid` inconnu, mauvaise clé, charge utile falsifiée, type de jeton, empreinte des permissions | 3 tests verts (14 au total pour le paquet) |
 | `apps/web` intégration appareils (S5) | Jetons à l'activation et au renouvellement, step-up exigé, dernier envoi d'un poste retiré puis refus et sessions fermées, poste perdu coupé immédiatement, double retrait refusé, liste réservée aux administrateurs, événements de sécurité | 4 tests verts (27 au total pour `apps/web`) |
 | `packages/domain` (S4) | Schémas d'organisation, règle du dernier site actif, champs modifiés, détection des connexions inhabituelles, heures dans le fuseau de la structure | 9 tests verts (19 au total pour le paquet) |
@@ -495,6 +502,7 @@ Commandes de contrôle avant chaque commit : `pnpm typecheck`, `pnpm lint`, `pnp
 | 30/10/2026 | Clés publiques des jetons | Remises au poste à son activation (en ligne, TLS) puis conservées localement, au lieu d'être compilées dans l'application : un même build sert tous les environnements (à valider) |
 | 30/10/2026 | Licence avant SADM | Jeton calqué sur l'état de la structure, tous les modules MVP, aucun plan ni limite inventés (à valider) |
 | 30/10/2026 | Postes activés avant S5 | Sans jeton, ils restent utilisables jusqu'à leur prochaine synchronisation, qui leur en remet un (à valider) |
+| 30/10/2026 | Configuration versionnée | `config_entry` pour les réglages simples, publication immédiate (`effective_from` = publication) ; les publications datées dans le futur arriveront avec les tarifs (S10) (à valider) |
 | 30/10/2026 | Step-up | Fenêtre de 15 minutes après la dernière preuve du second facteur pour toute modification de configuration, valeur codée en attendant la configuration versionnée de S5 (à valider) |
 | 30/10/2026 | Organisation | Modifications appliquées directement avec audit ; le cycle brouillon et publication de `docs/06` arrive avec la configuration versionnée (S5). Sites et services pas encore distribués aux postes par la synchronisation (S5, référentiels) (à valider) |
 | 30/10/2026 | Connexions inhabituelles | Signalées dans le journal de sécurité de la structure ; notification par courriel ou SMS reportée au module NOTIF ; pas de pays (aucune source de géolocalisation) (à valider) |
@@ -518,6 +526,6 @@ Commandes de contrôle avant chaque commit : `pnpm typecheck`, `pnpm lint`, `pnp
 
 S4 est terminée (`docs/11-feuille-de-route.md`) : authentification complète avec 2FA, structures, sites et services, RLS sur toutes les tables, rôles et permissions vérifiés côté serveur, audit chaîné, coquille PWA, mise en page, indicateur de synchronisation, protections de la plateforme. Les salles, horaires d'ouverture et jours fériés de `docs/modules/core.md` arrivent avec les rendez-vous et files (S7).
 
-S5 (en cours ; appareils, effacement à distance et jetons signés livrés) : configuration versionnée (`config_entry`, brouillon et publication), catalogues de référence, i18n complète, base de formation, gestion des utilisateurs (dont réinitialisation de la 2FA).
+S5 (en cours ; appareils, effacement à distance, jetons signés et configuration versionnée livrés) : reste (`config_entry`, brouillon et publication), catalogues de référence, i18n complète, base de formation, gestion des utilisateurs (dont réinitialisation de la 2FA).
 
 S6 : patients (recherche floue complète, dédoublonnage, fusion supervisée et réversible, carte et QR), périmètre de synchronisation. Puis S7 à S9 jusqu'au critère de sortie de J1 : un patient parcourt accueil, triage et consultation hors connexion et se synchronise sans erreur.
