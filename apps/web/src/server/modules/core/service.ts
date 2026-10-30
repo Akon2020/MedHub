@@ -8,8 +8,8 @@ import {
   withTenant,
   type Tx,
 } from '@medhub/db';
-import { assessSignIn, deviceLabel } from '@medhub/domain';
-import { verifyPassword } from '@medhub/db/password';
+import { assessSignIn, deviceLabel, passwordProblems } from '@medhub/domain';
+import { hashPassword, verifyPassword } from '@medhub/db/password';
 import { AppError, normalizeTenantCode, uuidv7, type DeviceKind } from '@medhub/shared';
 import { and, desc, eq, gt, isNull, ne, or } from 'drizzle-orm';
 import { database } from '../../platform/db';
@@ -58,7 +58,8 @@ export type SignedIn = { status: 'signed_in'; profile: Profile; cookie: string; 
 export type LoginResult =
   | SignedIn
   | { status: 'mfa_required'; challenge: string }
-  | { status: 'mfa_enrollment_required'; challenge: string };
+  | { status: 'mfa_enrollment_required'; challenge: string }
+  | { status: 'password_change_required'; challenge: string; minLength: number };
 
 async function siteOf(tx: Tx, siteId: string | null): Promise<{ id: string; code: string } | null> {
   if (!siteId) return null;
@@ -116,6 +117,22 @@ async function buildProfile(tx: Tx, tenant: TenantRow, user: UserRow): Promise<P
     site: await siteOf(tx, user.defaultSiteId),
     permissions: [...permissions].sort(),
   };
+}
+
+/** A user needs at least one role in force to sign in (docs/modules/core.md). */
+export async function hasActiveRole(tx: Tx, userId: string): Promise<boolean> {
+  const now = new Date();
+  const rows = await tx
+    .select({ id: schema.userRole.id })
+    .from(schema.userRole)
+    .where(
+      and(
+        eq(schema.userRole.userId, userId),
+        or(isNull(schema.userRole.validUntil), gt(schema.userRole.validUntil, now)),
+      ),
+    )
+    .limit(1);
+  return rows.length > 0;
 }
 
 /** Second factor mandatory for privileged roles and roles flagged by the structure. */
@@ -272,7 +289,11 @@ export async function login(
     async (
       tx,
     ): Promise<
-      LoginResult | { status: 'failed'; code: 'AUTH_ACCOUNT_LOCKED' | 'AUTH_INVALID_CREDENTIALS' }
+      | LoginResult
+      | {
+          status: 'failed';
+          code: 'AUTH_ACCOUNT_LOCKED' | 'AUTH_INVALID_CREDENTIALS' | 'AUTH_NO_ACTIVE_ROLE';
+        }
     > => {
       const [user] = await tx
         .select()
@@ -289,27 +310,117 @@ export async function login(
         return { status: 'failed', code: 'AUTH_INVALID_CREDENTIALS' };
       }
 
-      // The failure counter is only reset once every factor has succeeded.
-      if (user.mfaEnabledAt) {
+      if (!(await hasActiveRole(tx, user.id))) {
+        await appendAudit(tx, {
+          tenantId: tenant.id,
+          userId: user.id,
+          ip: input.ip,
+          action: 'login_refused_no_role',
+          entity: 'user_account',
+          entityId: user.id,
+        });
+        return { status: 'failed', code: 'AUTH_NO_ACTIVE_ROLE' };
+      }
+      if (user.mustChangePassword) {
+        const values = await loadConfig(tx);
         return {
-          status: 'mfa_required',
-          challenge: issueChallenge({ tenantId: tenant.id, userId: user.id, purpose: 'verify' }),
+          status: 'password_change_required',
+          challenge: issueChallenge({ tenantId: tenant.id, userId: user.id, purpose: 'password' }),
+          minLength: values['security.password_min_length'],
         };
       }
-      if (await roleRequiresMfa(tx, user.id)) {
-        return {
-          status: 'mfa_enrollment_required',
-          challenge: issueChallenge({ tenantId: tenant.id, userId: user.id, purpose: 'enroll' }),
-        };
-      }
-      return openSession(tx, tenant, user, input, 'password');
+      return afterPassword(tx, tenant, user, input);
     },
   );
 
   if (outcome.status === 'failed') {
-    throw new AppError(outcome.code, outcome.code === 'AUTH_ACCOUNT_LOCKED' ? 423 : 401);
+    const status =
+      outcome.code === 'AUTH_ACCOUNT_LOCKED'
+        ? 423
+        : outcome.code === 'AUTH_NO_ACTIVE_ROLE'
+          ? 403
+          : 401;
+    throw new AppError(outcome.code, status);
   }
   return outcome;
+}
+
+/** Once the password is settled: second factor if any, otherwise the session. */
+async function afterPassword(
+  tx: Tx,
+  tenant: TenantRow,
+  user: UserRow,
+  client: Client,
+): Promise<LoginResult> {
+  // The failure counter is only reset once every factor has succeeded.
+  if (user.mfaEnabledAt) {
+    return {
+      status: 'mfa_required',
+      challenge: issueChallenge({ tenantId: tenant.id, userId: user.id, purpose: 'verify' }),
+    };
+  }
+  if (await roleRequiresMfa(tx, user.id)) {
+    return {
+      status: 'mfa_enrollment_required',
+      challenge: issueChallenge({ tenantId: tenant.id, userId: user.id, purpose: 'enroll' }),
+    };
+  }
+  return openSession(tx, tenant, user, client, 'password');
+}
+
+/** Rejects a password that breaks the structure's policy or repeats the current one. */
+async function checkNewPassword(tx: Tx, user: UserRow, password: string): Promise<void> {
+  const values = await loadConfig(tx);
+  const minLength = values['security.password_min_length'];
+  const problems = passwordProblems(password, {
+    minLength,
+    identity: [user.username, user.displayName, user.email],
+  });
+  if (problems.length > 0) throw new AppError('AUTH_PASSWORD_WEAK', 422, { problems, minLength });
+  if (await verifyPassword(user.passwordHash, password)) {
+    throw new AppError('AUTH_PASSWORD_REUSED', 422);
+  }
+}
+
+async function storePassword(tx: Tx, userId: string, password: string): Promise<void> {
+  const now = new Date();
+  await tx
+    .update(schema.userAccount)
+    .set({
+      passwordHash: await hashPassword(password),
+      passwordChangedAt: now,
+      mustChangePassword: false,
+      updatedAt: now,
+    })
+    .where(eq(schema.userAccount.id, userId));
+}
+
+/**
+ * First sign-in with a temporary password (created or reset by an
+ * administrator): the user chooses their own before going any further.
+ */
+export async function changeInitialPassword(
+  input: { challenge: string; password: string } & Client,
+): Promise<LoginResult> {
+  const { tenant, userId } = await challengeContext(input.challenge, 'password', input.ip);
+  return withTenant(database().db, { tenantId: tenant.id, userId }, async (tx) => {
+    const user = await findUser(tx, userId);
+    if (!user || user.status !== 'active' || !user.mustChangePassword) {
+      throw new AppError('AUTH_MFA_CHALLENGE_EXPIRED', 401);
+    }
+    await checkNewPassword(tx, user, input.password);
+    await storePassword(tx, user.id, input.password);
+    await appendAudit(tx, {
+      tenantId: tenant.id,
+      userId: user.id,
+      ip: input.ip,
+      action: 'password_change',
+      entity: 'user_account',
+      entityId: user.id,
+      diff: { reason: 'temporary' },
+    });
+    return afterPassword(tx, tenant, { ...user, mustChangePassword: false }, input);
+  });
 }
 
 async function challengeContext(
@@ -715,6 +826,51 @@ export async function disableMfa(ctx: RequestContext, code: string, client: Clie
     tenantId: ctx.tenantId,
     userId: ctx.userId,
     ip: client.ip,
+  });
+}
+
+/** Change from the account page: the current password is required, other sessions end. */
+export async function changePassword(
+  ctx: RequestContext,
+  input: { current: string; password: string },
+  client: Client,
+): Promise<void> {
+  await enforceRateLimit(RATE_LIMITS.mfaByUser, ctx.userId, {
+    ip: client.ip,
+    tenantId: ctx.tenantId,
+  });
+  await withAccount(ctx, async (tx, tenant, user) => {
+    if (!(await verifyPassword(user.passwordHash, input.current))) {
+      throw new AppError('AUTH_INVALID_CREDENTIALS', 401);
+    }
+    await checkNewPassword(tx, user, input.password);
+    await storePassword(tx, user.id, input.password);
+    await tx
+      .update(schema.session)
+      .set({ revokedAt: new Date() })
+      .where(
+        and(
+          eq(schema.session.userId, user.id),
+          isNull(schema.session.revokedAt),
+          ne(schema.session.id, ctx.sessionId),
+        ),
+      );
+    await appendAudit(tx, {
+      tenantId: tenant.id,
+      userId: user.id,
+      ip: client.ip,
+      action: 'password_change',
+      entity: 'user_account',
+      entityId: user.id,
+      diff: { reason: 'self' },
+    });
+    await recordSecurityEvent(tx, {
+      kind: 'password_changed',
+      severity: 'info',
+      tenantId: tenant.id,
+      userId: user.id,
+      ip: client.ip,
+    });
   });
 }
 

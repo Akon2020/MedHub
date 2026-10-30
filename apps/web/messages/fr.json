@@ -276,7 +276,11 @@
       "AUTH_MFA_ALREADY_ENABLED": "La double authentification est déjà active.",
       "AUTH_MFA_NOT_ENROLLED": "La double authentification n'est pas configurée.",
       "IP_BLOCKED": "Accès refusé depuis cette adresse réseau.",
-      "AUTH_STEP_UP_REQUIRED": "Confirmation de votre identité requise."
+      "AUTH_STEP_UP_REQUIRED": "Confirmation de votre identité requise.",
+      "AUTH_NO_ACTIVE_ROLE": "Votre compte n'a aucun rôle actif. Demandez à l'administrateur de la structure de vous en attribuer un.",
+      "AUTH_PASSWORD_WEAK": "Mot de passe refusé.",
+      "AUTH_PASSWORD_REUSED": "Choisissez un mot de passe différent de l'actuel.",
+      "AUTH_USER_DISABLED": "Ce compte a été désactivé par l'administrateur de la structure."
     },
     "mfa": {
       "verifyTitle": "Double authentification",
@@ -302,7 +306,23 @@
       "recoveryConfirm": "J'ai conservé ces codes en lieu sûr",
       "continue": "Continuer"
     },
-    "deviceRetired": "Ce poste a été retiré ou déclaré perdu par l'administrateur de votre structure : ses données locales ont été effacées. Connectez-vous pour l'activer à nouveau si besoin."
+    "deviceRetired": "Ce poste a été retiré ou déclaré perdu par l'administrateur de votre structure : ses données locales ont été effacées. Connectez-vous pour l'activer à nouveau si besoin.",
+    "passwordProblems": {
+      "too_short": "Il faut au moins {min} caractères.",
+      "too_long": "Il est trop long (128 caractères au plus).",
+      "common": "Il est trop courant et facile à deviner.",
+      "contains_identity": "Il ne doit pas contenir votre nom ou votre identifiant."
+    },
+    "passwordChange": {
+      "title": "Choisissez votre mot de passe",
+      "subtitle": "Vous vous connectez avec un mot de passe temporaire. Remplacez-le par un mot de passe personnel, connu de vous uniquement.",
+      "newPassword": "Nouveau mot de passe",
+      "confirm": "Confirmez le mot de passe",
+      "hint": "Au moins {min} caractères. Une phrase de plusieurs mots est plus sûre et plus facile à retenir qu'un mot compliqué.",
+      "mismatch": "Les deux saisies ne correspondent pas.",
+      "submit": "Enregistrer et continuer",
+      "submitting": "Enregistrement..."
+    }
   },
   "app": {
     "nav": {
@@ -530,6 +550,13 @@
       "text": "Préférences de ce poste.",
       "theme": "Thème",
       "language": "Langue"
+    },
+    "password": {
+      "title": "Mot de passe",
+      "text": "Changer votre mot de passe ferme vos autres sessions ouvertes.",
+      "current": "Mot de passe actuel",
+      "submit": "Changer le mot de passe",
+      "changed": "Mot de passe changé. Vos autres sessions ont été fermées."
     }
   },
   "stepUp": {
@@ -566,7 +593,7 @@
       },
       "users": {
         "title": "Utilisateurs",
-        "text": "Comptes, rattachements, réinitialisations"
+        "text": "Comptes, rôles, rattachements, réinitialisations"
       },
       "roles": {
         "title": "Rôles et permissions",
@@ -692,7 +719,12 @@
       "NOT_FOUND": "Élément introuvable.",
       "AUTH_STEP_UP_REQUIRED": "Confirmation de votre identité annulée : rien n'a été modifié.",
       "NETWORK": "Le serveur est injoignable. Vérifiez la connexion.",
-      "UNKNOWN": "Une erreur inattendue est survenue."
+      "UNKNOWN": "Une erreur inattendue est survenue.",
+      "USER_USERNAME_TAKEN": "Cet identifiant est déjà utilisé dans la structure.",
+      "USER_LAST_ADMIN": "Impossible : la structure doit garder au moins un administrateur actif capable de gérer les rôles.",
+      "USER_IS_SELF": "Cette action ne peut pas viser votre propre compte. Utilisez « Mon compte ».",
+      "USER_ROLE_UNKNOWN": "Un des rôles choisis n'existe pas ou plus.",
+      "AUTH_MFA_NOT_ENROLLED": "Cet utilisateur n'a pas de double authentification à réinitialiser."
     },
     "devices": {
       "title": "Appareils",
@@ -747,7 +779,8 @@
       "units": {
         "days": "jours",
         "minutes": "minutes",
-        "attempts": "essais"
+        "attempts": "essais",
+        "characters": "caractères"
       },
       "keys": {
         "offline_token_days": {
@@ -765,7 +798,79 @@
         "step_up_minutes": {
           "title": "Confirmation des changements sensibles",
           "text": "Durée de validité de la dernière preuve du second facteur avant une modification de configuration (5 à 60 minutes)."
+        },
+        "password_min_length": {
+          "title": "Longueur minimale des mots de passe",
+          "text": "Nombre minimal de caractères (10 à 64). Aucune règle de composition n'est imposée : une phrase de plusieurs mots est recommandée."
         }
+      }
+    },
+    "users": {
+      "title": "Utilisateurs",
+      "subtitle": "Comptes de la structure, rôles, rattachements et réinitialisations.",
+      "listTitle": "{count, plural, one {# compte} other {# comptes}}",
+      "listText": "Un compte n'est jamais supprimé : il est désactivé et reste visible dans le journal.",
+      "new": "Nouvel utilisateur",
+      "newTitle": "Nouvel utilisateur",
+      "newText": "Un mot de passe temporaire est créé et affiché une seule fois. L'utilisateur le remplace à sa première connexion.",
+      "search": "Rechercher par nom ou identifiant",
+      "showDisabled": "{count, plural, one {Afficher le compte désactivé} other {Afficher les # comptes désactivés}}",
+      "you": "vous",
+      "noRole": "aucun rôle",
+      "lastLogin": "Dernière connexion : {date}",
+      "neverSignedIn": "Aucune connexion",
+      "empty": "Aucun utilisateur ne correspond.",
+      "close": "Fermer",
+      "none": "Aucun",
+      "save": "Enregistrer",
+      "create": "Créer l'utilisateur",
+      "usernameHint": "Lettres minuscules, chiffres, point, tiret ; commence par une lettre. Ne pourra plus changer.",
+      "usernameFixed": "L'identifiant ne change jamais : il figure dans le journal et sur les documents signés.",
+      "titlePlaceholder": "Dr, Inf., Ph.",
+      "rolesHint": "Au moins un rôle. Un rôle marqué « 2FA » impose la double authentification.",
+      "roleNeedsMfa": "2FA",
+      "reason": "Motif (consigné dans le journal)",
+      "cancel": "Annuler",
+      "mfaOn": "2FA",
+      "mustChange": "Mot de passe à changer",
+      "status": {
+        "active": "Actif",
+        "disabled": "Désactivé",
+        "locked": "Verrouillé"
+      },
+      "fields": {
+        "username": "Identifiant",
+        "displayName": "Nom complet",
+        "title": "Titre",
+        "professionalNumber": "Numéro d'ordre professionnel",
+        "phone": "Téléphone",
+        "email": "Courriel",
+        "defaultSite": "Site principal",
+        "defaultDepartment": "Service principal",
+        "locale": "Langue",
+        "roles": "Rôles"
+      },
+      "temporary": {
+        "title": "Mot de passe temporaire de {name}",
+        "text": "Communiquez-le en personne. Il ne sera plus affiché ; l'utilisateur devra le remplacer à sa première connexion.",
+        "copy": "Copier",
+        "copied": "Copié",
+        "done": "C'est noté"
+      },
+      "actions": {
+        "title": "Actions sur le compte",
+        "self": "Pour votre propre compte, utilisez « Mon compte ».",
+        "resetPassword": "Réinitialiser le mot de passe",
+        "unlock": "Déverrouiller",
+        "resetMfa": "Réinitialiser la 2FA",
+        "resetMfaConfirm": "Réinitialiser la double authentification",
+        "resetMfaHint": "À utiliser en cas de téléphone perdu ou changé. Ses sessions sont fermées ; si son rôle l'exige, un nouveau téléphone sera configuré à sa prochaine connexion.",
+        "disable": "Désactiver",
+        "disableConfirm": "Désactiver le compte",
+        "disableHint": "Ses sessions sont fermées immédiatement ; chacun de ses postes perd l'accès hors connexion à sa prochaine synchronisation. Rien n'est supprimé.",
+        "enable": "Réactiver",
+        "enableConfirm": "Réactiver le compte",
+        "enableHint": "L'utilisateur pourra de nouveau se connecter avec son mot de passe."
       }
     }
   }

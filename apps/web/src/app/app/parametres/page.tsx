@@ -46,7 +46,7 @@ const ENTRIES: Entry[] = [
     href: '/app/parametres/synchronisation',
     permission: 'configuration:read',
   },
-  { key: 'users', icon: Users, permission: 'user:read', soon: 'S5' },
+  { key: 'users', icon: Users, href: '/app/parametres/utilisateurs', permission: 'user:read' },
   { key: 'roles', icon: KeyRound, permission: 'role:read', soon: 'S5' },
   {
     key: 'devices',

@@ -1,0 +1,1 @@
+ALTER TABLE "user_account" ADD COLUMN "default_department_id" uuid;

@@ -19,6 +19,7 @@ import {
   useMfaErrorMessage,
   type EnrollmentMaterial,
 } from '@/features/auth/mfa-step';
+import { PasswordCard } from './password-card';
 
 type Overview = {
   mfa: {
@@ -262,6 +263,8 @@ export function AccountSecurity() {
             )}
           </CardContent>
         </Card>
+
+        <PasswordCard />
 
         <Card>
           <CardHeader>

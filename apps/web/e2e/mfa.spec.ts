@@ -141,6 +141,49 @@ test('a privileged role enrolls its second factor at first sign-in, then must us
   const databases = await tablet.evaluate(async () => (await indexedDB.databases()).length);
   expect(databases).toBe(0);
   await other.close();
+
+  // A new account: temporary password shown once, replaced by the user at first sign-in.
+  await page.goto('/app/parametres/utilisateurs');
+  await unlock(page);
+  await page.getByRole('button', { name: 'Nouvel utilisateur' }).click();
+  await page.getByLabel('Identifiant', { exact: true }).fill('e2e.mbuyi');
+  await page.getByLabel('Nom complet').fill('Grâce Mbuyi');
+  await page.getByRole('checkbox', { name: 'Accueil', exact: true }).check();
+  await page.getByRole('button', { name: "Créer l'utilisateur" }).click();
+  const temporary = (
+    await page.getByTestId('temporary-password').innerText({ timeout: 20_000 })
+  ).trim();
+  await page.screenshot({ path: 'test-results/users-dark.png', fullPage: true });
+
+  const fresh = await browser.newContext({ locale: 'fr-FR', serviceWorkers: 'block' });
+  const newcomer = await fresh.newPage();
+  await newcomer.goto('/connexion');
+  await newcomer.waitForLoadState('networkidle');
+  await newcomer.getByLabel('Code de la structure').fill(tenantCode());
+  await newcomer.getByLabel('Identifiant').fill('e2e.mbuyi');
+  await newcomer.getByLabel('Mot de passe').fill(temporary);
+  await newcomer.getByRole('button', { name: 'Se connecter' }).click();
+  await expect(
+    newcomer.getByRole('heading', { name: 'Choisissez votre mot de passe' }),
+  ).toBeVisible({ timeout: 20_000 });
+  await newcomer.getByLabel('Nouveau mot de passe').fill('azerty2024');
+  await newcomer.getByLabel('Confirmez le mot de passe').fill('azerty2024');
+  await newcomer.getByRole('button', { name: 'Enregistrer et continuer' }).click();
+  await expect(newcomer.getByText(/Mot de passe refusé/)).toBeVisible({ timeout: 20_000 });
+  await newcomer.getByLabel('Nouveau mot de passe').fill('la pirogue glisse sur le fleuve');
+  await newcomer.getByLabel('Confirmez le mot de passe').fill('la pirogue glisse sur le fleuve');
+  await newcomer.getByRole('button', { name: 'Enregistrer et continuer' }).click();
+  await newcomer.waitForURL(/\/connexion\/activation$/, { timeout: 30_000 });
+  await fresh.close();
+
+  // Disabling keeps the account, visible and audited, but ends its access.
+  await page.getByRole('button', { name: "C'est noté" }).click();
+  await page.getByRole('button', { name: 'Désactiver', exact: true }).click();
+  await page.getByLabel('Motif').fill('Fin de contrat (fictif)');
+  await page.getByRole('button', { name: 'Désactiver le compte' }).click();
+  await expect(page.getByText('Désactivé', { exact: true }).first()).toBeVisible({
+    timeout: 20_000,
+  });
 });
 
 test('content security policy carries a fresh nonce on every document', async ({ request }) => {

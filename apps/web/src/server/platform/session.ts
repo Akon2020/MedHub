@@ -134,21 +134,28 @@ export async function lookupSession(raw: string | undefined): Promise<SessionRec
   });
 }
 
+export type SessionEndReason = 'device_revoked' | 'user_disabled';
+
 /**
- * A session ended because its device was retired or declared lost: the device
- * must learn it (DEVICE_REVOKED) to wipe itself, rather than ask for a sign-in.
+ * Why a known session no longer works. A device retired or declared lost must
+ * learn it (DEVICE_REVOKED) to wipe itself; a disabled user's device must drop
+ * its offline token (AUTH_USER_DISABLED) rather than simply ask for a sign-in.
  */
-export async function sessionDeviceRevoked(raw: string | undefined): Promise<boolean> {
+export async function sessionEndReason(raw: string | undefined): Promise<SessionEndReason | null> {
   const decoded = decodeSessionCookie(raw);
-  if (!decoded) return false;
+  if (!decoded) return null;
   return withTenant(database().db, { tenantId: decoded.tenantId, userId: null }, async (tx) => {
     const [row] = await tx
-      .select({ status: schema.device.status })
+      .select({ device: schema.device.status, user: schema.userAccount.status })
       .from(schema.session)
-      .innerJoin(schema.device, eq(schema.device.id, schema.session.deviceId))
+      .innerJoin(schema.userAccount, eq(schema.userAccount.id, schema.session.userId))
+      .leftJoin(schema.device, eq(schema.device.id, schema.session.deviceId))
       .where(eq(schema.session.tokenHash, hashToken(decoded.token)))
       .limit(1);
-    return row !== undefined && row.status !== 'active';
+    if (!row) return null;
+    if (row.device !== null && row.device !== 'active') return 'device_revoked';
+    if (row.user === 'disabled') return 'user_disabled';
+    return null;
   });
 }
 

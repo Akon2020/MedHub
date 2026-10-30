@@ -20,10 +20,14 @@ const EPOCH_TOLERANCE_SECONDS = 30;
 const RECOVERY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export const RECOVERY_CODE_COUNT = 10;
 
-export type ChallengePurpose = 'verify' | 'enroll';
+export type ChallengePurpose = 'verify' | 'enroll' | 'password';
 export type Challenge = { tenantId: string; userId: string; purpose: ChallengePurpose };
 
-const CHALLENGE_TTL_SECONDS: Record<ChallengePurpose, number> = { verify: 300, enroll: 900 };
+const CHALLENGE_TTL_SECONDS: Record<ChallengePurpose, number> = {
+  verify: 300,
+  enroll: 900,
+  password: 900,
+};
 
 function fieldKey(tenantId: string): Buffer {
   const master = Buffer.from(env().MEDHUB_FIELD_MASTER_KEY, 'base64');
@@ -134,7 +138,7 @@ export function readChallenge(token: string, now = Date.now()): Challenge | null
   const given = Buffer.from(signature);
   if (expected.length !== given.length || !timingSafeEqual(expected, given)) return null;
   if (!isUuid(tenantId) || !isUuid(userId)) return null;
-  if (purpose !== 'verify' && purpose !== 'enroll') return null;
+  if (purpose !== 'verify' && purpose !== 'enroll' && purpose !== 'password') return null;
   if (Number(expires) * 1000 < now) return null;
   return { tenantId, userId, purpose };
 }

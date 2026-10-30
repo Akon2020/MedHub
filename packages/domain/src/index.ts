@@ -9,3 +9,5 @@ export * from './core/organization';
 export * from './core/sign-in-risk';
 export * from './core/license';
 export * from './core/config-schemas';
+export * from './core/password-policy';
+export * from './core/users';

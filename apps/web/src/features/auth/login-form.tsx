@@ -19,19 +19,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MfaEnrollStep, MfaVerifyStep } from './mfa-step';
+import { PasswordChangeStep, type AfterPassword } from './password-step';
 
 const KNOWN_ERRORS = new Set([
   'AUTH_INVALID_CREDENTIALS',
   'AUTH_ACCOUNT_LOCKED',
   'AUTH_TENANT_UNKNOWN',
   'AUTH_TENANT_SUSPENDED',
+  'AUTH_NO_ACTIVE_ROLE',
   'VALIDATION_FAILED',
   'RATE_LIMITED',
 ]);
 
 type LoginResponse =
-  | { status: 'signed_in'; profile: ServerProfile }
-  | { status: 'mfa_required' | 'mfa_enrollment_required'; challenge: string };
+  AfterPassword | { status: 'password_change_required'; challenge: string; minLength: number };
+
+type Step =
+  | { kind: 'verify' | 'enroll'; challenge: string }
+  | { kind: 'password'; challenge: string; minLength: number };
 
 function Field({
   id,
@@ -83,7 +88,7 @@ export function LoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [step, setStep] = useState<{ kind: 'verify' | 'enroll'; challenge: string } | null>(null);
+  const [step, setStep] = useState<Step | null>(null);
 
   async function finish(profile: ServerProfile) {
     const identity = identityFromProfile(profile);
@@ -93,6 +98,22 @@ export function LoginForm() {
     const ready = await isInitialized(db);
     db.close();
     router.push(ready ? '/app' : '/connexion/activation');
+  }
+
+  async function proceed(result: LoginResponse) {
+    if (result.status === 'signed_in') {
+      await finish(result.profile);
+      return;
+    }
+    setPassword('');
+    setStep(
+      result.status === 'password_change_required'
+        ? { kind: 'password', challenge: result.challenge, minLength: result.minLength }
+        : {
+            kind: result.status === 'mfa_required' ? 'verify' : 'enroll',
+            challenge: result.challenge,
+          },
+    );
   }
 
   async function onSubmit(event: FormEvent) {
@@ -113,15 +134,7 @@ export function LoginForm() {
           password,
         }),
       });
-      if (result.status === 'signed_in') {
-        await finish(result.profile);
-      } else {
-        setPassword('');
-        setStep({
-          kind: result.status === 'mfa_required' ? 'verify' : 'enroll',
-          challenge: result.challenge,
-        });
-      }
+      await proceed(result);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(t(`errors.${KNOWN_ERRORS.has(err.code) ? err.code : 'UNKNOWN'}`));
@@ -133,6 +146,14 @@ export function LoginForm() {
     }
   }
 
+  if (step?.kind === 'password')
+    return (
+      <PasswordChangeStep
+        challenge={step.challenge}
+        minLength={step.minLength}
+        onResult={proceed}
+      />
+    );
   if (step?.kind === 'verify')
     return <MfaVerifyStep challenge={step.challenge} onSignedIn={finish} />;
   if (step?.kind === 'enroll')

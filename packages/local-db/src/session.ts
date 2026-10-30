@@ -155,6 +155,25 @@ export async function loadTokens(db: MedHubLocalDb): Promise<StoredTokens | null
 }
 
 /**
+ * The user was disabled: the offline token is dropped so that the PIN no
+ * longer opens this database, but pending operations stay in case the account
+ * is restored and the user signs in online again.
+ */
+export async function revokeOfflineToken(db: MedHubLocalDb): Promise<void> {
+  const tokens = await loadTokens(db);
+  await db.meta.put({
+    key: 'tokens',
+    value: {
+      offlineToken: '',
+      licenseToken: tokens?.licenseToken ?? '',
+      signingKeys: tokens?.signingKeys ?? {},
+      ...(tokens?.config ? { config: tokens.config } : {}),
+      refreshedAt: tokens?.refreshedAt ?? 0,
+    },
+  });
+}
+
+/**
  * Remote wipe of a retired or lost device: the whole local database goes,
  * including any operation the server refused to receive.
  */

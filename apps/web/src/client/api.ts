@@ -4,6 +4,7 @@ export class ApiError extends Error {
   constructor(
     public readonly code: string,
     public readonly status: number,
+    public readonly details: Record<string, unknown> = {},
   ) {
     super(code);
     this.name = 'ApiError';
@@ -33,8 +34,10 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     clearTimeout(timer);
   }
   if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as { error?: { code?: string } } | null;
-    throw new ApiError(body?.error?.code ?? 'UNKNOWN', response.status);
+    const body = (await response.json().catch(() => null)) as {
+      error?: { code?: string; details?: Record<string, unknown> };
+    } | null;
+    throw new ApiError(body?.error?.code ?? 'UNKNOWN', response.status, body?.error?.details ?? {});
   }
   return (await response.json()) as T;
 }

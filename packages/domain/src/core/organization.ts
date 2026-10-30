@@ -13,7 +13,7 @@ export const DEPARTMENT_KINDS = [
 export const ORGANIZATION_CURRENCIES = ['USD', 'CDF'] as const;
 export const ORGANIZATION_LOCALES = ['fr', 'en'] as const;
 
-const optionalText = (max: number) =>
+export const optionalText = (max: number) =>
   z
     .string()
     .trim()
@@ -31,7 +31,7 @@ export const addressSchema = z.object({
 export type Address = z.infer<typeof addressSchema>;
 
 /** Phone numbers are kept as typed, but only digits, spaces and a leading + are allowed. */
-const phoneSchema = z
+export const phoneSchema = z
   .string()
   .trim()
   .max(30)
@@ -39,7 +39,7 @@ const phoneSchema = z
   .transform((v) => (v === '' ? null : v))
   .nullish();
 
-const emailSchema = z
+export const emailSchema = z
   .union([z.email().max(120), z.literal('')])
   .transform((v) => (v === '' ? null : v))
   .nullish();

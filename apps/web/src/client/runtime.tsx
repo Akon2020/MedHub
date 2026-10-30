@@ -9,6 +9,7 @@ import {
   nextCounter,
   openLocalDb,
   recoverWithCode,
+  revokeOfflineToken,
   unlockWithPin,
   wipeLocal,
   type EncryptedClientStore,
@@ -80,7 +81,11 @@ const DEFAULT_AUTO_LOCK_MINUTES = 5;
 async function startSession(
   identity: StoredIdentity,
   unlocked: UnlockedLocal,
-  hooks: { afterSync: (deviceId: string) => Promise<void>; onRevoked: () => void },
+  hooks: {
+    afterSync: (deviceId: string) => Promise<void>;
+    onRevoked: () => void;
+    onUserDisabled: () => void;
+  },
 ): Promise<Session | null> {
   const device = await loadDevice(unlocked);
   if (!device) return null;
@@ -101,6 +106,7 @@ async function startSession(
   const loop = new SyncLoop(client, unlocked.store, {
     afterSync: () => hooks.afterSync(device.deviceId),
     onRevoked: hooks.onRevoked,
+    onUserDisabled: hooks.onUserDisabled,
   });
   return {
     unlocked,
@@ -227,13 +233,18 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
           if (await refreshTokens(unlocked.db, deviceId)) setTokens(await read());
         },
         onRevoked: wipeDevice,
+        onUserDisabled: () => {
+          void revokeOfflineToken(unlocked.db)
+            .catch(() => undefined)
+            .then(lock);
+        },
       });
       if (!next) return 'not-activated';
       setSession(next);
       setPhase('ready');
       return 'ok';
     },
-    [identity, wipeDevice],
+    [identity, wipeDevice, lock],
   );
 
   const unlock = useCallback(

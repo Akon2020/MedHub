@@ -50,6 +50,8 @@ export class SyncLoop {
       afterSync?: () => Promise<void>;
       /** The server retired this device: the runtime wipes it. */
       onRevoked?: () => void;
+      /** The user was disabled: the runtime drops the offline token and locks. */
+      onUserDisabled?: () => void;
     } = {},
   ) {}
 
@@ -120,6 +122,13 @@ export class SyncLoop {
       if (error instanceof ApiError && error.code === 'DEVICE_REVOKED' && this.hooks.onRevoked) {
         this.stop();
         this.hooks.onRevoked();
+      } else if (
+        error instanceof ApiError &&
+        error.code === 'AUTH_USER_DISABLED' &&
+        this.hooks.onUserDisabled
+      ) {
+        this.stop();
+        this.hooks.onUserDisabled();
       } else if (
         error instanceof ApiError &&
         (error.status === 401 || error.code === 'DEVICE_REVOKED')

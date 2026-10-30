@@ -2,9 +2,11 @@ export {
   accountMfaConfirmRoute,
   accountMfaDisableRoute,
   accountMfaSetupRoute,
+  accountPasswordRoute,
   accountRecoveryCodesRoute,
   accountRevokeSessionsRoute,
   accountSecurityRoute,
+  initialPasswordRoute,
   loginRoute,
   logoutRoute,
   meRoute,
@@ -31,4 +33,13 @@ export {
   configRestoreRoute,
   configurationRoute,
 } from './configuration-routes';
+export {
+  userCreateRoute,
+  userResetMfaRoute,
+  userResetPasswordRoute,
+  usersRoute,
+  userStatusRoute,
+  userUnlockRoute,
+  userUpdateRoute,
+} from './users-routes';
 export type { Profile } from './service';

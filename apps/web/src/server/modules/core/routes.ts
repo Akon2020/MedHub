@@ -6,6 +6,8 @@ import { clientIp, defineRoute, json } from '../../platform/http';
 import { revokeSession, SESSION_COOKIE, sessionCookieOptions } from '../../platform/session';
 import {
   beginMfaSetup,
+  changeInitialPassword,
+  changePassword,
   completeEnrollment,
   confirmMfaSetup,
   currentProfile,
@@ -90,6 +92,32 @@ export const mfaActivateRoute = defineRoute({
 export const accountSecurityRoute = defineRoute({
   route: 'account.security',
   handler: async ({ ctx }) => json(await securityOverview(ctx)),
+});
+
+const newPassword = z.string().min(1).max(200);
+
+export const initialPasswordRoute = defineRoute({
+  route: 'auth.password.initial',
+  auth: false,
+  schema: challengeSchema.extend({ password: newPassword }),
+  handler: async ({ request, body }) => {
+    const result = await changeInitialPassword({
+      challenge: body.challenge,
+      password: body.password,
+      ...client(request),
+    });
+    if (result.status !== 'signed_in') return json(result);
+    return signedIn(result);
+  },
+});
+
+export const accountPasswordRoute = defineRoute({
+  route: 'account.password',
+  schema: z.object({ current: z.string().min(1).max(200), password: newPassword }),
+  handler: async ({ request, body, ctx }) => {
+    await changePassword(ctx, body, client(request));
+    return json({ ok: true });
+  },
 });
 
 export const accountMfaSetupRoute = defineRoute({
