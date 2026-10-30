@@ -13,7 +13,8 @@ Le jalon **J0 Fondations** est construit :
 - application web au design MedHub (teal) : page publique, connexion, activation du poste, tableau de bord, patients, fiche patient avec constantes, diagnostic ;
 - worker cron pour les tâches de fond, scripts de déploiement cPanel, CI GitHub Actions ;
 - thème clair, sombre ou automatique (selon le système) sur toute l'application ;
-- début de J1 (S4) : double authentification TOTP avec codes de secours, limitation de débit en base, règles d'IP, politique CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes.
+- début de J1 (S4) : double authentification TOTP avec codes de secours, limitation de débit en base, règles d'IP, politique CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes, organisation de la structure ;
+- S5 (en cours) : appareils et effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs.
 
 Le journal complet de tout ce qui a été fait se trouve dans `walkthrough.md`.
 
@@ -330,7 +331,17 @@ Menu **Paramètres** (permission `configuration:read`, administrateur de structu
 
 ### Configuration versionnée (postes et sécurité)
 
-**Paramètres, Postes et sécurité** (`/app/parametres/synchronisation`) : durée de l'accès hors connexion (14 jours par défaut, 1 à 30), verrouillage automatique (5 minutes), essais de code PIN (10), validité de la confirmation des changements sensibles (15 minutes). Chaque changement est d'abord un **brouillon** (permission `configuration:edit`), puis une **publication** (`configuration:publish`) ; la version précédente est archivée et peut être restaurée en brouillon. Une version publiée n'est jamais modifiée (trigger PostgreSQL). Les postes reçoivent les valeurs publiées avec leurs jetons, à la synchronisation suivante.
+**Paramètres, Postes et sécurité** (`/app/parametres/synchronisation`) : durée de l'accès hors connexion (14 jours par défaut, 1 à 30), verrouillage automatique (5 minutes), essais de code PIN (10), validité de la confirmation des changements sensibles (15 minutes), longueur minimale des mots de passe (10). Chaque changement est d'abord un **brouillon** (permission `configuration:edit`), puis une **publication** (`configuration:publish`) ; la version précédente est archivée et peut être restaurée en brouillon. Une version publiée n'est jamais modifiée (trigger PostgreSQL). Les postes reçoivent les valeurs publiées avec leurs jetons, à la synchronisation suivante.
+
+### Utilisateurs
+
+**Paramètres, Utilisateurs** (`/app/parametres/utilisateurs`, permission `user:read`), en ligne seulement. Toute modification demande la confirmation récente du second facteur.
+- **Créer** un compte (`user:create`) : identifiant définitif (lettres minuscules, chiffres, point, tiret), nom, titre, numéro d'ordre, téléphone, courriel, site et service principaux, langue, au moins un rôle. Un **mot de passe temporaire** est affiché une seule fois : remettez-le en personne. À sa première connexion, l'utilisateur choisit son propre mot de passe.
+- **Modifier** le profil et les rôles (`user:update`) : un rôle retiré garde son historique (date de fin), rien n'est supprimé.
+- **Réinitialiser le mot de passe** (`user:reset_password`) : nouveau mot de passe temporaire, verrouillage levé, sessions fermées. **Déverrouiller** un compte bloqué après des échecs. **Réinitialiser la 2FA** (téléphone perdu, avec motif) : si le rôle l'impose, l'utilisateur configure un nouveau téléphone à sa prochaine connexion.
+- **Désactiver** ou **réactiver** (`user:disable`, avec motif) : sessions fermées immédiatement ; chaque poste de l'utilisateur retire son accès hors connexion à sa synchronisation suivante, sans perdre les opérations en attente.
+- Garde-fous : on n'agit jamais sur son propre compte depuis cet écran (« Mon compte » sert à cela) ; la structure garde toujours au moins un administrateur actif capable de gérer les rôles (`role:manage`) ; un compte sans rôle actif ne peut pas se connecter.
+- **Politique de mot de passe** : 10 caractères au moins (réglable de 10 à 64 dans Postes et sécurité), refus des mots de passe courants (liste embarquée) et de ceux qui contiennent le nom ou l'identifiant, aucune règle de composition. Chacun peut changer son mot de passe dans « Mon compte » (ses autres sessions sont fermées).
 
 ### Thème sombre
 
