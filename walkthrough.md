@@ -70,7 +70,12 @@ Consignes reçues et appliquées pendant les sessions :
 | `68f2e0c` | 29/10/2026 | `docs` : `guide.md`, journal d'avancement, identité teal |
 | `71517a7` | 30/10/2026 | `test(e2e)` : banc Playwright à deux navigateurs sur build de production |
 | `829036a` | 30/10/2026 | `docs` : résultats du banc et points ouverts de J0 |
-| (cette session) | 30/10/2026 | Thème sombre sur toute l'application ; S4 : 2FA TOTP, codes de secours, limitation de débit, règles d'IP, événements de sécurité, CSP à nonce, écran « Mon compte », mesure de la durée des requêtes ; ce document |
+| `3040626` | 30/10/2026 | `feat(web)` : thème sombre sur toute l'application |
+| `65c6e36` | 30/10/2026 | `feat(core)` : 2FA TOTP, codes de secours, limitation de débit, règles d'IP, événements de sécurité, CSP à nonce, écran « Mon compte », mesure de la durée des requêtes (S4, première partie) |
+| `3a832e5` | 30/10/2026 | `docs` : ce document, avancement S4, guide |
+| `74fb052` et précédent | 30/10/2026 | S4, seconde partie : organisation (structure, sites, services), confirmation par second facteur (step-up) avec rotation de session, détection des connexions inhabituelles, journal de sécurité de la structure |
+| `5bffff0` et précédent | 30/10/2026 | `feat(core)` : jetons hors connexion et de licence signés Ed25519, retrait et perte d'appareil, effacement à distance (S5) |
+| (S5, configuration) | 30/10/2026 | `feat(core)` : configuration versionnée (`config_entry`, brouillon, publication, archivage, restauration), réglages de sécurité des postes appliqués hors connexion |
 
 ---
 
@@ -141,6 +146,10 @@ Code pur, sans Node.js, DOM ni Dexie, utilisé à l'identique par le client et l
 - `dpi/vital-signs.ts` : plausibilité des constantes ; une valeur hors limites exige un motif (`DPI_VITAL_IMPLAUSIBLE`).
 - `phar/stock.ts` : solde = somme des mouvements, alerte de stock négatif.
 - `core/numbering.ts` : numérotation hors connexion sans collision (`{PREFIX}-{DEVICE}-{YY}-{SEQ:5}` par défaut, configurable).
+- `core/organization.ts` (S4) : schémas Zod partagés du profil de structure (nom usuel, raison sociale, langue, devise USD ou CDF, fuseau Kinshasa ou Lubumbashi, contact, adresse congolaise : province, ville ou territoire, commune, quartier, avenue), des sites (code de 3 lettres immuable) et des services (code de 2 à 8 caractères, type clinique, technique, administratif, pharmacie, laboratoire ou caisse) ; règle « au moins un site actif » ; liste des champs réellement modifiés pour l'audit.
+- `core/config-schemas.ts` (S5) : registre des réglages simples avec schéma Zod et valeur par défaut documentée (`security.offline_token_days` 14, `security.auto_lock_minutes` 5, `security.pin_max_attempts` 10, `security.step_up_minutes` 15), résolution des valeurs publiées (valeur invalide ramenée au défaut), part de configuration utile aux postes.
+- `core/license.ts` (S5) : « maintenant » jamais antérieur à la dernière heure serveur connue, état de l'accès hors connexion (valide, expire dans moins de 3 jours, expiré ; 14 jours par défaut, 30 au plus) et phase de licence (normale, retard, lecture seule, suspendue) calculée hors connexion à partir des dates du jeton.
+- `core/sign-in-risk.ts` (S4) : signature d'appareil (navigateur et système) et détection des connexions inhabituelles (nouvel appareil, horaire éloigné de toutes les connexions habituelles dans le fuseau de la structure, à partir de 10 connexions d'historique). Utilisé par le serveur et par l'écran « Mon compte ».
 
 ---
 
@@ -156,6 +165,7 @@ Code pur, sans Node.js, DOM ni Dexie, utilisé à l'identique par le client et l
   - dépendances (`dependsOn`) : une opération dont la dépendance est rejetée est rejetée (`DEPENDENCY_REJECTED`).
 - `server/pull.ts` (`processPull`) : lecture par curseur `change_log.seq` avec fenêtre de rattrapage pour les transactions validées en retard, filtrée par permission de lecture.
 - `client/engine.ts` (`SyncClient`) : outbox locale, envoi par lots, rejeu en cas de réponse perdue, rebasage des opérations en attente après une modification distante ; les erreurs de transport remontent telles quelles.
+- `tokens.ts` (S5) : JWS compact EdDSA (`signToken`, `verifyToken` avec plusieurs `kid` pour la rotation), jetons hors connexion (`sub`, `tid`, `did`, empreinte des permissions, `iat`, `exp`) et de licence (`plan`, `modules`, `limits`, `state`, `validUntil`, `graceAt`, `readOnlyAt`, `suspendAt`), empreinte SHA-256 des permissions.
 - `testing.ts` : magasins en mémoire (`MemoryServerStore`, `MemoryClientStore`) pour les bancs.
 - Tests : `prototype.props.test.ts` (500 opérations, deux postes, coupures aléatoires, propriété vérifiée sur 15 graines), `engine.test.ts`, `harness.ts`.
 
@@ -163,14 +173,14 @@ Code pur, sans Node.js, DOM ni Dexie, utilisé à l'identique par le client et l
 
 ## 8. `packages/db` : base PostgreSQL, sécurité et migrations
 
-### 8.1 Schéma (27 tables)
+### 8.1 Schéma (29 tables)
 
 | Domaine | Tables |
 | --- | --- |
-| Plateforme | `tenant`, `site`, `person_global` (point d'accroche du dossier partagé phase 2), `permission` (catalogue), `platform_audit_log` |
-| Identité | `user_account` (dont, depuis S4, `mfa_secret_enc`, `mfa_enabled_at`, `mfa_last_step`), `role`, `role_permission`, `user_role`, `session`, `mfa_recovery_code` (S4) |
+| Plateforme et organisation | `tenant`, `site`, `department` (S4), `config_entry` (S5, configuration versionnée), `person_global` (point d'accroche du dossier partagé phase 2), `permission` (catalogue), `platform_audit_log` |
+| Identité | `user_account` (dont, depuis S4, `mfa_secret_enc`, `mfa_enabled_at`, `mfa_last_step`), `role`, `role_permission`, `user_role`, `session` (dont, depuis S4, `mfa_verified_at` et `rotated_from`), `mfa_recovery_code` (S4) |
 | Traçabilité | `audit_log` (chaîné par hachage), `data_access_log` |
-| Appareils et numérotation | `device`, `number_series` |
+| Appareils et numérotation | `device` (dont, depuis S5, `revoked_at`, `revoked_by`, `allow_final_push`), `number_series` |
 | Clinique | `patient` (avec `field_meta` pour la fusion par champ), `vital_sign` |
 | Stock | `stock_movement` |
 | Synchronisation | `op_log`, `change_log`, `sync_conflict` |
@@ -181,13 +191,13 @@ Colonnes communes, index composites commençant par `tenant_id`, contraintes `ch
 
 ### 8.2 Isolation des structures
 
-- `rls.ts` (`ensureRls`) : après chaque migration, **toute** table possédant `tenant_id` (sauf `job`) reçoit `ENABLE` et `FORCE ROW LEVEL SECURITY`, la politique `tenant_isolation` (`tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid`) et la politique `platform_scope` en lecture seule. Aucune table ne peut être oubliée. 17 tables protégées aujourd'hui.
+- `rls.ts` (`ensureRls`) : après chaque migration, **toute** table possédant `tenant_id` (sauf `job`) reçoit `ENABLE` et `FORCE ROW LEVEL SECURITY`, la politique `tenant_isolation` (`tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid`) et la politique `platform_scope` en lecture seule. Aucune table ne peut être oubliée. 19 tables protégées aujourd'hui.
 - Les tables de plateforme de S4 (`rate_limit`, `ip_rule`, `security_event`) n'ont volontairement pas de colonne `tenant_id` (elles protègent la plateforme avant qu'une structure soit connue) ; elles utilisent `target_tenant_id`.
 - `context.ts` : `withTenant` (transaction avec `set_config(..., true)` de la structure, de l'utilisateur et de l'appareil), `withPlatformScope` (lecture seule, réservée à `server/platform` et `sadm`), `withSystem` (tables de plateforme).
 
 ### 8.3 Ajout seul et immuabilité
 
-`guards.ts` installe des triggers PostgreSQL : `DELETE` interdit sur `vital_sign`, `stock_movement`, `op_log`, `audit_log`, `change_log`, `data_access_log`, `platform_audit_log`, `security_event`, `patient` ; `UPDATE` interdit sur les journaux, les mouvements et `security_event` ; sur `vital_sign`, seules les métadonnées de remplacement peuvent changer.
+`guards.ts` installe des triggers PostgreSQL : `DELETE` interdit sur `vital_sign`, `stock_movement`, `op_log`, `audit_log`, `change_log`, `data_access_log`, `platform_audit_log`, `security_event`, `patient` ; `UPDATE` interdit sur les journaux, les mouvements et `security_event` ; sur `vital_sign`, seules les métadonnées de remplacement peuvent changer ; sur `config_entry` (S5), seul un brouillon peut être modifié ou supprimé, une version publiée ne peut que passer à l'état archivé.
 
 ### 8.4 Audit chaîné
 
@@ -204,8 +214,11 @@ Colonnes communes, index composites commençant par `tenant_id`, contraintes `ch
 
 - `migrations/0000_init.sql` : schéma initial.
 - `migrations/0001_s4_mfa_security.sql` : colonnes 2FA de `user_account`, tables `mfa_recovery_code`, `rate_limit`, `ip_rule`, `security_event` et leurs index.
+- `migrations/0004_s5_configuration.sql` : table `config_entry` et index partiels (un seul brouillon et une seule version publiée par clé).
+- `migrations/0003_s5_devices.sql` : colonnes de retrait des appareils.
+- `migrations/0002_s4_organization.sql` : table `department`, colonnes `session.mfa_verified_at` et `session.rotated_from`.
 - `scripts/migrate.ts` : extensions, migrations Drizzle, `ensureRls`, `ensureGuards`, données de référence. Option `--test` pour la base de test.
-- `scripts/seed.ts` : structure fictive `HOP-DEM-0001` et comptes `admin`, `accueil`, `infirmier`, `medecin`, `pharmacie`, `caisse` (mot de passe `MEDHUB_SEED_PASSWORD`). Option `--tenant CODE` pour créer une structure de test neuve (utilisée par Playwright : `TST-BNC-NNNN`).
+- `scripts/seed.ts` : structure fictive `HOP-DEM-0001` et comptes `admin`, `accueil`, `infirmier`, `medecin`, `pharmacie`, `caisse` (mot de passe `MEDHUB_SEED_PASSWORD`) et services fictifs du site `KIN` (accueil, consultations externes, laboratoire, pharmacie, caisse). Option `--tenant CODE` pour créer une structure de test neuve (utilisée par Playwright : `TST-BNC-NNNN`).
 - `scripts/reference-data.ts`, `seeds/platform/plans.json` (grille indicative, marqueur `TODO(medhub-decision)`).
 
 ---
@@ -215,6 +228,7 @@ Colonnes communes, index composites commençant par `tenant_id`, contraintes `ch
 - `crypto.ts` : un secret maître par poste, **enveloppé deux fois** : par une clé dérivée du PIN (PBKDF2-SHA-256, 600 000 itérations) et par le code de récupération imprimé. HKDF en dérive deux clés non extractibles : la clé de données AES-GCM et la clé HMAC des index de recherche.
 - `database.ts` : schéma Dexie, compteurs de numérotation (`nextCounter`).
 - `store.ts` (`EncryptedClientStore`) : toutes les lignes sont chiffrées ; WebCrypto ne pouvant pas s'exécuter dans une transaction IndexedDB, les écritures passent par une surcouche puis un vidage. Recherche hors connexion par jetons hachés (trigrammes et clé phonétique) : aucun nom n'est lisible dans IndexedDB.
+- `session.ts` (suite S5) : `saveTokens` et `loadTokens` (jetons signés et clés publiques de la plateforme, lisibles avant le PIN car ils ne contiennent que des identifiants et des dates), `wipeLocal` (effacement complet ordonné par le serveur).
 - `session.ts` : activation, déverrouillage par PIN, récupération par code imprimé, politique d'échecs (10 essais par défaut). Le poste n'est effacé que si l'outbox est vide : une opération non envoyée n'est jamais perdue.
 - Les clés ne vivent qu'en mémoire : un rechargement complet redemande le PIN (comportement voulu, `docs/02-offline-sync.md` section 3).
 
@@ -251,6 +265,11 @@ Colonnes communes, index composites commençant par `tenant_id`, contraintes `ch
 | `/app/diagnostic` | Opérationnelle | État du poste : appareil, opérations en attente, rejets, conflits, dernière synchronisation, stockage, version, synchronisation forcée |
 | `/app/bientot?m=` | Opérationnelle | Page d'attente des modules à venir avec la semaine prévue |
 | `/app/compte` | En ligne seulement (S4) | Mon compte : double authentification, sessions ouvertes, apparence (thème et langue) |
+| `/app/parametres` | En ligne seulement (S4) | Accueil des paramètres filtré par permission : organisation, journal de sécurité, Mon compte ; utilisateurs, rôles, appareils et référentiels annoncés pour S5 |
+| `/app/parametres/organisation` | En ligne seulement (S4) | Profil de la structure, sites (ajout, modification, désactivation), services par site |
+| `/app/parametres/synchronisation` | En ligne seulement (S5) | Postes et sécurité : réglages versionnés (brouillon, publication, historique, restauration) |
+| `/app/parametres/appareils` | En ligne seulement (S5) | Postes de la structure : utilisateur, dernière synchronisation, version, état ; retrait (avec dernier envoi autorisé ou non) et déclaration de perte ; recommandation de chiffrement des disques |
+| `/app/parametres/securite` | En ligne seulement (S4) | Journal de sécurité de la structure : connexions inhabituelles, tentatives excessives, blocages, changements de 2FA |
 
 La coquille `/app` (`features/shell`) comprend la barre latérale repliable filtrée par permissions, la recherche globale, l'**indicateur de synchronisation** permanent (connecté, synchronisation, hors connexion, attention requise) avec panneau de détail, le bandeau de base de formation, le menu utilisateur (thème, langue, « Mon compte et sécurité », verrouillage `Alt+L`, déconnexion) et le verrouillage automatique après 5 minutes d'inactivité.
 
@@ -262,6 +281,7 @@ La coquille `/app` (`features/shell`) comprend la barre latérale repliable filt
 - `transport.ts`, `api.ts` : appels courts (délai 20 s), distinction erreur réseau et erreur applicative.
 - `browser-state.ts` : état réseau et valeurs mémorisées via `useSyncExternalStore`.
 - `service-worker.tsx` : enregistrement et mises à jour contrôlées.
+- `device-tokens.ts` (S5) : stockage, renouvellement (au plus une fois par heure après une synchronisation réussie) et vérification hors connexion des jetons ; au déverrouillage, un jeton expiré est renouvelé si le réseau est là, sinon le poste reste verrouillé avec « Me connecter en ligne » (l'outbox est conservée). Sur `DEVICE_REVOKED`, le runtime arrête la synchronisation, efface la base locale et l'identité, puis la page de connexion explique le retrait.
 - `e2e-hook.ts` : `window.__medhubTest`, compilé **uniquement** quand `NEXT_PUBLIC_MEDHUB_E2E=1` (build Playwright séparé, jamais déployé).
 
 ### 11.4 API REST (`/api/v1`)
@@ -277,13 +297,21 @@ Toutes les routes passent par `defineRoute` (`server/platform/http.ts`) : identi
 | `POST /api/v1/auth/mfa/activate` | Premier code, codes de secours et session (S4) |
 | `POST /api/v1/auth/logout` | Révocation de la session |
 | `GET /api/v1/auth/me` | Profil, structure, site, permissions |
-| `POST /api/v1/devices/register` | Enregistrement du poste (clé publique Ed25519, code d'appareil à deux lettres) |
+| `POST /api/v1/devices/register` | Enregistrement du poste (clé publique Ed25519, code d'appareil à deux lettres) ; depuis S5, renvoie aussi le jeton hors connexion, le jeton de licence, les clés publiques et l'heure serveur |
+| `GET /api/v1/config`, `POST /api/v1/config/draft`, `.../discard`, `.../publish`, `.../restore` | Configuration versionnée (`configuration:read`, `configuration:edit`, `configuration:publish`, step-up) (S5) |
+| `POST /api/v1/devices/tokens` | Renouvellement des jetons d'un poste actif de l'utilisateur (S5) |
+| `GET /api/v1/devices`, `POST /api/v1/devices/revoke` | Liste des postes (`device:read`) ; retrait ou perte (`device:revoke` et step-up) (S5) |
 | `POST /api/v1/sync/push`, `GET /api/v1/sync/pull`, `GET /api/v1/sync/status` | Synchronisation |
 | `GET /api/v1/account/security` | État de la 2FA et sessions ouvertes (S4) |
 | `POST /api/v1/account/mfa/setup`, `.../confirm` | Activation volontaire de la 2FA (S4) |
 | `POST /api/v1/account/mfa/recovery-codes` | Nouveaux codes de secours, avec code frais (S4) |
 | `POST /api/v1/account/mfa/disable` | Désactivation, refusée si le rôle l'impose (S4) |
 | `POST /api/v1/account/sessions/revoke` | Déconnexion d'une session ou de toutes les autres (S4) |
+| `POST /api/v1/auth/step-up` | Nouvelle preuve du second facteur dans la session ; l'identifiant de session est renouvelé (S4) |
+| `GET /api/v1/organization`, `PATCH /api/v1/organization` | Lecture de l'organisation (`configuration:read`) ; modification du profil de la structure (`configuration:edit` et step-up) (S4) |
+| `POST /api/v1/sites`, `PATCH /api/v1/sites` | Création et modification ou désactivation d'un site (S4) |
+| `POST /api/v1/departments`, `PATCH /api/v1/departments` | Création et modification ou désactivation d'un service (S4) |
+| `GET /api/v1/security/events` | Journal de sécurité de la structure (`audit:review`) (S4) |
 
 ### 11.5 Serveur (`src/server`)
 
@@ -293,7 +321,11 @@ Toutes les routes passent par `defineRoute` (`server/platform/http.ts`) : identi
 - `platform/tenant.ts` : résolution unique de la structure depuis la session signée (jamais depuis le corps, l'URL ou un en-tête).
 - `platform/logger.ts` (pino, JSON), `platform/telemetry.ts` (interface `Telemetry`, adaptateur interne, emplacement pour l'adaptateur Batela).
 - `platform/mfa.ts`, `platform/ip.ts`, `platform/security.ts` : voir section 13.
-- `modules/core` : connexion, 2FA, profil, compte, enregistrement d'appareil.
+- `modules/core/configuration.ts` (S5) : lecture des valeurs publiées (`loadConfig`), brouillon, publication avec audit `config_publish` (ancienne et nouvelle valeur), archivage, restauration en brouillon ; `requireRecentStepUp` lit la fenêtre de confirmation dans la configuration. La durée du jeton hors connexion et la configuration remise aux postes en dépendent.
+- `platform/tokens.ts` (S5) : émission des jetons avec `MEDHUB_SIGNING_*` (`SIGNING_KEY_MISSING` si absentes), clés publiques acceptées (actuelle et `MEDHUB_SIGNING_PREVIOUS_KEYS`), licence calquée sur l'état de la structure et ouvrant tous les modules MVP tant que les abonnements n'existent pas.
+- `platform/session.ts` (S5) : `sessionDeviceRevoked` ; `platform/tenant.ts` répond `DEVICE_REVOKED` au lieu de `UNAUTHENTICATED` quand la session a été fermée par le retrait de son poste, pour que le poste s'efface au lieu de demander une connexion.
+- `modules/sync` (S5) : un poste retiré avec dernier envoi autorisé peut encore pousser ; tout autre contact d'un poste retiré ou perdu ferme ses sessions et répond `DEVICE_REVOKED`.
+- `modules/core` : connexion, 2FA, step-up, profil, compte, enregistrement d'appareil (`service.ts`, `routes.ts`) ; organisation et journal de sécurité (`organization.ts`, `organization-routes.ts`).
 - `modules/sync` : magasin PostgreSQL du moteur de synchronisation (`pgSyncStore`), routes push, pull et statut.
 
 ---
@@ -359,7 +391,25 @@ Table `security_event` en ajout seul (triggers) : `rate_limited`, `ip_auto_block
 
 Chaque document reçoit une CSP avec **nonce neuf** (`src/proxy.ts`) : `script-src 'self' 'nonce-...' 'strict-dynamic'` (plus `'unsafe-eval'` en développement uniquement, exigé par React), `style-src 'self' 'unsafe-inline'` (attributs `style` de React et des graphiques ; aucun script en ligne), `img-src 'self' blob: data:`, `connect-src 'self'`, `worker-src 'self'`, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'`, et `upgrade-insecure-requests` quand l'adresse publique est en HTTPS. Next.js applique le nonce à ses scripts ; toutes les pages sont rendues dynamiquement.
 
-### 13.6 Mesure de la durée des requêtes
+### 13.6 Confirmation par second facteur (step-up) et rotation de session
+
+- Toute modification de configuration (profil de la structure, sites, services, et à venir utilisateurs et rôles) exige `configuration:edit` **et** une preuve du second facteur datant de moins de **15 minutes** (`session.mfa_verified_at`). Une session ouverte avec un code TOTP ou un code de secours en bénéficie d'emblée.
+- Au-delà, le serveur répond `AUTH_STEP_UP_REQUIRED` ; l'interface (`useStepUp`) ouvre une boîte « Confirmez votre identité », envoie le code à `/api/v1/auth/step-up` puis rejoue la modification. Sans 2FA configurée, la boîte renvoie vers « Mon compte ».
+- **Rotation** : à chaque élévation (step-up, activation de la 2FA depuis « Mon compte »), la session courante est révoquée et une nouvelle est émise (`rotated_from` garde le lien). Un jeton volé avant l'élévation ne porte jamais les droits élevés.
+- Les échecs de code comptent dans le verrouillage du compte et la limitation de débit ; chaque step-up est audité (`step_up`).
+
+### 13.7 Connexions inhabituelles
+
+À chaque connexion réussie, l'historique des sessions de l'utilisateur (180 jours) est comparé à la nouvelle : **nouvel appareil** (couple navigateur et système jamais vu) ou **horaire inhabituel** (aucune connexion habituelle à moins d'une heure, dans le fuseau de la structure, à partir de 10 connexions d'historique). Une anomalie écrit un événement `sign_in_anomaly` (gravité « attention ») et figure dans l'audit de connexion. Les administrateurs (`audit:review`) la voient dans **Paramètres, Journal de sécurité**. L'envoi par courriel ou SMS arrivera avec le module de notifications ; aucune géolocalisation n'est disponible pour l'instant.
+
+### 13.8 Appareils, jetons signés et effacement à distance (S5)
+
+- **Jeton hors connexion** (JWS Ed25519, 14 jours, 30 au plus) : vérifié au déverrouillage par PIN avec les clés publiques reçues à l'activation, et lié à la structure, à l'utilisateur et au poste. L'heure de référence est la plus tardive entre l'horloge du poste et la dernière heure serveur connue : reculer l'horloge ne prolonge rien.
+- **Jeton de licence** : calculé hors connexion (retard, lecture seule, suspension) et affiché en bandeau ; jamais bloquant pour l'urgence et l'export.
+- **Retrait** (`revoked`) : le poste peut, si l'administrateur l'autorise, envoyer une dernière fois ses opérations en attente ; ensuite `DEVICE_REVOKED`. **Perte ou vol** (`lost`) : sessions fermées immédiatement, aucun envoi accepté. Dans les deux cas, au contact suivant, le poste efface toute sa base locale et son identité. Événements `device_revoked` et `device_lost` dans le journal de sécurité, audit `device_revoke` et `device_lost`.
+- Les codes d'appareil ne sont jamais réutilisés (numérotation hors connexion).
+
+### 13.9 Mesure de la durée des requêtes
 
 Réponse au point ouvert de J0 (une connexion restée 20 s sans réponse) : chaque route renvoie `Server-Timing: app;dur=N`, la métrique `http.duration_ms` est émise, et toute requête plus lente que `MEDHUB_SLOW_REQUEST_MS` (2 s par défaut) est journalisée avec l'état du pool (`total`, `idle`, `waiting`) pour distinguer pool saturé, requête lente ou verrou.
 
@@ -395,16 +445,21 @@ Réponse au point ouvert de J0 (une connexion restée 20 s sans réponse) : chaq
 | `packages/shared` | UUID, HLC, argent, codes | 9 tests verts |
 | `packages/domain` | Commandes, recherche, plausibilité, stock, numérotation | 10 tests verts |
 | `packages/db` (unitaires) | Hachage d'audit | 2 tests verts |
-| `packages/db` (isolation, `pnpm db:test-isolation`) | RLS activée et forcée partout, une fabrique par table, lectures, mises à jour et insertions croisées refusées, triggers, chaîne d'audit | **75 tests verts** (71 avant S4 + `mfa_recovery_code`) |
+| `packages/db` (isolation, `pnpm db:test-isolation`) | RLS activée et forcée partout, une fabrique par table, lectures, mises à jour et insertions croisées refusées, triggers, chaîne d'audit | **83 tests verts** (71 avant S4, puis `mfa_recovery_code`, `department` et `config_entry`) |
 | `packages/local-db` | Chiffrement, PIN, récupération, absence de nom en clair | 5 tests verts |
 | `packages/sync` | Banc de propriétés : 500 opérations, deux postes, coupures, réponses perdues, doublons absorbés | 11 tests verts |
-| `apps/worker` | Analyseur cron, tick, reprises, lettres mortes | 3 tests verts (budget du tick porté à 20 s dans le test : il échouait sous forte charge) |
+| `apps/worker` | Analyseur cron, tick, reprises, lettres mortes | 3 tests verts (le test des deux ticks réels dispose de 60 s : il dépassait les 5 s par défaut de Vitest quand toutes les suites tournent ensemble) |
 | `apps/web` (unitaires, S4) | Correspondance d'adresses et décisions d'IP, chiffrement du secret, TOTP sans rejeu, codes de secours, défis signés | 11 tests verts |
-| `apps/web` (intégration PostgreSQL) | Synchronisation réelle (160 opérations, RLS, triggers, audit) ; 2FA de bout en bout (rôle non privilégié, configuration imposée, code faux, rejeu refusé, code de secours à usage unique, désactivation refusée par le rôle, chaîne d'audit intacte, limitation de débit et événement) | 7 tests verts |
+| `apps/web` (intégration PostgreSQL) | Synchronisation réelle (160 opérations, RLS, triggers, audit) ; 2FA de bout en bout (rôle non privilégié, configuration imposée, code faux, rejeu refusé, code de secours à usage unique, désactivation refusée par le rôle, chaîne d'audit intacte, limitation de débit et événement) | 7 tests verts (23 au total pour `apps/web` avec l'organisation et les tests unitaires) |
 | Playwright `sync-bench.spec.ts` | Deux navigateurs réels, 500 opérations, coupures, réponses perdues | 500 opérations (226 enregistrements, 96 modifications, 178 constantes), 109 cycles coupés, 41 réponses perdues ; zéro rejet, zéro doublon, convergence, aucun nom en clair |
 | Playwright `sync-bench.spec.ts` (second scénario) | Enregistrement hors connexion par le formulaire, rechargement, synchronisation | Vert |
 | Playwright `public.spec.ts` | Page publique vers connexion ; bouton désactivé hors connexion ; projet tablette | Vert |
-| Playwright `mfa.spec.ts` (S4) | Configuration imposée de la 2FA à l'écran, codes de secours, seconde connexion avec code faux puis bon code, activation du poste, « Mon compte » en thème sombre ; CSP à nonce neuf | 2 tests verts (1,4 min et 0,5 s) |
+| Playwright `mfa.spec.ts` (S4) | Configuration imposée de la 2FA à l'écran, codes de secours, seconde connexion avec code faux puis bon code, activation du poste, « Mon compte » en thème sombre, création d'un site, modification après expiration de la preuve avec boîte de step-up, **effacement à distance** d'une tablette déclarée perdue (second navigateur : identité et IndexedDB vides, message sur la page de connexion) ; CSP à nonce neuf | 2 tests verts (2,3 min et 0,2 s) |
+| `apps/web` intégration configuration (S5) | Valeurs par défaut, validation, brouillon par un rédacteur et publication refusée sans `configuration:publish`, archivage, trigger d'immuabilité (modification et suppression refusées), restauration, jeton de 21 jours après publication, fenêtre de step-up configurée, audit chaîné | 5 tests verts (32 au total pour `apps/web`) |
+| `packages/sync` jetons (S5) | Signature et vérification, rotation des clés, `kid` inconnu, mauvaise clé, charge utile falsifiée, type de jeton, empreinte des permissions | 3 tests verts (14 au total pour le paquet) |
+| `apps/web` intégration appareils (S5) | Jetons à l'activation et au renouvellement, step-up exigé, dernier envoi d'un poste retiré puis refus et sessions fermées, poste perdu coupé immédiatement, double retrait refusé, liste réservée aux administrateurs, événements de sécurité | 4 tests verts (27 au total pour `apps/web`) |
+| `packages/domain` (S4) | Schémas d'organisation, règle du dernier site actif, champs modifiés, détection des connexions inhabituelles, heures dans le fuseau de la structure | 9 tests verts (19 au total pour le paquet) |
+| `apps/web` intégration organisation (S4) | Permission refusée à l'accueil, step-up exigé puis périmé, profil, sites et services avec codes uniques et dernier site actif, audit chaîné intact, nouvel appareil signalé et visible des seuls administrateurs, rotation de session à l'activation de la 2FA | 5 tests verts |
 
 Commandes de contrôle avant chaque commit : `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm db:test-isolation` (table métier touchée), `pnpm test:props` (synchronisation touchée).
 
@@ -444,6 +499,13 @@ Commandes de contrôle avant chaque commit : `pnpm typecheck`, `pnpm lint`, `pnp
 | 30/10/2026 | Tables de sécurité | `rate_limit`, `ip_rule`, `security_event` sans `tenant_id` (colonne `target_tenant_id`) car elles servent avant la résolution de la structure (à valider) |
 | 30/10/2026 | Clé des secrets 2FA | Dérivée par HKDF de `MEDHUB_FIELD_MASTER_KEY` et de la structure, en attendant l'enveloppe complète (DEK par structure en base) prévue par `docs/03` section 5 (à valider) |
 | 30/10/2026 | CSP | `style-src 'unsafe-inline'` conservé pour les attributs `style` de React ; aucun script en ligne autorisé (conforme à `docs/03` section 7) |
+| 30/10/2026 | Clés publiques des jetons | Remises au poste à son activation (en ligne, TLS) puis conservées localement, au lieu d'être compilées dans l'application : un même build sert tous les environnements (à valider) |
+| 30/10/2026 | Licence avant SADM | Jeton calqué sur l'état de la structure, tous les modules MVP, aucun plan ni limite inventés (à valider) |
+| 30/10/2026 | Postes activés avant S5 | Sans jeton, ils restent utilisables jusqu'à leur prochaine synchronisation, qui leur en remet un (à valider) |
+| 30/10/2026 | Configuration versionnée | `config_entry` pour les réglages simples, publication immédiate (`effective_from` = publication) ; les publications datées dans le futur arriveront avec les tarifs (S10) (à valider) |
+| 30/10/2026 | Step-up | Fenêtre de 15 minutes après la dernière preuve du second facteur pour toute modification de configuration, valeur codée en attendant la configuration versionnée de S5 (à valider) |
+| 30/10/2026 | Organisation | Modifications appliquées directement avec audit ; le cycle brouillon et publication de `docs/06` arrive avec la configuration versionnée (S5). Sites et services pas encore distribués aux postes par la synchronisation (S5, référentiels) (à valider) |
+| 30/10/2026 | Connexions inhabituelles | Signalées dans le journal de sécurité de la structure ; notification par courriel ou SMS reportée au module NOTIF ; pas de pays (aucune source de géolocalisation) (à valider) |
 
 ---
 
@@ -462,11 +524,8 @@ Commandes de contrôle avant chaque commit : `pnpm typecheck`, `pnpm lint`, `pnp
 
 ## 20. Suite du plan de développement
 
-Reste de S4 (`docs/11-feuille-de-route.md`) :
-- gestion des structures et des sites par l'administrateur de structure (écrans) ;
-- rotation de l'identifiant de session à l'élévation de privilège ;
-- détection d'anomalies de connexion (nouvel appareil, horaire atypique) notifiée à l'administrateur.
+S4 est terminée (`docs/11-feuille-de-route.md`) : authentification complète avec 2FA, structures, sites et services, RLS sur toutes les tables, rôles et permissions vérifiés côté serveur, audit chaîné, coquille PWA, mise en page, indicateur de synchronisation, protections de la plateforme. Les salles, horaires d'ouverture et jours fériés de `docs/modules/core.md` arrivent avec les rendez-vous et files (S7).
 
-S5 : appareils (révocation, effacement à distance), jeton hors connexion et jeton de licence signés Ed25519, configuration versionnée (`config_entry`, brouillon et publication), catalogues de référence, i18n complète, base de formation, gestion des utilisateurs (dont réinitialisation de la 2FA).
+S5 (en cours ; appareils, effacement à distance, jetons signés et configuration versionnée livrés) : reste (`config_entry`, brouillon et publication), catalogues de référence, i18n complète, base de formation, gestion des utilisateurs (dont réinitialisation de la 2FA).
 
 S6 : patients (recherche floue complète, dédoublonnage, fusion supervisée et réversible, carte et QR), périmètre de synchronisation. Puis S7 à S9 jusqu'au critère de sortie de J1 : un patient parcourt accueil, triage et consultation hors connexion et se synchronise sans erreur.

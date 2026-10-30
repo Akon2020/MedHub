@@ -58,7 +58,12 @@ export const NAVIGATION: NavGroup[] = [
   {
     key: 'system',
     items: [
-      { key: 'settings', href: '/app/bientot?m=settings', icon: Settings, soon: 'S5' },
+      {
+        key: 'settings',
+        href: '/app/parametres',
+        icon: Settings,
+        permission: 'configuration:read',
+      },
       { key: 'diagnostic', href: '/app/diagnostic', icon: Gauge },
     ],
   },

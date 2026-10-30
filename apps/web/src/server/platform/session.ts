@@ -13,6 +13,7 @@ export type SessionRecord = {
   tenantId: string;
   userId: string;
   deviceId: string | null;
+  mfaVerifiedAt: Date | null;
 };
 
 function hashToken(token: string): string {
@@ -54,12 +55,15 @@ export async function createSession(
     deviceId?: string | null;
     ip?: string | null;
     userAgent?: string | null;
+    mfaVerifiedAt?: Date | null;
+    rotatedFrom?: string | null;
   },
-): Promise<{ cookie: string; expiresAt: Date }> {
+): Promise<{ sessionId: string; cookie: string; expiresAt: Date }> {
   const token = randomBytes(32).toString('base64url');
   const expiresAt = new Date(Date.now() + env().MEDHUB_SESSION_ABSOLUTE_DAYS * 86_400_000);
+  const sessionId = uuidv7();
   await tx.insert(schema.session).values({
-    id: uuidv7(),
+    id: sessionId,
     tenantId: input.tenantId,
     userId: input.userId,
     deviceId: input.deviceId ?? null,
@@ -67,8 +71,35 @@ export async function createSession(
     expiresAt,
     ip: input.ip ?? null,
     userAgent: input.userAgent?.slice(0, 300) ?? null,
+    mfaVerifiedAt: input.mfaVerifiedAt ?? null,
+    rotatedFrom: input.rotatedFrom ?? null,
   });
-  return { cookie: encodeSessionCookie(input.tenantId, token), expiresAt };
+  return { sessionId, cookie: encodeSessionCookie(input.tenantId, token), expiresAt };
+}
+
+/**
+ * Privilege elevation (second factor proven again, stronger authentication):
+ * the old identifier is revoked and a new one issued, so that a token captured
+ * before the elevation never carries the elevated rights.
+ */
+export async function rotateSession(
+  tx: Tx,
+  current: { sessionId: string; tenantId: string; userId: string; deviceId: string | null },
+  input: { ip: string | null; userAgent: string | null; mfaVerifiedAt: Date | null },
+): Promise<{ sessionId: string; cookie: string; expiresAt: Date }> {
+  await tx
+    .update(schema.session)
+    .set({ revokedAt: new Date() })
+    .where(eq(schema.session.id, current.sessionId));
+  return createSession(tx, {
+    tenantId: current.tenantId,
+    userId: current.userId,
+    deviceId: current.deviceId,
+    ip: input.ip,
+    userAgent: input.userAgent,
+    mfaVerifiedAt: input.mfaVerifiedAt,
+    rotatedFrom: current.sessionId,
+  });
 }
 
 export async function lookupSession(raw: string | undefined): Promise<SessionRecord | null> {
@@ -98,7 +129,26 @@ export async function lookupSession(raw: string | undefined): Promise<SessionRec
       tenantId: row.tenantId,
       userId: row.userId,
       deviceId: row.deviceId,
+      mfaVerifiedAt: row.mfaVerifiedAt,
     };
+  });
+}
+
+/**
+ * A session ended because its device was retired or declared lost: the device
+ * must learn it (DEVICE_REVOKED) to wipe itself, rather than ask for a sign-in.
+ */
+export async function sessionDeviceRevoked(raw: string | undefined): Promise<boolean> {
+  const decoded = decodeSessionCookie(raw);
+  if (!decoded) return false;
+  return withTenant(database().db, { tenantId: decoded.tenantId, userId: null }, async (tx) => {
+    const [row] = await tx
+      .select({ status: schema.device.status })
+      .from(schema.session)
+      .innerJoin(schema.device, eq(schema.device.id, schema.session.deviceId))
+      .where(eq(schema.session.tokenHash, hashToken(decoded.token)))
+      .limit(1);
+    return row !== undefined && row.status !== 'active';
   });
 }
 

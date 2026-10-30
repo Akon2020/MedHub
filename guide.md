@@ -108,7 +108,8 @@ Collez les lignes affichées dans `.env.local`. Sur votre poste, `.env.local` ex
 | `MEDHUB_BACKUP_ENCRYPTION_KEY` | Chiffrement des sauvegardes `pg_dump` | généré |
 | `MEDHUB_SIGNING_KID` | Identifiant de la clé de signature (rotation) | généré |
 | `MEDHUB_SIGNING_PRIVATE_KEY` | Clé privée Ed25519 de la plateforme (jetons de licence et hors connexion, S5) | généré |
-| `MEDHUB_SIGNING_PUBLIC_KEY` | Clé publique correspondante, embarquée dans l'application | généré |
+| `MEDHUB_SIGNING_PUBLIC_KEY` | Clé publique correspondante, remise à chaque poste lors de son activation | généré |
+| `MEDHUB_SIGNING_PREVIOUS_KEYS` | Anciennes clés publiques encore acceptées pendant une rotation, format `kid:base64,kid:base64` | vide |
 | `MEDHUB_SESSION_IDLE_HOURS` | Expiration d'une session inactive | `12` |
 | `MEDHUB_SESSION_ABSOLUTE_DAYS` | Durée maximale d'une session | `7` |
 | `MEDHUB_STORAGE_DIR` | Fichiers chiffrés, hors `public_html` en production | `./storage` |
@@ -313,6 +314,24 @@ Le script fait une sauvegarde `pg_dump`, applique les migrations, bascule le lie
 - Règles manuelles : table `ip_rule` (adresse ou plage CIDR, `block`, `allow` ou `monitor`, portée `platform`, `admin` ou `tenant`, expiration). Une règle `allow` de portée `tenant` transforme les règles de la structure en liste blanche. L'écran du super-admin arrive avec SADM (J2) ; en attendant, insertion SQL. Les règles sont relues toutes les 60 secondes.
 - Le worker purge chaque heure les compteurs de plus de 24 h (`security.purge_rate_limits`).
 
+### Paramètres de la structure
+
+Menu **Paramètres** (permission `configuration:read`, administrateur de structure dans les rôles modèles), en ligne seulement :
+- **Organisation** : nom usuel, raison sociale, langue et devise par défaut, fuseau horaire (Kinshasa ou Lubumbashi), contact, adresse, mentions légales des documents ; sites (code de 3 lettres définitif, nom, adresse, téléphone, désactivation, au moins un site actif) ; services de chaque site.
+- **Journal de sécurité** (permission `audit:review`) : connexions inhabituelles (nouvel appareil, horaire inhabituel), tentatives excessives, adresses bloquées, activation ou désactivation de la 2FA.
+- Toute modification demande une **preuve récente du second facteur** : si la dernière date de plus de 15 minutes, une fenêtre « Confirmez votre identité » demande un code, puis la modification est enregistrée. Chaque modification est tracée dans l'audit.
+
+### Appareils, accès hors connexion et licence
+
+- À l'activation, chaque poste reçoit deux **jetons signés** par la plateforme (Ed25519) : un jeton hors connexion valable **14 jours** et un jeton de licence. Ils sont renouvelés automatiquement, au plus une fois par heure, après une synchronisation réussie. Les clés de signature sont `MEDHUB_SIGNING_*` (`pnpm keys:generate`) : **obligatoires** pour activer un poste.
+- Un poste qui n'a pas synchronisé depuis plus de 14 jours ne se déverrouille plus hors connexion : l'écran propose « Me connecter en ligne ». Les opérations en attente sont conservées et partent dès la reconnexion. Un bandeau prévient trois jours avant l'échéance.
+- La licence reflète pour l'instant l'état de la structure (essai, actif, retard, lecture seule, suspendu) ; les plans et abonnements arrivent avec le super-admin (S14). Un bandeau signale le retard, la lecture seule ou la suspension ; l'accès d'urgence et l'export ne sont jamais bloqués.
+- **Paramètres, Appareils** (permission `device:read`, action `device:revoke` avec confirmation du second facteur) : liste des postes, dernière synchronisation, version ; **Retirer** (poste remplacé, avec option « envoyer une dernière fois les opérations en attente ») ou **Déclarer perdu** (sessions fermées immédiatement). Au contact suivant avec le serveur, le poste **efface ses données locales** et la page de connexion explique pourquoi.
+
+### Configuration versionnée (postes et sécurité)
+
+**Paramètres, Postes et sécurité** (`/app/parametres/synchronisation`) : durée de l'accès hors connexion (14 jours par défaut, 1 à 30), verrouillage automatique (5 minutes), essais de code PIN (10), validité de la confirmation des changements sensibles (15 minutes). Chaque changement est d'abord un **brouillon** (permission `configuration:edit`), puis une **publication** (`configuration:publish`) ; la version précédente est archivée et peut être restaurée en brouillon. Une version publiée n'est jamais modifiée (trigger PostgreSQL). Les postes reçoivent les valeurs publiées avec leurs jetons, à la synchronisation suivante.
+
 ### Thème sombre
 
 Sélecteur Système, Clair ou Sombre en haut des pages publiques et de la connexion, dans le menu utilisateur et dans « Mon compte ». Le choix est propre au poste (cookie `medhub_theme`) ; « Système » suit le réglage du téléphone ou de l'ordinateur.
@@ -338,6 +357,8 @@ Décisions qui vous reviennent (marqueurs `TODO(medhub-decision)`) :
 | Indicateur rouge « Attention requise » | Rejets, conflits, horloge du poste en retard ou session expirée | Ouvrir `Diagnostic` ; se reconnecter si la session a expiré |
 | Code PIN oublié | Le PIN ne peut pas être retrouvé | « Utiliser le code de récupération » sur l'écran verrouillé |
 | Poste volé ou perdu | Données chiffrées sur le poste | Révocation d'appareil (écran prévu en S5) ; en attendant, « Mon compte », « Déconnecter les autres » |
+| « L'accès hors connexion de ce poste a expiré » | Plus de 14 jours sans synchronisation | Se connecter en ligne : le jeton est renouvelé, rien n'est perdu |
+| Activation d'un poste impossible (`SIGNING_KEY_MISSING`) | Clés `MEDHUB_SIGNING_*` absentes | `pnpm keys:generate` et copier les trois lignes dans `.env.local` (ou dans cPanel) |
 | « Trop de tentatives » à la connexion | Limitation de débit atteinte | Patienter 5 minutes ; vérifier la table `ip_rule` si l'adresse a été bloquée automatiquement |
 | Code 2FA toujours refusé | Heure du téléphone décalée de plus de 30 s | Activer l'heure automatique sur le téléphone, ou utiliser un code de secours |
 | `Invalid environment configuration: MEDHUB_FIELD_MASTER_KEY` | Clé absente ou pas de 32 octets en base64 | `pnpm keys:generate` et copier la ligne dans `.env.local` |

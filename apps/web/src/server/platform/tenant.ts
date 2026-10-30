@@ -1,12 +1,14 @@
 import 'server-only';
 import { AppError } from '@medhub/shared';
-import { lookupSession, SESSION_COOKIE } from './session';
+import { lookupSession, SESSION_COOKIE, sessionDeviceRevoked } from './session';
 
 export type RequestContext = {
   tenantId: string;
   userId: string;
   sessionId: string;
   deviceId: string | null;
+  /** Last proof of the second factor in this session, for step-up checks. */
+  mfaVerifiedAt: Date | null;
 };
 
 function readCookie(request: Request, name: string): string | undefined {
@@ -25,12 +27,17 @@ function readCookie(request: Request, name: string): string | undefined {
  * The tenant never comes from the body, the URL or a custom header.
  */
 export async function resolveTenant(request: Request): Promise<RequestContext> {
-  const session = await lookupSession(readCookie(request, SESSION_COOKIE));
-  if (!session) throw new AppError('UNAUTHENTICATED', 401);
+  const cookie = readCookie(request, SESSION_COOKIE);
+  const session = await lookupSession(cookie);
+  if (!session) {
+    if (await sessionDeviceRevoked(cookie)) throw new AppError('DEVICE_REVOKED', 403);
+    throw new AppError('UNAUTHENTICATED', 401);
+  }
   return {
     tenantId: session.tenantId,
     userId: session.userId,
     sessionId: session.sessionId,
     deviceId: session.deviceId,
+    mfaVerifiedAt: session.mfaVerifiedAt,
   };
 }

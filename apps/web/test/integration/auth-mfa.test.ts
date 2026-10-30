@@ -179,7 +179,13 @@ describe.skipIf(!url)('two-factor sign-in against PostgreSQL', () => {
         'AUTH_MFA_INVALID',
       );
 
-      const ctx = { tenantId, userId: adminId, sessionId: uuidv7(), deviceId: null };
+      const ctx = {
+        tenantId,
+        userId: adminId,
+        sessionId: uuidv7(),
+        deviceId: null,
+        mfaVerifiedAt: new Date(),
+      };
       const overview = await service.securityOverview(ctx);
       expect(overview.mfa).toMatchObject({
         enabled: true,

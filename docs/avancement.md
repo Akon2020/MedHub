@@ -5,7 +5,8 @@ Tenu à jour par Claude Code à la fin de chaque session de travail. Le porteur 
 ## État courant
 
 - Jalon en cours : **J0 Fondations** terminé côté code (critère de sortie atteint en tests automatisés) ; **J1, semaine S4, commencée** sur instruction du porteur du projet du 30/10/2026 (« poursuis avec l'étape suivante »). Reste à faire pour clore formellement J0 : liste de contrôle cPanel sur l'hébergement réel et premier déploiement, validation de la décision d'architecture et des écarts par le porteur du projet.
-- S4 livré : double authentification TOTP (imposée aux rôles privilégiés, codes de secours, sans rejeu), limitation de débit en base, règles d'IP et blocage automatique, journal `security_event`, CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes. Reste de S4 : écrans structures et sites, rotation de session à l'élévation de privilège, détection d'anomalies de connexion.
+- S4 livré : double authentification TOTP (imposée aux rôles privilégiés, codes de secours, sans rejeu), limitation de débit en base, règles d'IP et blocage automatique, journal `security_event`, CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes. Seconde partie de S4 livrée le même jour : écrans Paramètres (organisation : structure, sites, services ; journal de sécurité), confirmation par second facteur (step-up, 15 minutes) avec rotation de l'identifiant de session, détection des connexions inhabituelles (nouvel appareil, horaire inhabituel). **S4 terminée.**
+- S5 en cours : appareils (liste, retrait, perte, effacement à distance) et jetons signés Ed25519 (hors connexion 14 jours, licence) livrés. Configuration versionnée (`config_entry`, brouillon, publication, archivage, restauration) livrée avec les réglages de sécurité des postes. Reste : utilisateurs (dont réinitialisation de la 2FA), catalogues de référence, i18n complète, diagnostic, base de formation.
 - Thème sombre livré sur toute l'application (demande du porteur du 30/10/2026).
 - Récapitulatif complet de tout ce qui a été fait : `walkthrough.md`.
 - Dernière mise à jour : 30/10/2026
@@ -63,6 +64,12 @@ Environnement de développement constaté sur le poste du porteur du projet : Wi
 | 30/10/2026 | `docs/03-multitenant-securite.md` section 2 | Codes de secours remplacés (supprimés puis recréés) à chaque régénération : identifiants, pas données cliniques ni financières | À valider |
 | 30/10/2026 | `docs/03-multitenant-securite.md` section 5 | Secret TOTP chiffré avec une clé dérivée par HKDF de `MEDHUB_FIELD_MASTER_KEY` et de la structure, en attendant l'enveloppe complète (DEK par structure) | À valider |
 | 30/10/2026 | `docs/04-modele-donnees.md` | Tables `rate_limit`, `ip_rule`, `security_event` sans `tenant_id` (colonne `target_tenant_id`) : elles servent avant la résolution de la structure ; `security_event` protégée en ajout seul par trigger | À valider |
+| 30/10/2026 | `docs/03-multitenant-securite.md` section 2 | Step-up : toute modification de configuration exige une preuve du second facteur de moins de 15 minutes (valeur codée en attendant la configuration versionnée de S5) ; rotation de l'identifiant de session à chaque step-up et à l'activation de la 2FA | À valider |
+| 30/10/2026 | `docs/06-configuration.md` | Organisation (structure, sites, services) modifiée directement avec audit, sans cycle brouillon et publication (S5) ; sites et services pas encore distribués aux postes (S5) | À valider |
+| 30/10/2026 | `docs/03-multitenant-securite.md` section 2 | Connexions inhabituelles : nouvel appareil et horaire inhabituel seulement (aucune géolocalisation), signalées dans le journal de sécurité de la structure ; notification courriel ou SMS avec le module NOTIF | À valider |
+| 30/10/2026 | `docs/02-offline-sync.md` section 9 | Clés publiques des jetons remises au poste à l'activation et conservées localement, au lieu d'être compilées dans l'application | À valider |
+| 30/10/2026 | `docs/02-offline-sync.md` section 9 | Licence calquée sur l'état de la structure, tous les modules MVP, sans plan ni limite, jusqu'à SADM (S14) ; postes activés avant S5 tolérés sans jeton jusqu'à leur prochaine synchronisation | À valider |
+| 30/10/2026 | `docs/06-configuration.md` section 2 | Réglages simples publiés immédiatement (`effective_from` = date de publication) ; pas encore de publication datée dans le futur ni d'aperçu | À valider |
 | 30/10/2026 | `docs/03-multitenant-securite.md` section 7 | CSP : `style-src 'unsafe-inline'` conservé pour les attributs `style` de React et des graphiques ; scripts uniquement par nonce et `strict-dynamic` | À valider |
 
 ## Marqueurs `TODO(medhub-decision)` ouverts
@@ -116,7 +123,28 @@ Constats :
 - Le test du worker échouait sous forte charge (build Playwright en parallèle) : le budget de 5 s du tick était dépassé avant le traitement du job de test. Budget du test porté à 20 s ; deux passes complètes de `pnpm test` vertes ensuite.
 - L'annonceur de route de Next.js porte `role="alert"` : les tests doivent cibler le texte du message d'erreur.
 
-Tests passés : `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm db:test-isolation` (75 tests), tests de `apps/web` (18 tests dont la 2FA de bout en bout sur PostgreSQL), Playwright `public.spec.ts` et `mfa.spec.ts` (configuration imposée de la 2FA à l'écran, code faux refusé, bon code accepté, activation du poste, « Mon compte » en thème sombre, CSP à nonce neuf).
+S5, configuration versionnée (même jour) :
+- Migration `0004_s5_configuration` (`config_entry`, index partiels, trigger d'immuabilité des versions publiées), registre `packages/domain/src/core/config-schemas.ts`, service et routes `/api/v1/config/*`, écran `/app/parametres/synchronisation`. Valeurs publiées appliquées : durée du jeton hors connexion, verrouillage automatique et essais de PIN sur les postes (remis avec les jetons), fenêtre de step-up.
+- Constat : le test du worker échouait quand toutes les suites tournent ensemble, car ses deux ticks réels dépassaient le délai par défaut de 5 s de Vitest ; délai du test porté à 60 s.
+- Tests : 5 tests d'intégration, 1 test de domaine, isolation (83 tests). `pnpm test` (88 tests) vert.
+
+S5, appareils et jetons (même jour) :
+- Migration `0003_s5_devices` (colonnes de retrait), jetons JWS Ed25519 (`packages/sync/src/tokens.ts`), règles de licence (`packages/domain/src/core/license.ts`), émission serveur (`platform/tokens.ts`), écran `/app/parametres/appareils`, effacement à distance côté client, bandeaux de licence et d'expiration, écran de verrouillage « accès hors connexion expiré ».
+- CI : une paire de clés de signature jetable est générée à chaque exécution (`pnpm keys:generate`), aucune clé n'est stockée dans le dépôt.
+- Tests : 3 tests de jetons, 3 tests de licence, 4 tests d'intégration du cycle de vie d'un appareil, scénario Playwright d'effacement à distance. `pnpm test` (92 tests), `pnpm db:test-isolation` (79), `pnpm test:props`, typecheck, lint verts.
+
+Seconde partie de S4 (même jour) :
+- Migration `0002_s4_organization` : table `department` (RLS forcée automatiquement, fabrique d'isolation ajoutée), colonnes `session.mfa_verified_at` et `session.rotated_from`.
+- Règles partagées `packages/domain/src/core/organization.ts` et `sign-in-risk.ts`.
+- Service et routes d'organisation (`/api/v1/organization`, `/sites`, `/departments`), journal de sécurité de la structure (`/api/v1/security/events`), step-up (`/api/v1/auth/step-up`).
+- Écrans `/app/parametres`, `/app/parametres/organisation`, `/app/parametres/securite` ; boîte « Confirmez votre identité » réutilisable (`useStepUp`) ; composants `NativeSelect` et `Textarea`.
+- Services fictifs ajoutés à la structure de démonstration par `pnpm db:seed`.
+
+Constat : sur ce poste, le build de production prend maintenant de 3 à 6 minutes et les suites lourdes lancées en parallèle (Playwright et `pnpm test`) se ralentissent mutuellement jusqu'à l'échec ; délai de démarrage du serveur Playwright porté à 10 minutes. Lancer ces suites l'une après l'autre.
+
+Tests passés (seconde partie) : `pnpm typecheck`, `pnpm lint`, `pnpm test` (81 tests), `pnpm db:test-isolation` (79 tests), `pnpm test:props`, Playwright `mfa.spec.ts` (2FA, organisation, step-up).
+
+Tests passés (première partie) : `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm db:test-isolation` (75 tests), tests de `apps/web` (18 tests dont la 2FA de bout en bout sur PostgreSQL), Playwright `public.spec.ts` et `mfa.spec.ts` (configuration imposée de la 2FA à l'écran, code faux refusé, bon code accepté, activation du poste, « Mon compte » en thème sombre, CSP à nonce neuf).
 
 
 ### 29/10/2026 (suite)

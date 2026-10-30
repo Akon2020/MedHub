@@ -37,6 +37,7 @@ function UnlockScreen() {
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [code, setCode] = useState('');
   const [newPin, setNewPin] = useState('');
+  const [expired, setExpired] = useState(false);
 
   async function onUnlock(e: FormEvent) {
     e.preventDefault();
@@ -51,7 +52,10 @@ function UnlockScreen() {
       setMessage(t('blocked'));
       setRecoveryMode(true);
     } else if (result.reason === 'WIPED') setMessage(t('wiped'));
-    else setMessage(t('noLocal'));
+    else if (result.reason === 'OFFLINE_EXPIRED') {
+      setMessage(t('offlineExpired'));
+      setExpired(true);
+    } else setMessage(t('noLocal'));
   }
 
   async function onRecover(e: FormEvent) {
@@ -93,6 +97,11 @@ function UnlockScreen() {
             <p role="alert" className="rounded-lg bg-danger-soft px-3.5 py-2.5 text-sm text-danger">
               {message}
             </p>
+          )}
+          {expired && (
+            <Button asChild variant="secondary" size="lg">
+              <Link href="/connexion">{t('signInOnline')}</Link>
+            </Button>
           )}
           <Button type="submit" size="lg" disabled={busy || pin.length < 6}>
             {busy && <Loader2 className="animate-spin" />}

@@ -257,7 +257,9 @@
       "recover": "Récupérer",
       "recoveryFailed": "Code de récupération incorrect.",
       "switchUser": "Changer d'utilisateur",
-      "noLocal": "Ce poste n'est pas encore activé pour cet utilisateur. Connectez-vous en ligne."
+      "noLocal": "Ce poste n'est pas encore activé pour cet utilisateur. Connectez-vous en ligne.",
+      "offlineExpired": "L'accès hors connexion de ce poste a expiré. Connectez-vous en ligne pour le renouveler : vos opérations en attente sont conservées.",
+      "signInOnline": "Me connecter en ligne"
     },
     "errors": {
       "AUTH_INVALID_CREDENTIALS": "Identifiant ou mot de passe incorrect.",
@@ -273,7 +275,8 @@
       "AUTH_MFA_REQUIRED_BY_ROLE": "Votre rôle exige la double authentification : elle ne peut pas être désactivée.",
       "AUTH_MFA_ALREADY_ENABLED": "La double authentification est déjà active.",
       "AUTH_MFA_NOT_ENROLLED": "La double authentification n'est pas configurée.",
-      "IP_BLOCKED": "Accès refusé depuis cette adresse réseau."
+      "IP_BLOCKED": "Accès refusé depuis cette adresse réseau.",
+      "AUTH_STEP_UP_REQUIRED": "Confirmation de votre identité requise."
     },
     "mfa": {
       "verifyTitle": "Double authentification",
@@ -298,7 +301,8 @@
       "print": "Imprimer",
       "recoveryConfirm": "J'ai conservé ces codes en lieu sûr",
       "continue": "Continuer"
-    }
+    },
+    "deviceRetired": "Ce poste a été retiré ou déclaré perdu par l'administrateur de votre structure : ses données locales ont été effacées. Connectez-vous pour l'activer à nouveau si besoin."
   },
   "app": {
     "nav": {
@@ -329,7 +333,13 @@
       "menu": "Menu",
       "account": "Mon compte et sécurité"
     },
-    "training": "Base de formation"
+    "training": "Base de formation",
+    "banners": {
+      "grace": "Abonnement de la structure en retard de paiement : contactez l'administrateur.",
+      "readOnly": "Abonnement de la structure en lecture seule. L'accès d'urgence et l'export restent disponibles.",
+      "suspended": "Abonnement de la structure suspendu. L'accès d'urgence et l'export restent disponibles.",
+      "offlineExpiring": "L'accès hors connexion de ce poste expire le {date} : synchronisez-le avant cette date."
+    }
   },
   "sync": {
     "online": "Connecté",
@@ -520,6 +530,243 @@
       "text": "Préférences de ce poste.",
       "theme": "Thème",
       "language": "Langue"
+    }
+  },
+  "stepUp": {
+    "title": "Confirmez votre identité",
+    "text": "Cette modification est sensible. Saisissez le code à 6 chiffres de votre application d'authentification ou un code de secours.",
+    "code": "Code de vérification",
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "notEnrolled": "Cette modification exige la double authentification. Activez-la dans « Mon compte », puis recommencez.",
+    "openAccount": "Ouvrir Mon compte"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "subtitle": "Configuration de la structure. Écrans disponibles en ligne seulement.",
+    "soon": "prévu en {week}",
+    "offline": "Écran disponible en ligne seulement. Reconnectez ce poste pour modifier la configuration.",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "edit": "Modifier",
+    "deactivate": "Désactiver",
+    "reactivate": "Réactiver",
+    "hub": {
+      "organization": {
+        "title": "Organisation",
+        "text": "Structure, sites et services"
+      },
+      "security": {
+        "title": "Journal de sécurité",
+        "text": "Connexions inhabituelles, blocages, double authentification"
+      },
+      "account": {
+        "title": "Mon compte",
+        "text": "Double authentification, sessions, apparence"
+      },
+      "users": {
+        "title": "Utilisateurs",
+        "text": "Comptes, rattachements, réinitialisations"
+      },
+      "roles": {
+        "title": "Rôles et permissions",
+        "text": "Rôles modèles et rôles de la structure"
+      },
+      "devices": {
+        "title": "Appareils",
+        "text": "Postes enregistrés, révocation, perte"
+      },
+      "reference": {
+        "title": "Référentiels",
+        "text": "Listes de choix, catalogues, numérotation"
+      },
+      "workstations": {
+        "title": "Postes et sécurité",
+        "text": "Verrouillage, code PIN, accès hors connexion, confirmation"
+      }
+    },
+    "organization": {
+      "title": "Organisation",
+      "subtitle": "Identité de la structure, sites et services. Chaque modification est tracée dans le journal d'audit."
+    },
+    "structure": {
+      "title": "Structure",
+      "text": "Informations utilisées sur les documents imprimés et les rapports.",
+      "training": "Base de formation",
+      "displayName": "Nom usuel",
+      "legalName": "Raison sociale",
+      "defaultLocale": "Langue par défaut",
+      "defaultCurrency": "Devise par défaut",
+      "timezone": "Fuseau horaire",
+      "phone": "Téléphone",
+      "email": "Courriel",
+      "legalMentions": "Mentions légales des documents",
+      "legalMentionsHint": "Numéro d'agrément, identifiant fiscal, adresse... tels que votre structure doit les imprimer.",
+      "save": "Enregistrer",
+      "saved": "Modifications enregistrées.",
+      "locales": {
+        "fr": "Français",
+        "en": "English"
+      },
+      "timezones": {
+        "Kinshasa": "Ouest (Kinshasa, UTC+1)",
+        "Lubumbashi": "Est (Lubumbashi, UTC+2)"
+      }
+    },
+    "address": {
+      "province": "Province",
+      "city": "Ville ou territoire",
+      "commune": "Commune",
+      "quarter": "Quartier",
+      "street": "Avenue et numéro"
+    },
+    "sites": {
+      "title": "Sites",
+      "text": "Lieux d'activité de la structure. Un site reste toujours actif.",
+      "add": "Ajouter un site",
+      "code": "Code (3 lettres)",
+      "codeHint": "Le code apparaît dans les numéros de documents : il ne pourra plus être modifié.",
+      "name": "Nom du site",
+      "noAddress": "Adresse non renseignée",
+      "create": "Créer le site",
+      "save": "Enregistrer",
+      "cancel": "Annuler"
+    },
+    "departments": {
+      "title": "Services",
+      "text": "Services de chaque site : ils servent aux files d'attente, aux droits par service et aux rapports.",
+      "add": "Ajouter un service",
+      "empty": "Aucun service pour le moment.",
+      "site": "Site",
+      "code": "Code (2 à 8 caractères)",
+      "name": "Nom du service",
+      "kind": "Type",
+      "costCenter": "Centre de coût (facultatif)",
+      "create": "Créer le service",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "kinds": {
+        "clinical": "Clinique",
+        "technical": "Technique",
+        "administrative": "Administratif",
+        "pharmacy": "Pharmacie",
+        "laboratory": "Laboratoire",
+        "cashier": "Caisse"
+      }
+    },
+    "security": {
+      "title": "Journal de sécurité",
+      "subtitle": "Événements de sécurité de votre structure, du plus récent au plus ancien.",
+      "offline": "Écran disponible en ligne seulement.",
+      "empty": "Aucun événement de sécurité.",
+      "denied": "Vous n'avez pas la permission de consulter ce journal.",
+      "loadError": "Le journal n'a pas pu être chargé.",
+      "severity": {
+        "info": "Information",
+        "warning": "Attention",
+        "critical": "Critique"
+      },
+      "kinds": {
+        "sign_in_anomaly": "Connexion inhabituelle",
+        "rate_limited": "Trop de tentatives",
+        "ip_auto_blocked": "Adresse bloquée automatiquement",
+        "ip_refused": "Accès refusé par une règle d'adresse",
+        "mfa_enabled": "Double authentification activée",
+        "mfa_disabled": "Double authentification désactivée",
+        "other": "Autre événement",
+        "device_revoked": "Poste retiré",
+        "device_lost": "Poste déclaré perdu ou volé"
+      },
+      "anomalies": {
+        "new_device": "nouvel appareil",
+        "unusual_hour": "horaire inhabituel"
+      }
+    },
+    "errors": {
+      "ORG_SITE_CODE_TAKEN": "Ce code de site existe déjà.",
+      "ORG_DEPARTMENT_CODE_TAKEN": "Ce code de service existe déjà sur ce site.",
+      "ORG_LAST_ACTIVE_SITE": "Impossible : la structure doit garder au moins un site actif.",
+      "ORG_SITE_INACTIVE": "Ce site est inactif : réactivez-le avant d'y ajouter un service.",
+      "PERMISSION_DENIED": "Vous n'avez pas la permission d'effectuer cette action.",
+      "VALIDATION_FAILED": "Vérifiez les champs saisis.",
+      "NOT_FOUND": "Élément introuvable.",
+      "AUTH_STEP_UP_REQUIRED": "Confirmation de votre identité annulée : rien n'a été modifié.",
+      "NETWORK": "Le serveur est injoignable. Vérifiez la connexion.",
+      "UNKNOWN": "Une erreur inattendue est survenue."
+    },
+    "devices": {
+      "title": "Appareils",
+      "subtitle": "Postes activés dans la structure. Un poste retiré ou perdu efface ses données au prochain contact.",
+      "diskHint": "Recommandation : activez le chiffrement du disque des postes (BitLocker, FileVault, chiffrement Android).",
+      "current": "Ce poste",
+      "never": "jamais",
+      "lastSync": "dernière synchronisation : {date}",
+      "revokedOn": "Retiré le {date}",
+      "status": {
+        "active": "Actif",
+        "revoked": "Retiré",
+        "lost": "Perdu ou volé"
+      },
+      "revoke": "Retirer",
+      "lost": "Déclarer perdu",
+      "reason": "Motif",
+      "revokeWarning": "Le poste ne pourra plus synchroniser. À son prochain contact avec le serveur, il effacera ses données locales.",
+      "lostWarning": "Toutes les sessions du poste sont fermées immédiatement. À son prochain contact, il effacera ses données locales, y compris les opérations non envoyées.",
+      "allowFinalPush": "Autoriser le poste à envoyer une dernière fois ses opérations en attente avant de s'effacer",
+      "confirmRevoke": "Retirer le poste",
+      "confirmLost": "Déclarer perdu ou volé",
+      "cancel": "Annuler",
+      "errors": {
+        "DEVICE_IS_CURRENT": "Vous ne pouvez pas retirer le poste que vous utilisez.",
+        "DEVICE_ALREADY_REVOKED": "Ce poste est déjà retiré.",
+        "PERMISSION_DENIED": "Vous n'avez pas la permission d'effectuer cette action.",
+        "VALIDATION_FAILED": "Indiquez un motif (3 caractères au moins).",
+        "AUTH_STEP_UP_REQUIRED": "Confirmation de votre identité annulée : rien n'a été modifié."
+      }
+    },
+    "configuration": {
+      "title": "Postes et sécurité",
+      "subtitle": "Réglages appliqués à tous les postes de la structure, publiés par version.",
+      "lifecycle": "Chaque changement passe par un brouillon, puis une publication. Une version publiée n'est jamais modifiée : la précédente est archivée et peut être restaurée. Les postes reçoivent les valeurs publiées à leur prochaine synchronisation.",
+      "current": "Valeur en vigueur",
+      "defaultValue": "Valeur par défaut",
+      "defaultHint": "valeur par défaut de MedHub",
+      "publishedVersion": "Version {version} publiée",
+      "draftPending": "Brouillon en attente",
+      "newValue": "Nouvelle valeur",
+      "saveDraft": "Enregistrer le brouillon",
+      "publish": "Publier ({value})",
+      "discard": "Abandonner le brouillon",
+      "history": "Historique ({count})",
+      "restore": "Restaurer en brouillon",
+      "status": {
+        "draft": "Brouillon",
+        "published": "En vigueur",
+        "archived": "Archivée"
+      },
+      "units": {
+        "days": "jours",
+        "minutes": "minutes",
+        "attempts": "essais"
+      },
+      "keys": {
+        "offline_token_days": {
+          "title": "Accès hors connexion",
+          "text": "Durée pendant laquelle un poste peut travailler sans se synchroniser (1 à 30 jours). Au-delà, une connexion en ligne est demandée ; rien n'est perdu."
+        },
+        "auto_lock_minutes": {
+          "title": "Verrouillage automatique",
+          "text": "Délai d'inactivité avant que le poste demande le code PIN (1 à 60 minutes)."
+        },
+        "pin_max_attempts": {
+          "title": "Essais de code PIN",
+          "text": "Nombre d'essais avant blocage (3 à 20). Les données ne sont effacées que si aucune opération n'attend d'être envoyée."
+        },
+        "step_up_minutes": {
+          "title": "Confirmation des changements sensibles",
+          "text": "Durée de validité de la dernière preuve du second facteur avant une modification de configuration (5 à 60 minutes)."
+        }
+      }
     }
   }
 }

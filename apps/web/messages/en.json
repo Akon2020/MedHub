@@ -252,7 +252,9 @@
       "recover": "Recover",
       "recoveryFailed": "Wrong recovery code.",
       "switchUser": "Switch user",
-      "noLocal": "This workstation is not activated for this user yet. Sign in online."
+      "noLocal": "This workstation is not activated for this user yet. Sign in online.",
+      "offlineExpired": "Offline access on this device has expired. Sign in online to renew it: your pending operations are kept.",
+      "signInOnline": "Sign in online"
     },
     "errors": {
       "AUTH_INVALID_CREDENTIALS": "Wrong username or password.",
@@ -268,7 +270,8 @@
       "AUTH_MFA_REQUIRED_BY_ROLE": "Your role requires two-factor authentication: it cannot be turned off.",
       "AUTH_MFA_ALREADY_ENABLED": "Two-factor authentication is already on.",
       "AUTH_MFA_NOT_ENROLLED": "Two-factor authentication is not set up.",
-      "IP_BLOCKED": "Access refused from this network address."
+      "IP_BLOCKED": "Access refused from this network address.",
+      "AUTH_STEP_UP_REQUIRED": "Identity confirmation required."
     },
     "mfa": {
       "verifyTitle": "Two-factor authentication",
@@ -293,7 +296,8 @@
       "print": "Print",
       "recoveryConfirm": "I have stored these codes somewhere safe",
       "continue": "Continue"
-    }
+    },
+    "deviceRetired": "This device was retired or declared lost by your structure administrator: its local data has been erased. Sign in to activate it again if needed."
   },
   "app": {
     "nav": {
@@ -324,7 +328,13 @@
       "menu": "Menu",
       "account": "My account and security"
     },
-    "training": "Training database"
+    "training": "Training database",
+    "banners": {
+      "grace": "The structure subscription is overdue: contact the administrator.",
+      "readOnly": "The structure subscription is read-only. Emergency access and export remain available.",
+      "suspended": "The structure subscription is suspended. Emergency access and export remain available.",
+      "offlineExpiring": "Offline access on this device expires on {date}: sync it before then."
+    }
   },
   "sync": {
     "online": "Connected",
@@ -515,6 +525,243 @@
       "text": "Preferences of this device.",
       "theme": "Theme",
       "language": "Language"
+    }
+  },
+  "stepUp": {
+    "title": "Confirm your identity",
+    "text": "This change is sensitive. Enter the 6-digit code from your authenticator app or a recovery code.",
+    "code": "Verification code",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "notEnrolled": "This change requires two-factor authentication. Turn it on in \"My account\", then try again.",
+    "openAccount": "Open My account"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Configuration of the structure. Available online only.",
+    "soon": "planned for {week}",
+    "offline": "This screen is only available online. Reconnect this device to change the configuration.",
+    "active": "Active",
+    "inactive": "Inactive",
+    "edit": "Edit",
+    "deactivate": "Deactivate",
+    "reactivate": "Reactivate",
+    "hub": {
+      "organization": {
+        "title": "Organization",
+        "text": "Structure, sites and departments"
+      },
+      "security": {
+        "title": "Security log",
+        "text": "Unusual sign-ins, blocks, two-factor authentication"
+      },
+      "account": {
+        "title": "My account",
+        "text": "Two-factor authentication, sessions, appearance"
+      },
+      "users": {
+        "title": "Users",
+        "text": "Accounts, assignments, resets"
+      },
+      "roles": {
+        "title": "Roles and permissions",
+        "text": "Template roles and structure roles"
+      },
+      "devices": {
+        "title": "Devices",
+        "text": "Registered devices, revocation, loss"
+      },
+      "reference": {
+        "title": "Reference data",
+        "text": "Choice lists, catalogues, numbering"
+      },
+      "workstations": {
+        "title": "Devices and security",
+        "text": "Auto-lock, PIN, offline access, confirmation"
+      }
+    },
+    "organization": {
+      "title": "Organization",
+      "subtitle": "Identity of the structure, sites and departments. Every change is recorded in the audit log."
+    },
+    "structure": {
+      "title": "Structure",
+      "text": "Information used on printed documents and reports.",
+      "training": "Training database",
+      "displayName": "Usual name",
+      "legalName": "Legal name",
+      "defaultLocale": "Default language",
+      "defaultCurrency": "Default currency",
+      "timezone": "Time zone",
+      "phone": "Phone",
+      "email": "Email",
+      "legalMentions": "Legal mentions on documents",
+      "legalMentionsHint": "Approval number, tax identifier, address... as your structure must print them.",
+      "save": "Save",
+      "saved": "Changes saved.",
+      "locales": {
+        "fr": "Français",
+        "en": "English"
+      },
+      "timezones": {
+        "Kinshasa": "West (Kinshasa, UTC+1)",
+        "Lubumbashi": "East (Lubumbashi, UTC+2)"
+      }
+    },
+    "address": {
+      "province": "Province",
+      "city": "City or territory",
+      "commune": "Commune",
+      "quarter": "Quarter",
+      "street": "Street and number"
+    },
+    "sites": {
+      "title": "Sites",
+      "text": "Places where the structure works. One site always stays active.",
+      "add": "Add a site",
+      "code": "Code (3 letters)",
+      "codeHint": "The code appears in document numbers: it cannot be changed later.",
+      "name": "Site name",
+      "noAddress": "No address yet",
+      "create": "Create the site",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "departments": {
+      "title": "Departments",
+      "text": "Departments of each site: used by queues, department-scoped rights and reports.",
+      "add": "Add a department",
+      "empty": "No department yet.",
+      "site": "Site",
+      "code": "Code (2 to 8 characters)",
+      "name": "Department name",
+      "kind": "Type",
+      "costCenter": "Cost centre (optional)",
+      "create": "Create the department",
+      "save": "Save",
+      "cancel": "Cancel",
+      "kinds": {
+        "clinical": "Clinical",
+        "technical": "Technical",
+        "administrative": "Administrative",
+        "pharmacy": "Pharmacy",
+        "laboratory": "Laboratory",
+        "cashier": "Cashier"
+      }
+    },
+    "security": {
+      "title": "Security log",
+      "subtitle": "Security events of your structure, most recent first.",
+      "offline": "This screen is only available online.",
+      "empty": "No security event.",
+      "denied": "You are not allowed to read this log.",
+      "loadError": "The log could not be loaded.",
+      "severity": {
+        "info": "Information",
+        "warning": "Warning",
+        "critical": "Critical"
+      },
+      "kinds": {
+        "sign_in_anomaly": "Unusual sign-in",
+        "rate_limited": "Too many attempts",
+        "ip_auto_blocked": "Address blocked automatically",
+        "ip_refused": "Access refused by an address rule",
+        "mfa_enabled": "Two-factor authentication turned on",
+        "mfa_disabled": "Two-factor authentication turned off",
+        "other": "Other event",
+        "device_revoked": "Device retired",
+        "device_lost": "Device declared lost or stolen"
+      },
+      "anomalies": {
+        "new_device": "new device",
+        "unusual_hour": "unusual hour"
+      }
+    },
+    "errors": {
+      "ORG_SITE_CODE_TAKEN": "This site code already exists.",
+      "ORG_DEPARTMENT_CODE_TAKEN": "This department code already exists on this site.",
+      "ORG_LAST_ACTIVE_SITE": "Not possible: the structure must keep at least one active site.",
+      "ORG_SITE_INACTIVE": "This site is inactive: reactivate it before adding a department.",
+      "PERMISSION_DENIED": "You are not allowed to do this.",
+      "VALIDATION_FAILED": "Check the fields.",
+      "NOT_FOUND": "Item not found.",
+      "AUTH_STEP_UP_REQUIRED": "Identity confirmation cancelled: nothing was changed.",
+      "NETWORK": "The server cannot be reached. Check the connection.",
+      "UNKNOWN": "An unexpected error occurred."
+    },
+    "devices": {
+      "title": "Devices",
+      "subtitle": "Devices activated in the structure. A retired or lost device erases its data at its next contact.",
+      "diskHint": "Recommendation: turn on disk encryption on the devices (BitLocker, FileVault, Android encryption).",
+      "current": "This device",
+      "never": "never",
+      "lastSync": "last sync: {date}",
+      "revokedOn": "Retired on {date}",
+      "status": {
+        "active": "Active",
+        "revoked": "Retired",
+        "lost": "Lost or stolen"
+      },
+      "revoke": "Retire",
+      "lost": "Declare lost",
+      "reason": "Reason",
+      "revokeWarning": "The device will no longer sync. At its next contact with the server, it will erase its local data.",
+      "lostWarning": "All sessions of the device end immediately. At its next contact, it will erase its local data, including unsent operations.",
+      "allowFinalPush": "Let the device send its pending operations one last time before erasing itself",
+      "confirmRevoke": "Retire the device",
+      "confirmLost": "Declare lost or stolen",
+      "cancel": "Cancel",
+      "errors": {
+        "DEVICE_IS_CURRENT": "You cannot retire the device you are using.",
+        "DEVICE_ALREADY_REVOKED": "This device is already retired.",
+        "PERMISSION_DENIED": "You are not allowed to do this.",
+        "VALIDATION_FAILED": "Give a reason (at least 3 characters).",
+        "AUTH_STEP_UP_REQUIRED": "Identity confirmation cancelled: nothing was changed."
+      }
+    },
+    "configuration": {
+      "title": "Devices and security",
+      "subtitle": "Settings applied to every device of the structure, published by version.",
+      "lifecycle": "Every change goes through a draft, then a publication. A published version is never changed: the previous one is archived and can be restored. Devices receive the published values at their next sync.",
+      "current": "Current value",
+      "defaultValue": "Default value",
+      "defaultHint": "MedHub default",
+      "publishedVersion": "Version {version} published",
+      "draftPending": "Draft pending",
+      "newValue": "New value",
+      "saveDraft": "Save draft",
+      "publish": "Publish ({value})",
+      "discard": "Discard draft",
+      "history": "History ({count})",
+      "restore": "Restore as draft",
+      "status": {
+        "draft": "Draft",
+        "published": "Current",
+        "archived": "Archived"
+      },
+      "units": {
+        "days": "days",
+        "minutes": "minutes",
+        "attempts": "attempts"
+      },
+      "keys": {
+        "offline_token_days": {
+          "title": "Offline access",
+          "text": "How long a device may work without syncing (1 to 30 days). After that, an online sign-in is required; nothing is lost."
+        },
+        "auto_lock_minutes": {
+          "title": "Auto-lock",
+          "text": "Inactivity delay before the device asks for the PIN (1 to 60 minutes)."
+        },
+        "pin_max_attempts": {
+          "title": "PIN attempts",
+          "text": "Attempts before blocking (3 to 20). Data is only erased when no operation is waiting to be sent."
+        },
+        "step_up_minutes": {
+          "title": "Confirmation of sensitive changes",
+          "text": "How long the last proof of the second factor stays valid before a configuration change (5 to 60 minutes)."
+        }
+      }
     }
   }
 }

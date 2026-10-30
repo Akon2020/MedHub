@@ -15,6 +15,27 @@
       "when": 1793330694585,
       "tag": "0001_s4_mfa_security",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793334376797,
+      "tag": "0002_s4_organization",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793338069836,
+      "tag": "0003_s5_devices",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793340497728,
+      "tag": "0004_s5_configuration",
+      "breakpoints": true
     }
   ]
 }

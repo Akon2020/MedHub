@@ -13,7 +13,7 @@ import {
   type ServerSyncStore,
   type ServerSyncTx,
 } from '@medhub/sync/server';
-import { and, asc, eq, gt, gte, inArray, lte } from 'drizzle-orm';
+import { and, asc, eq, gt, gte, inArray, isNull, lte } from 'drizzle-orm';
 
 type Ctx = { tenantId: string; userId: string; deviceId: string | null };
 
@@ -427,5 +427,14 @@ export async function touchDevice(db: Db, ctx: Ctx, deviceId: string, synced: bo
       .update(schema.device)
       .set({ lastSeenAt: new Date(), ...(synced ? { lastSyncAt: new Date() } : {}) })
       .where(eq(schema.device.id, deviceId)),
+  );
+}
+
+export async function endDeviceSessions(db: Db, ctx: Ctx, deviceId: string) {
+  await withTenant(db, { tenantId: ctx.tenantId, userId: ctx.userId }, (tx) =>
+    tx
+      .update(schema.session)
+      .set({ revokedAt: new Date() })
+      .where(and(eq(schema.session.deviceId, deviceId), isNull(schema.session.revokedAt))),
   );
 }

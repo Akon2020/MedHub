@@ -2,12 +2,15 @@
 
 import type { CommandName, CommandPayload } from '@medhub/domain';
 import {
+  DEFAULT_MAX_PIN_ATTEMPTS,
   isInitialized,
+  loadTokens,
   loadDevice,
   nextCounter,
   openLocalDb,
   recoverWithCode,
   unlockWithPin,
+  wipeLocal,
   type EncryptedClientStore,
   type MedHubLocalDb,
   type UnlockedLocal,
@@ -26,8 +29,9 @@ import {
   type ReactNode,
 } from 'react';
 import { apiFetch } from './api';
+import { refreshTokens, tokensDue, tokenStatus, type TokenStatus } from './device-tokens';
 import { installTestHook } from './e2e-hook';
-import { clearIdentity, readIdentity, type StoredIdentity } from './identity';
+import { clearIdentity, DEVICE_REVOKED_FLAG, readIdentity, type StoredIdentity } from './identity';
 import { SyncLoop, type SyncStatus } from './sync-loop';
 import { HttpSyncTransport } from './transport';
 
@@ -36,7 +40,7 @@ export type Phase = 'loading' | 'no-identity' | 'not-activated' | 'locked' | 're
 export type UnlockOutcome =
   | { ok: true }
   | { ok: false; reason: 'WRONG_PIN'; remaining: number }
-  | { ok: false; reason: 'BLOCKED_USE_RECOVERY' | 'WIPED' | 'NOT_ACTIVATED' };
+  | { ok: false; reason: 'BLOCKED_USE_RECOVERY' | 'WIPED' | 'NOT_ACTIVATED' | 'OFFLINE_EXPIRED' };
 
 type Session = {
   unlocked: UnlockedLocal;
@@ -51,6 +55,8 @@ type RuntimeValue = {
   device: { deviceId: string; deviceCode: string } | null;
   store: EncryptedClientStore | null;
   status: SyncStatus | null;
+  /** Offline access and license read from the signed tokens of the device. */
+  tokens: TokenStatus | null;
   /** Bumped after every local write and every sync cycle; drives local queries. */
   revision: number;
   unlock: (pin: string) => Promise<UnlockOutcome>;
@@ -68,11 +74,13 @@ type RuntimeValue = {
 
 const RuntimeContext = createContext<RuntimeValue | null>(null);
 
-const AUTO_LOCK_MS = 5 * 60 * 1000;
+/** Defaults until the structure publishes its own values (docs/06, config_entry). */
+const DEFAULT_AUTO_LOCK_MINUTES = 5;
 
 async function startSession(
   identity: StoredIdentity,
   unlocked: UnlockedLocal,
+  hooks: { afterSync: (deviceId: string) => Promise<void>; onRevoked: () => void },
 ): Promise<Session | null> {
   const device = await loadDevice(unlocked);
   if (!device) return null;
@@ -90,7 +98,10 @@ async function startSession(
     sign: (op) => signOperation(op, secretKey),
     permissions: new Set(identity.permissions),
   });
-  const loop = new SyncLoop(client, unlocked.store);
+  const loop = new SyncLoop(client, unlocked.store, {
+    afterSync: () => hooks.afterSync(device.deviceId),
+    onRevoked: hooks.onRevoked,
+  });
   return {
     unlocked,
     client,
@@ -105,6 +116,8 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [status, setStatus] = useState<SyncStatus | null>(null);
   const [revision, setRevision] = useState(0);
+  const [tokens, setTokens] = useState<TokenStatus | null>(null);
+  const [autoLockMs, setAutoLockMs] = useState(DEFAULT_AUTO_LOCK_MINUTES * 60_000);
   const dbRef = useRef<MedHubLocalDb | null>(null);
 
   useEffect(() => {
@@ -155,10 +168,10 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (phase !== 'ready') return;
-    let timer = setTimeout(lock, AUTO_LOCK_MS);
+    let timer = setTimeout(lock, autoLockMs);
     const reset = () => {
       clearTimeout(timer);
-      timer = setTimeout(lock, AUTO_LOCK_MS);
+      timer = setTimeout(lock, autoLockMs);
     };
     const events = ['pointerdown', 'keydown', 'touchstart'] as const;
     events.forEach((e) => window.addEventListener(e, reset, { passive: true }));
@@ -166,32 +179,80 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
       clearTimeout(timer);
       events.forEach((e) => window.removeEventListener(e, reset));
     };
-  }, [phase, lock]);
+  }, [phase, lock, autoLockMs]);
+
+  /** Remote wipe ordered by the server (device retired or declared lost). */
+  const wipeDevice = useCallback(() => {
+    const db = dbRef.current;
+    setSession(null);
+    setStatus(null);
+    void (async () => {
+      if (db) await wipeLocal(db).catch(() => undefined);
+      dbRef.current = null;
+      clearIdentity();
+      try {
+        window.sessionStorage.setItem(DEVICE_REVOKED_FLAG, '1');
+      } catch {
+        // The sign-in page then simply shows no explanation.
+      }
+      setIdentity(null);
+      setPhase('no-identity');
+    })();
+  }, []);
 
   const openWith = useCallback(
-    async (unlocked: UnlockedLocal): Promise<boolean> => {
-      if (!identity) return false;
-      const next = await startSession(identity, unlocked);
-      if (!next) return false;
+    async (unlocked: UnlockedLocal): Promise<'ok' | 'not-activated' | 'expired'> => {
+      if (!identity) return 'not-activated';
+      const device = await loadDevice(unlocked);
+      if (!device) return 'not-activated';
+      const who = {
+        tenantId: identity.tenantId,
+        userId: identity.userId,
+        deviceId: device.deviceId,
+      };
+      const read = async () =>
+        tokenStatus(unlocked.db, who, (await unlocked.store.readState()).lastServerTime);
+      let current = await read();
+      if (current.offline !== 'valid' && current.offline !== 'expiring' && navigator.onLine) {
+        if (await refreshTokens(unlocked.db, device.deviceId)) current = await read();
+      }
+      // Devices activated before the tokens existed keep working until their next sync.
+      if (current.offline === 'expired' || current.offline === 'invalid') return 'expired';
+      setTokens(current);
+      const stored = await loadTokens(unlocked.db);
+      if (stored?.config) setAutoLockMs(stored.config.autoLockMinutes * 60_000);
+      const next = await startSession(identity, unlocked, {
+        afterSync: async (deviceId) => {
+          if (!(await tokensDue(unlocked.db))) return;
+          if (await refreshTokens(unlocked.db, deviceId)) setTokens(await read());
+        },
+        onRevoked: wipeDevice,
+      });
+      if (!next) return 'not-activated';
       setSession(next);
       setPhase('ready');
-      return true;
+      return 'ok';
     },
-    [identity],
+    [identity, wipeDevice],
   );
 
   const unlock = useCallback(
     async (pin: string): Promise<UnlockOutcome> => {
       const db = dbRef.current;
       if (!db || !identity) return { ok: false, reason: 'NOT_ACTIVATED' };
-      const result = await unlockWithPin(db, pin);
+      const stored = await loadTokens(db);
+      const result = await unlockWithPin(
+        db,
+        pin,
+        stored?.config?.pinMaxAttempts ?? DEFAULT_MAX_PIN_ATTEMPTS,
+      );
       if (!result.ok) {
         if (result.reason === 'WIPED') setPhase('not-activated');
         return result;
       }
-      return (await openWith(result.unlocked))
-        ? { ok: true }
-        : { ok: false, reason: 'NOT_ACTIVATED' };
+      const opened = await openWith(result.unlocked);
+      if (opened === 'ok') return { ok: true };
+      return { ok: false, reason: opened === 'expired' ? 'OFFLINE_EXPIRED' : 'NOT_ACTIVATED' };
     },
     [identity, openWith],
   );
@@ -201,7 +262,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
       const db = dbRef.current;
       if (!db) return false;
       try {
-        return await openWith(await recoverWithCode(db, code, newPin));
+        return (await openWith(await recoverWithCode(db, code, newPin))) === 'ok';
       } catch {
         return false;
       }
@@ -236,6 +297,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
       device: session?.device ?? null,
       store: session?.unlocked.store ?? null,
       status,
+      tokens,
       revision,
       unlock,
       recover,
@@ -248,7 +310,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
         return nextCounter(session.unlocked.db, name);
       },
     }),
-    [phase, identity, session, status, revision, unlock, recover, lock, signOut, dispatch],
+    [phase, identity, session, status, tokens, revision, unlock, recover, lock, signOut, dispatch],
   );
 
   return <RuntimeContext.Provider value={value}>{children}</RuntimeContext.Provider>;

@@ -45,6 +45,12 @@ export class SyncLoop {
   constructor(
     private readonly client: SyncClient,
     private readonly store: EncryptedClientStore,
+    private readonly hooks: {
+      /** After each successful cycle (token renewal). */
+      afterSync?: () => Promise<void>;
+      /** The server retired this device: the runtime wipes it. */
+      onRevoked?: () => void;
+    } = {},
   ) {}
 
   start(): void {
@@ -107,10 +113,17 @@ export class SyncLoop {
         await this.withLock(() => this.client.sync());
         this.failures = 0;
         this.needsLogin = false;
+        await this.hooks.afterSync?.().catch(() => undefined);
         await this.refresh();
       }
     } catch (error) {
-      if (error instanceof ApiError && (error.status === 401 || error.code === 'DEVICE_REVOKED')) {
+      if (error instanceof ApiError && error.code === 'DEVICE_REVOKED' && this.hooks.onRevoked) {
+        this.stop();
+        this.hooks.onRevoked();
+      } else if (
+        error instanceof ApiError &&
+        (error.status === 401 || error.code === 'DEVICE_REVOKED')
+      ) {
         this.needsLogin = true;
         await this.refresh('attention');
       } else if (error instanceof NetworkError || error instanceof ApiError) {

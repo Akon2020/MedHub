@@ -67,6 +67,59 @@ export const site = pgTable(
   ],
 );
 
+/** Departments (services) of a site: scope of roles, queues and reports. */
+export const department = pgTable(
+  'department',
+  {
+    ...tenantColumns(),
+    siteId: uuid('site_id').notNull(),
+    code: text('code').notNull(),
+    name: text('name').notNull(),
+    kind: text('kind').notNull(),
+    costCenterCode: text('cost_center_code'),
+    isActive: boolean('is_active').notNull().default(true),
+  },
+  (t) => [
+    uniqueIndex('department_code_uq').on(t.tenantId, t.siteId, t.code),
+    check(
+      'department_kind_check',
+      sql`${t.kind} in ('clinical','technical','administrative','pharmacy','laboratory','cashier')`,
+    ),
+  ],
+);
+
+/**
+ * Versioned simple settings (docs/06-configuration.md section 2). A published
+ * version is never changed: a change is a new version, the previous one is
+ * archived. Only drafts may be edited or discarded (enforced by a trigger).
+ */
+export const configEntry = pgTable(
+  'config_entry',
+  {
+    ...tenantColumns(),
+    domain: text('domain').notNull(),
+    key: text('key').notNull(),
+    version: integer('version').notNull(),
+    status: text('status').notNull().default('draft'),
+    value: jsonb('value').$type<unknown>().notNull(),
+    note: text('note'),
+    effectiveFrom: timestamp('effective_from', { withTimezone: true }),
+    createdBy: uuid('created_by'),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    publishedBy: uuid('published_by'),
+  },
+  (t) => [
+    uniqueIndex('config_entry_version_uq').on(t.tenantId, t.key, t.version),
+    uniqueIndex('config_entry_draft_uq')
+      .on(t.tenantId, t.key)
+      .where(sql`${t.status} = 'draft'`),
+    uniqueIndex('config_entry_published_uq')
+      .on(t.tenantId, t.key)
+      .where(sql`${t.status} = 'published'`),
+    check('config_entry_status_check', sql`${t.status} in ('draft','published','archived')`),
+  ],
+);
+
 export const device = pgTable(
   'device',
   {
@@ -83,6 +136,10 @@ export const device = pgTable(
     appVersion: text('app_version'),
     status: text('status').notNull().default('active'),
     revokedReason: text('revoked_reason'),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    revokedBy: uuid('revoked_by'),
+    /** Retired device allowed to send its pending operations once before it wipes itself. */
+    allowFinalPush: boolean('allow_final_push').notNull().default(false),
   },
   (t) => [
     uniqueIndex('device_code_uq').on(t.tenantId, t.deviceCode),

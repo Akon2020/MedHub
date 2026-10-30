@@ -6,10 +6,15 @@ import { Building2, KeyRound, Loader2, LogIn, User, WifiOff } from 'lucide-react
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { ApiError, apiFetch } from '@/client/api';
 import { useOnline, useStoredIdentity, useStoredTenantCode } from '@/client/browser-state';
-import { identityFromProfile, writeIdentity, type ServerProfile } from '@/client/identity';
+import {
+  DEVICE_REVOKED_FLAG,
+  identityFromProfile,
+  writeIdentity,
+  type ServerProfile,
+} from '@/client/identity';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,6 +63,19 @@ export function LoginForm() {
   const storedCode = useStoredTenantCode();
   const storedIdentity = useStoredIdentity();
   const online = useOnline();
+  const [retired, setRetired] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (!window.sessionStorage.getItem(DEVICE_REVOKED_FLAG)) return;
+      window.sessionStorage.removeItem(DEVICE_REVOKED_FLAG);
+      // The flag only exists in the browser: it can only be read after hydration.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setRetired(true);
+    } catch {
+      // Storage unavailable: nothing to explain.
+    }
+  }, []);
   const [tenantCodeInput, setTenantCode] = useState<string | null>(null);
   const tenantCode = tenantCodeInput ?? storedCode;
   const canUnlock = storedIdentity !== null;
@@ -124,6 +142,12 @@ export function LoginForm() {
     <div>
       <h1 className="text-2xl font-semibold sm:text-3xl">{t('title')}</h1>
       <p className="mt-2 text-[15px] text-muted-foreground">{t('subtitle')}</p>
+
+      {retired && (
+        <p role="alert" className="mt-6 rounded-xl bg-danger-soft p-4 text-sm text-danger">
+          {t('deviceRetired')}
+        </p>
+      )}
 
       {!online && (
         <div className="mt-6 flex gap-3 rounded-xl bg-warning-soft p-4 text-sm text-warning">

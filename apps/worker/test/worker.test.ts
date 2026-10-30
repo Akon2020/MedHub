@@ -36,7 +36,8 @@ describe.skipIf(!url)('tick', () => {
     await handle?.pool.end();
   });
 
-  it('runs due jobs, retries failures and records the tick', async () => {
+  // Two real ticks against PostgreSQL: slower than 5 s when every suite runs at once.
+  it('runs due jobs, retries failures and records the tick', { timeout: 60_000 }, async () => {
     const ids = await withSystem(handle.db, async (tx) => [
       await enqueue(tx, 'test.ok'),
       await enqueue(tx, 'test.fail', {}, { maxAttempts: 2 }),

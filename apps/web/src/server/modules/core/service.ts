@@ -1,9 +1,17 @@
 import 'server-only';
 import { createHash } from 'node:crypto';
-import { appendAudit, schema, withSystem, withTenant, type Tx } from '@medhub/db';
+import {
+  appendAudit,
+  recordSecurityEvent,
+  schema,
+  withSystem,
+  withTenant,
+  type Tx,
+} from '@medhub/db';
+import { assessSignIn, deviceLabel } from '@medhub/domain';
 import { verifyPassword } from '@medhub/db/password';
 import { AppError, normalizeTenantCode, uuidv7, type DeviceKind } from '@medhub/shared';
-import { and, eq, gt, isNull, ne, or } from 'drizzle-orm';
+import { and, desc, eq, gt, isNull, ne, or } from 'drizzle-orm';
 import { database } from '../../platform/db';
 import {
   checkTotp,
@@ -20,7 +28,10 @@ import {
 } from '../../platform/mfa';
 import { loadPermissions, requirePermission } from '../../platform/permissions';
 import { enforceRateLimit, RATE_LIMITS, securityEvent } from '../../platform/security';
-import { createSession } from '../../platform/session';
+import { createSession, rotateSession } from '../../platform/session';
+import { loadConfig } from './configuration';
+import { deviceConfig, type DeviceConfig } from '@medhub/domain';
+import { issueLicenseToken, issueOfflineToken, platformSigningKeys } from '../../platform/tokens';
 import type { RequestContext } from '../../platform/tenant';
 
 const LOCKOUT_STEPS: { failures: number; minutes: number }[] = [
@@ -30,6 +41,7 @@ const LOCKOUT_STEPS: { failures: number; minutes: number }[] = [
 ];
 const SUSPENDED_STATES = new Set(['suspended', 'terminated', 'archived']);
 const DEVICE_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+const SIGN_IN_HISTORY_DAYS = 180;
 
 export type Profile = {
   user: { id: string; displayName: string; title: string | null; username: string };
@@ -158,15 +170,18 @@ async function openSession(
   client: Client,
   method: 'password' | 'totp' | 'recovery_code' | 'mfa_enrollment',
 ): Promise<SignedIn> {
+  const now = new Date();
   await tx
     .update(schema.userAccount)
-    .set({ failedLogins: 0, lockedUntil: null, lastLoginAt: new Date() })
+    .set({ failedLogins: 0, lockedUntil: null, lastLoginAt: now })
     .where(eq(schema.userAccount.id, user.id));
+  const anomalies = await detectAnomalies(tx, tenant, user, client, now);
   const session = await createSession(tx, {
     tenantId: tenant.id,
     userId: user.id,
     ip: client.ip,
     userAgent: client.userAgent,
+    mfaVerifiedAt: method === 'password' ? null : now,
   });
   await appendAudit(tx, {
     tenantId: tenant.id,
@@ -175,7 +190,7 @@ async function openSession(
     action: 'login',
     entity: 'user_account',
     entityId: user.id,
-    diff: { method },
+    diff: anomalies.length > 0 ? { method, anomalies } : { method },
   });
   return {
     status: 'signed_in',
@@ -183,6 +198,46 @@ async function openSession(
     expiresAt: session.expiresAt,
     profile: await buildProfile(tx, tenant, user),
   };
+}
+
+/**
+ * Compares this sign-in with the user's previous sessions; anything unusual is
+ * written as a security event that the structure administrators review.
+ */
+async function detectAnomalies(
+  tx: Tx,
+  tenant: TenantRow,
+  user: UserRow,
+  client: Client,
+  now: Date,
+): Promise<string[]> {
+  const history = await tx
+    .select({ at: schema.session.createdAt, userAgent: schema.session.userAgent })
+    .from(schema.session)
+    .where(
+      and(
+        eq(schema.session.userId, user.id),
+        gt(schema.session.createdAt, new Date(now.getTime() - SIGN_IN_HISTORY_DAYS * 86_400_000)),
+      ),
+    )
+    .orderBy(desc(schema.session.createdAt))
+    .limit(200);
+  const anomalies = assessSignIn(
+    history,
+    { at: now, userAgent: client.userAgent },
+    tenant.timezone,
+  );
+  if (anomalies.length > 0) {
+    await recordSecurityEvent(tx, {
+      kind: 'sign_in_anomaly',
+      severity: 'warning',
+      tenantId: tenant.id,
+      userId: user.id,
+      ip: client.ip,
+      detail: { anomalies, device: deviceLabel(client.userAgent) },
+    });
+  }
+  return anomalies;
 }
 
 function accountKey(tenantCode: string, username: string): string {
@@ -534,22 +589,65 @@ export async function beginMfaSetup(ctx: RequestContext): Promise<EnrollmentMate
   return withAccount(ctx, (tx, tenant, user) => prepareSecret(tx, tenant, user));
 }
 
+export type RotatedSession = { cookie: string; expiresAt: Date };
+
+/** Turning the second factor on elevates the session: its identifier is rotated. */
 export async function confirmMfaSetup(
   ctx: RequestContext,
   code: string,
   client: Client,
-): Promise<string[]> {
-  const codes = await withAccount(ctx, (tx, tenant, user) =>
-    activateSecret(tx, tenant, user, code, client),
-  );
-  if (!codes) throw new AppError('AUTH_MFA_INVALID', 401);
+): Promise<{ recoveryCodes: string[]; session: RotatedSession }> {
+  const outcome = await withAccount(ctx, async (tx, tenant, user) => {
+    const codes = await activateSecret(tx, tenant, user, code, client);
+    if (!codes) return null;
+    const session = await rotateSession(tx, ctx, { ...client, mfaVerifiedAt: new Date() });
+    return { recoveryCodes: codes, session };
+  });
+  if (!outcome) throw new AppError('AUTH_MFA_INVALID', 401);
   await securityEvent({
     kind: 'mfa_enabled',
     tenantId: ctx.tenantId,
     userId: ctx.userId,
     ip: client.ip,
   });
-  return codes;
+  return outcome;
+}
+
+/**
+ * Step-up: the second factor proven again inside a session, before a sensitive
+ * change. The session identifier is rotated at the same time.
+ */
+export async function stepUp(
+  ctx: RequestContext,
+  code: string,
+  client: Client,
+): Promise<RotatedSession> {
+  await enforceRateLimit(RATE_LIMITS.mfaByUser, ctx.userId, {
+    ip: client.ip,
+    tenantId: ctx.tenantId,
+  });
+  const outcome = await withAccount(ctx, async (tx, tenant, user) => {
+    if (!user.mfaEnabledAt) return { failure: 'AUTH_MFA_NOT_ENROLLED' as const };
+    const factor = await checkSecondFactor(tx, tenant.id, user, code);
+    if (!factor.ok) {
+      await recordFailure(tx, tenant.id, user, client, 'mfa_failed');
+      return { failure: 'AUTH_MFA_INVALID' as const };
+    }
+    const session = await rotateSession(tx, ctx, { ...client, mfaVerifiedAt: new Date() });
+    await appendAudit(tx, {
+      tenantId: tenant.id,
+      userId: user.id,
+      ip: client.ip,
+      action: 'step_up',
+      entity: 'session',
+      entityId: session.sessionId,
+      diff: { method: factor.method },
+    });
+    return { failure: null, session };
+  });
+  if (outcome.failure === 'AUTH_MFA_NOT_ENROLLED') throw new AppError(outcome.failure, 409);
+  if (outcome.failure === 'AUTH_MFA_INVALID') throw new AppError(outcome.failure, 401);
+  return outcome.session;
 }
 
 /** Sensitive account changes require a fresh second factor, not just the session. */
@@ -668,9 +766,12 @@ export async function registerDevice(
     userAgent: string | null;
     appVersion: string | null;
   },
-): Promise<{ deviceId: string; deviceCode: string }> {
+): Promise<{ deviceId: string; deviceCode: string; tokens: DeviceTokens }> {
+  const tenant = await findTenantById(ctx.tenantId);
+  if (!tenant) throw new AppError('UNAUTHENTICATED', 401);
   return withTenant(database().db, { tenantId: ctx.tenantId, userId: ctx.userId }, async (tx) => {
-    requirePermission(await loadPermissions(tx, ctx.userId), 'device:register');
+    const permissions = await loadPermissions(tx, ctx.userId);
+    requirePermission(permissions, 'device:register');
     const existing = await tx.select({ code: schema.device.deviceCode }).from(schema.device);
     const deviceCode = nextDeviceCode(new Set(existing.map((d) => d.code)));
     const deviceId = uuidv7();
@@ -697,6 +798,66 @@ export async function registerDevice(
       entity: 'device',
       entityId: deviceId,
     });
-    return { deviceId, deviceCode };
+    return {
+      deviceId,
+      deviceCode,
+      tokens: deviceTokensFor(tenant, await loadConfig(tx), {
+        userId: ctx.userId,
+        deviceId,
+        permissions,
+      }),
+    };
+  });
+}
+
+/** What a device needs to keep working offline: both tokens and the keys that verify them. */
+export type DeviceTokens = {
+  offlineToken: string;
+  licenseToken: string;
+  signingKeys: Record<string, string>;
+  serverTime: number;
+  /** Published settings the device applies offline (auto-lock, PIN attempts). */
+  config: DeviceConfig;
+};
+
+export function deviceTokensFor(
+  tenant: { id: string; status: string },
+  config: Awaited<ReturnType<typeof loadConfig>>,
+  input: { userId: string; deviceId: string; permissions: Iterable<string> },
+): DeviceTokens {
+  return {
+    config: deviceConfig(config),
+    offlineToken: issueOfflineToken({
+      tenantId: tenant.id,
+      ...input,
+      days: config['security.offline_token_days'],
+    }),
+    licenseToken: issueLicenseToken(tenant),
+    signingKeys: platformSigningKeys(),
+    serverTime: Date.now(),
+  };
+}
+
+/** Renewed after every successful synchronisation, for an active device of the user only. */
+export async function refreshDeviceTokens(
+  ctx: RequestContext,
+  deviceId: string,
+): Promise<DeviceTokens> {
+  const tenant = await findTenantById(ctx.tenantId);
+  if (!tenant) throw new AppError('UNAUTHENTICATED', 401);
+  return withTenant(database().db, { tenantId: ctx.tenantId, userId: ctx.userId }, async (tx) => {
+    const [device] = await tx
+      .select()
+      .from(schema.device)
+      .where(eq(schema.device.id, deviceId))
+      .limit(1);
+    if (!device || device.userId !== ctx.userId) throw new AppError('DEVICE_UNKNOWN', 403);
+    if (device.status !== 'active') throw new AppError('DEVICE_REVOKED', 403);
+    const permissions = await loadPermissions(tx, ctx.userId);
+    return deviceTokensFor(tenant, await loadConfig(tx), {
+      userId: ctx.userId,
+      deviceId,
+      permissions,
+    });
   });
 }

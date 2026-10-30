@@ -1,6 +1,7 @@
 'use client';
 
 import { Laptop, Loader2, LogOut, Palette, ShieldCheck, ShieldOff, WifiOff } from 'lucide-react';
+import { deviceLabel } from '@medhub/domain';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { apiFetch } from '@/client/api';
@@ -42,31 +43,6 @@ type Mode =
   | { kind: 'enroll'; material: EnrollmentMaterial }
   | { kind: 'codes'; codes: string[] }
   | { kind: 'confirm'; action: 'regenerate' | 'disable' };
-
-function browserLabel(userAgent: string | null): string {
-  if (!userAgent) return '';
-  const browser = /Edg\//.test(userAgent)
-    ? 'Edge'
-    : /Firefox\//.test(userAgent)
-      ? 'Firefox'
-      : /Chrome\//.test(userAgent)
-        ? 'Chrome'
-        : /Safari\//.test(userAgent)
-          ? 'Safari'
-          : '';
-  const system = /Android/.test(userAgent)
-    ? 'Android'
-    : /iPhone|iPad/.test(userAgent)
-      ? 'iOS'
-      : /Windows/.test(userAgent)
-        ? 'Windows'
-        : /Mac OS X/.test(userAgent)
-          ? 'macOS'
-          : /Linux/.test(userAgent)
-            ? 'Linux'
-            : '';
-  return [browser, system].filter(Boolean).join(' · ');
-}
 
 /** Online-only screen (docs/07-ui-ux.md section on the two families of screens). */
 export function AccountSecurity() {
@@ -314,7 +290,7 @@ export function AccountSecurity() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">
-                      {browserLabel(s.userAgent) || t('sessions.unknownBrowser')}
+                      {deviceLabel(s.userAgent) || t('sessions.unknownBrowser')}
                       {s.current && (
                         <Badge variant="info" className="ml-2 align-middle">
                           {t('sessions.current')}

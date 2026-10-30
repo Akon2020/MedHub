@@ -3,7 +3,9 @@ import type { Tx } from '../../src/client';
 import { appendAudit } from '../../src/audit';
 import {
   changeLog,
+  configEntry,
   dataAccessLog,
+  department,
   device,
   mfaRecoveryCode,
   numberSeries,
@@ -27,6 +29,26 @@ import {
 export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<void>> = {
   site: async (tx, tenantId) => {
     await tx.insert(site).values({ id: uuidv7(), tenantId, code: 'KIN', name: 'Site test' });
+  },
+  config_entry: async (tx, tenantId) => {
+    await tx.insert(configEntry).values({
+      id: uuidv7(),
+      tenantId,
+      domain: 'security',
+      key: 'security.auto_lock_minutes',
+      version: 1,
+      value: 5,
+    });
+  },
+  department: async (tx, tenantId) => {
+    await tx.insert(department).values({
+      id: uuidv7(),
+      tenantId,
+      siteId: uuidv7(),
+      code: 'CONS',
+      name: 'Consultations',
+      kind: 'clinical',
+    });
   },
   device: async (tx, tenantId) => {
     await tx.insert(device).values({

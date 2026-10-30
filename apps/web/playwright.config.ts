@@ -27,7 +27,8 @@ export default defineConfig({
         command: `pnpm exec next build && pnpm exec next start -p ${PORT}`,
         url: `${baseURL}/api/health`,
         reuseExistingServer: true,
-        timeout: 300_000,
+        // A production build takes 3 to 6 minutes on the development machine.
+        timeout: 600_000,
         env: { NEXT_PUBLIC_MEDHUB_E2E: '1', NEXT_DIST_DIR: '.next-e2e' },
       },
 });

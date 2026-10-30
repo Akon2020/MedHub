@@ -13,7 +13,7 @@ import { processPull, processPush } from '@medhub/sync/server';
 import { database } from '../../platform/db';
 import { loadPermissions } from '../../platform/permissions';
 import type { RequestContext } from '../../platform/tenant';
-import { loadDevice, pgSyncStore, touchDevice } from './repository';
+import { endDeviceSessions, loadDevice, pgSyncStore, touchDevice } from './repository';
 
 /** Entities a user may receive on pull, by read permission. */
 const READ_PERMISSION: Record<string, readonly string[]> = {
@@ -28,11 +28,18 @@ async function permissionsOf(ctx: RequestContext): Promise<Set<string>> {
   );
 }
 
-async function activeDevice(ctx: RequestContext, deviceId: string) {
+/**
+ * A retired device may send its pending operations once (final push) when the
+ * administrator allowed it; any other contact gets DEVICE_REVOKED, ends the
+ * device sessions and makes the client wipe its local data.
+ */
+async function activeDevice(ctx: RequestContext, deviceId: string, purpose: 'push' | 'pull') {
   const device = await loadDevice(database().db, ctx, deviceId);
   if (!device || device.userId !== ctx.userId) throw new AppError('DEVICE_UNKNOWN', 403);
-  if (device.status !== 'active') throw new AppError('DEVICE_REVOKED', 403);
-  return device;
+  if (device.status === 'active') return device;
+  if (purpose === 'push' && device.status === 'revoked' && device.allowFinalPush) return device;
+  await endDeviceSessions(database().db, ctx, device.id);
+  throw new AppError('DEVICE_REVOKED', 403);
 }
 
 export async function push(
@@ -44,7 +51,7 @@ export async function push(
   if (!SUPPORTED_SCHEMA_VERSIONS.includes(request.schemaVersion)) {
     throw new AppError('SYNC_SCHEMA_UNSUPPORTED', 426);
   }
-  const device = await activeDevice(ctx, request.deviceId);
+  const device = await activeDevice(ctx, request.deviceId, 'push');
   const permissions = await permissionsOf(ctx);
   const store = pgSyncStore(database().db, { ...ctx, deviceId: device.id });
   const response = await processPush(
@@ -67,7 +74,7 @@ export async function pull(
   ctx: RequestContext,
   input: { deviceId: string; cursor: number; limit: number; lookback: boolean },
 ): Promise<PullResponse> {
-  const device = await activeDevice(ctx, input.deviceId);
+  const device = await activeDevice(ctx, input.deviceId, 'pull');
   const permissions = await permissionsOf(ctx);
   const store = pgSyncStore(database().db, { ...ctx, deviceId: device.id });
   const now = Date.now();

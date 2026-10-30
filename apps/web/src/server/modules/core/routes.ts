@@ -16,6 +16,8 @@ import {
   revokeSessions,
   securityOverview,
   startEnrollment,
+  stepUp,
+  type RotatedSession,
   verifyMfa,
   type SignedIn,
 } from './service';
@@ -39,6 +41,11 @@ export const loginRoute = defineRoute({
 
 function client(request: Request) {
   return { ip: clientIp(request), userAgent: request.headers.get('user-agent') };
+}
+
+async function setSessionCookie(session: RotatedSession): Promise<void> {
+  const store = await cookies();
+  store.set(SESSION_COOKIE, session.cookie, sessionCookieOptions(session.expiresAt));
 }
 
 async function signedIn(result: SignedIn, extra: Record<string, unknown> = {}): Promise<Response> {
@@ -93,8 +100,20 @@ export const accountMfaSetupRoute = defineRoute({
 export const accountMfaConfirmRoute = defineRoute({
   route: 'account.mfa.confirm',
   schema: codeSchema,
-  handler: async ({ request, body, ctx }) =>
-    json({ recoveryCodes: await confirmMfaSetup(ctx, body.code, client(request)) }),
+  handler: async ({ request, body, ctx }) => {
+    const result = await confirmMfaSetup(ctx, body.code, client(request));
+    await setSessionCookie(result.session);
+    return json({ recoveryCodes: result.recoveryCodes });
+  },
+});
+
+export const stepUpRoute = defineRoute({
+  route: 'auth.step_up',
+  schema: codeSchema,
+  handler: async ({ request, body, ctx }) => {
+    await setSessionCookie(await stepUp(ctx, body.code, client(request)));
+    return json({ ok: true });
+  },
 });
 
 export const accountRecoveryCodesRoute = defineRoute({

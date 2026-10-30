@@ -17,6 +17,8 @@ export type StoredIdentity = {
 };
 
 const IDENTITY_KEY = 'medhub.identity';
+/** Set when the server retired the device and it wiped itself; read by the sign-in page. */
+export const DEVICE_REVOKED_FLAG = 'medhub.deviceRevoked';
 const TENANT_CODE_KEY = 'medhub.tenantCode';
 
 function safeStorage(): Storage | null {
