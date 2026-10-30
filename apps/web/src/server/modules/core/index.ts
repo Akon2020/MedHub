@@ -42,4 +42,5 @@ export {
   userUnlockRoute,
   userUpdateRoute,
 } from './users-routes';
+export { roleCreateRoute, rolesRoute, roleUpdateRoute } from './roles-routes';
 export type { Profile } from './service';

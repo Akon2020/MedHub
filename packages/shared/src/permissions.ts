@@ -221,3 +221,65 @@ export const ROLE_TEMPLATES: readonly RoleTemplate[] = [
     ],
   },
 ];
+
+export const PERMISSION_SCOPES_ALL = [
+  'self',
+  'department',
+  'site',
+  'tenant',
+  'warehouse',
+  'cash_register',
+  'patient',
+] as const;
+export type PermissionScope = (typeof PERMISSION_SCOPES_ALL)[number];
+
+/**
+ * Scopes offered per resource (docs/05-roles-permissions.md section 3), plus
+ * "tenant" everywhere: the whole structure, the default of the role templates
+ * until warehouses, cash registers and assignments exist.
+ */
+export const RESOURCE_SCOPES: Record<string, readonly PermissionScope[]> = {
+  patient: ['site', 'tenant'],
+  encounter: ['department', 'site', 'tenant'],
+  appointment: ['self', 'department', 'site', 'tenant'],
+  queue: ['department', 'site', 'tenant'],
+  triage: ['department', 'site', 'tenant'],
+  clinical_record: ['self', 'department', 'tenant'],
+  vital_sign: ['department', 'tenant'],
+  diagnosis: ['department', 'tenant'],
+  prescription: ['self', 'department', 'tenant'],
+  medication_administration: ['department', 'tenant'],
+  lab_order: ['department', 'tenant'],
+  lab_result: ['department', 'tenant'],
+  dispensation: ['warehouse', 'tenant'],
+  stock: ['warehouse', 'tenant'],
+  controlled_substance: ['warehouse', 'tenant'],
+  invoice: ['site', 'tenant'],
+  payment: ['cash_register', 'site', 'tenant'],
+  cash_session: ['cash_register', 'site', 'tenant'],
+  report: ['department', 'site', 'tenant'],
+  approval: ['department', 'site', 'tenant'],
+};
+
+export function scopesFor(permissionKey: string): readonly PermissionScope[] {
+  return RESOURCE_SCOPES[permissionKey.split(':')[0] ?? ''] ?? ['tenant'];
+}
+
+/**
+ * Administrative permissions: a role that grants one of them is privileged and
+ * requires the second factor (docs/05-roles-permissions.md section 2).
+ */
+export const PRIVILEGED_PERMISSIONS: ReadonlySet<string> = new Set([
+  'role:manage',
+  'user:create',
+  'user:update',
+  'user:disable',
+  'user:reset_password',
+  'user:delegate',
+  'configuration:publish',
+  'device:revoke',
+  'audit:export',
+  'account:pay',
+  'account:change_plan',
+  'support:grant_remote_access',
+]);

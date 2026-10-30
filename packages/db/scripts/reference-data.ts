@@ -1,4 +1,4 @@
-import { ALL_PERMISSION_KEYS } from '@medhub/shared';
+import { ALL_PERMISSION_KEYS, scopesFor } from '@medhub/shared';
 import { sql } from 'drizzle-orm';
 import type { Db } from '../src/client';
 import { permission } from '../src/schema';
@@ -35,10 +35,20 @@ const MODULE_BY_RESOURCE: Record<string, string> = {
 export async function seedReferenceData(db: Db): Promise<void> {
   const rows = ALL_PERMISSION_KEYS.map((key) => {
     const resource = key.split(':')[0] ?? '';
-    return { key, moduleCode: MODULE_BY_RESOURCE[resource] ?? 'core' };
+    return {
+      key,
+      moduleCode: MODULE_BY_RESOURCE[resource] ?? 'core',
+      scopesAllowed: [...scopesFor(key)],
+    };
   });
   await db
     .insert(permission)
     .values(rows)
-    .onConflictDoUpdate({ target: permission.key, set: { moduleCode: sql`excluded.module_code` } });
+    .onConflictDoUpdate({
+      target: permission.key,
+      set: {
+        moduleCode: sql`excluded.module_code`,
+        scopesAllowed: sql`excluded.scopes_allowed`,
+      },
+    });
 }

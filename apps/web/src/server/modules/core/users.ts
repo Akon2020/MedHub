@@ -90,7 +90,7 @@ async function activeAdministrators(tx: Tx): Promise<number> {
 }
 
 /** Called after a change, inside its transaction: throwing undoes the change. */
-async function keepOneAdministrator(tx: Tx): Promise<void> {
+export async function keepOneAdministrator(tx: Tx): Promise<void> {
   if ((await activeAdministrators(tx)) === 0) throw new AppError('USER_LAST_ADMIN', 409);
 }
 

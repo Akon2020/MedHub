@@ -47,7 +47,7 @@ const ENTRIES: Entry[] = [
     permission: 'configuration:read',
   },
   { key: 'users', icon: Users, href: '/app/parametres/utilisateurs', permission: 'user:read' },
-  { key: 'roles', icon: KeyRound, permission: 'role:read', soon: 'S5' },
+  { key: 'roles', icon: KeyRound, href: '/app/parametres/roles', permission: 'role:read' },
   {
     key: 'devices',
     icon: Smartphone,

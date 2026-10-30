@@ -184,6 +184,25 @@ test('a privileged role enrolls its second factor at first sign-in, then must us
   await expect(page.getByText('Désactivé', { exact: true }).first()).toBeVisible({
     timeout: 20_000,
   });
+
+  // Role editor: duplicate the front desk role, then narrow the copy.
+  await page.goto('/app/parametres/roles');
+  await unlock(page);
+  await page.getByRole('button', { name: /^Accueil/ }).click();
+  await page.getByRole('button', { name: 'Dupliquer' }).click();
+  await page.getByLabel('Nom du rôle').fill('Accueil du soir');
+  await page.getByLabel('Code', { exact: true }).fill('accueil_soir');
+  await page.getByRole('button', { name: 'Créer le rôle' }).click();
+  await expect(page.getByRole('heading', { name: 'Accueil du soir' })).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.getByRole('checkbox', { name: 'Rendez-vous : Annuler' }).uncheck();
+  await page.getByRole('combobox', { name: 'Périmètre : Patients' }).selectOption('site');
+  await expect(page.getByText(/1 retirée/)).toBeVisible();
+  await page.getByRole('button', { name: 'Enregistrer le rôle' }).click();
+  await expect(page.getByText('Rôle enregistré.')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('checkbox', { name: 'Rendez-vous : Annuler' })).not.toBeChecked();
+  await page.screenshot({ path: 'test-results/roles-dark.png', fullPage: true });
 });
 
 test('content security policy carries a fresh nonce on every document', async ({ request }) => {
