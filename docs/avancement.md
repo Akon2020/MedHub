@@ -4,8 +4,11 @@ Tenu à jour par Claude Code à la fin de chaque session de travail. Le porteur 
 
 ## État courant
 
-- Jalon en cours : **J0 Fondations**, S1 réalisée, prototype de synchronisation S2 et S3 livré et validé en tests automatisés. Le banc Playwright à deux navigateurs passe. Reste à faire pour clore J0 : liste de contrôle cPanel sur l'hébergement réel et premier déploiement, validation de la décision d'architecture par le porteur du projet. Le jeton hors connexion et le jeton de licence restent prévus en S5.
-- Dernière mise à jour : 29/10/2026
+- Jalon en cours : **J0 Fondations** terminé côté code (critère de sortie atteint en tests automatisés) ; **J1, semaine S4, commencée** sur instruction du porteur du projet du 30/10/2026 (« poursuis avec l'étape suivante »). Reste à faire pour clore formellement J0 : liste de contrôle cPanel sur l'hébergement réel et premier déploiement, validation de la décision d'architecture et des écarts par le porteur du projet.
+- S4 livré : double authentification TOTP (imposée aux rôles privilégiés, codes de secours, sans rejeu), limitation de débit en base, règles d'IP et blocage automatique, journal `security_event`, CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes. Reste de S4 : écrans structures et sites, rotation de session à l'élévation de privilège, détection d'anomalies de connexion.
+- Thème sombre livré sur toute l'application (demande du porteur du 30/10/2026).
+- Récapitulatif complet de tout ce qui a été fait : `walkthrough.md`.
+- Dernière mise à jour : 30/10/2026
 - Version déployée : aucune
 - Branche de travail : `develop`
 
@@ -38,6 +41,9 @@ Environnement de développement constaté sur le poste du porteur du projet : Wi
 | 29/10/2026 | Hachage des mots de passe exposé par le sous-chemin `@medhub/db/password` | Le worker est un fichier unique sans module natif | aucun |
 | 29/10/2026 | Point d'entrée Passenger `web/app.cjs` qui importe le serveur standalone | Le serveur standalone de Next.js 16 est un module ES | `guide.md` |
 | 29/10/2026 | Rechargement complet d'une page de `/app` : nouveau déverrouillage par PIN | Les clés locales vivent uniquement en mémoire (`docs/02-offline-sync.md` section 3) | aucun |
+| 30/10/2026 | Thème sombre livré dès maintenant sur toute l'application (Système, Clair, Sombre, cookie `medhub_theme`) | Demande du porteur du projet ; `docs/07` le prévoyait en phase 2 | `docs/07-ui-ux.md` section 1 |
+| 30/10/2026 | S4 commencée | Instruction du porteur du projet ; critère de sortie technique de J0 atteint | aucun |
+| 30/10/2026 | `otplib` 13.5.0 et `qrcode` 1.5.4 côté serveur uniquement | TOTP imposé par la pile ; QR produit en SVG par le serveur pour ne rien ajouter au budget client | aucun |
 
 ## Écarts par rapport à `docs/`
 
@@ -53,6 +59,11 @@ Environnement de développement constaté sur le poste du porteur du projet : Wi
 | 29/10/2026 | `docs/02-offline-sync.md` section 8 | Périmètre de synchronisation : toute la structure pour l'instant, filtrée par permission de lecture par entité (`sync_scope_rule` en S6) | Temporaire |
 | 30/10/2026 | `docs/10-tests-qualite.md` section 1 | Banc Playwright exécuté sur un build de production dédié (`.next-e2e`) plutôt que sur le serveur de développement, service worker bloqué | À valider |
 | 29/10/2026 | `docs/09-hebergement-deploiement.md` section 8 | Développement sur PostgreSQL local (Docker absent du poste) ; `infra/docker` reste fourni | Constat |
+| 30/10/2026 | `docs/03-multitenant-securite.md` section 2 | Défi de 2FA sans état (jeton HMAC lié à la structure, à l'utilisateur et à l'usage, 5 ou 15 minutes) ; il n'accorde rien seul et chaque échec alimente le verrouillage du compte | À valider |
+| 30/10/2026 | `docs/03-multitenant-securite.md` section 2 | Codes de secours remplacés (supprimés puis recréés) à chaque régénération : identifiants, pas données cliniques ni financières | À valider |
+| 30/10/2026 | `docs/03-multitenant-securite.md` section 5 | Secret TOTP chiffré avec une clé dérivée par HKDF de `MEDHUB_FIELD_MASTER_KEY` et de la structure, en attendant l'enveloppe complète (DEK par structure) | À valider |
+| 30/10/2026 | `docs/04-modele-donnees.md` | Tables `rate_limit`, `ip_rule`, `security_event` sans `tenant_id` (colonne `target_tenant_id`) : elles servent avant la résolution de la structure ; `security_event` protégée en ajout seul par trigger | À valider |
+| 30/10/2026 | `docs/03-multitenant-securite.md` section 7 | CSP : `style-src 'unsafe-inline'` conservé pour les attributs `style` de React et des graphiques ; scripts uniquement par nonce et `strict-dynamic` | À valider |
 
 ## Marqueurs `TODO(medhub-decision)` ouverts
 
@@ -60,6 +71,8 @@ Environnement de développement constaté sur le poste du porteur du projet : Wi
 | --- | --- | --- |
 | `packages/db/seeds/platform/plans.json` | Grille tarifaire publique affichée sur la page d'accueil | Valeurs médianes de `docs/13-tarification.md`, mention « valeurs indicatives » |
 | `.env.example` | Fournisseurs SMS et paiement | Adaptateurs `console` et `manual` |
+
+Variables d'environnement ajoutées en S4 : `MEDHUB_FIELD_MASTER_KEY` devient **obligatoire** (secrets 2FA), `MEDHUB_SLOW_REQUEST_MS` (2000 par défaut).
 
 ## Dépendances ajoutées et justification
 
@@ -70,6 +83,8 @@ Environnement de développement constaté sur le poste du porteur du projet : Wi
 | `recharts` | Client, chargé à la demande | environ 100 ko | Graphiques (pile imposée), importé par `next/dynamic` hors du shell |
 | `serwist` | Service worker | environ 15 ko | Précache et stratégies de cache hors connexion |
 | `radix-ui` (Slot seulement) | Client | moins de 5 ko | Composition des boutons shadcn |
+| `otplib` | Serveur seulement | sans objet | TOTP (pile imposée) |
+| `qrcode` | Serveur seulement | sans objet | Code QR SVG de configuration de la 2FA |
 
 Budget mesuré au build du 29/10/2026 : **549 Kio compressés** pour l'ensemble de `.next/static` (budget : 1,5 Mo). Contrôle automatique dans la CI.
 
@@ -84,6 +99,25 @@ J0 (en cours) : le risque principal, la synchronisation, est couvert par trois n
 | PC de développement | Windows 11 | Chromium (navigateur intégré) | Connexion, activation du poste, enregistrement patient, synchronisation : OK |
 
 ## Journal des sessions
+
+### 30/10/2026
+
+Travail réalisé :
+- **Thème sombre** sur toute l'application : jetons redéfinis (clair, sombre, système), surfaces décoratives en variables, couleurs en dur supprimées des composants, graphiques en variables CSS, sélecteur Système, Clair, Sombre (public, connexion, menu utilisateur, « Mon compte »), cookie `medhub_theme` lu par le serveur, aucun script en ligne.
+- **S4, double authentification** : migration `0001_s4_mfa_security`, secret TOTP chiffré, configuration imposée aux rôles privilégiés à la connexion (code QR, clé manuelle, premier code, 10 codes de secours), vérification par code ou code de secours, refus du rejeu, échecs comptés dans le verrouillage, activation volontaire, régénération et désactivation avec code frais, audit chaîné de chaque étape.
+- **S4, protection de la plateforme** : limitation de débit en base (connexion par adresse et par compte, vérification de code), blocage automatique d'une adresse 15 minutes, règles d'IP (plateforme et administration dans `proxy.ts`, structure dans `defineRoute`), journal `security_event` en ajout seul, purge horaire des compteurs par le worker.
+- **S4, en-têtes** : CSP à nonce neuf par document (`strict-dynamic`), `upgrade-insecure-requests` en HTTPS.
+- **S4, sessions** : écran « Mon compte » (`/app/compte`) avec sessions ouvertes et déconnexion des autres sessions ; option `permission` de `defineRoute` pour exiger une permission au niveau de la route.
+- **Point ouvert de J0 (connexion lente)** : `Server-Timing` sur chaque route, métrique `http.duration_ms`, journalisation des requêtes lentes avec l'état du pool.
+- `walkthrough.md` : récapitulatif complet du projet.
+
+Constats :
+- Le compte `admin` de la structure de démonstration `HOP-DEM-0001` (rôle privilégié) devra configurer la 2FA à sa prochaine connexion.
+- Le test du worker échouait sous forte charge (build Playwright en parallèle) : le budget de 5 s du tick était dépassé avant le traitement du job de test. Budget du test porté à 20 s ; deux passes complètes de `pnpm test` vertes ensuite.
+- L'annonceur de route de Next.js porte `role="alert"` : les tests doivent cibler le texte du message d'erreur.
+
+Tests passés : `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm db:test-isolation` (75 tests), tests de `apps/web` (18 tests dont la 2FA de bout en bout sur PostgreSQL), Playwright `public.spec.ts` et `mfa.spec.ts` (configuration imposée de la 2FA à l'écran, code faux refusé, bon code accepté, activation du poste, « Mon compte » en thème sombre, CSP à nonce neuf).
+
 
 ### 29/10/2026 (suite)
 

@@ -1,6 +1,6 @@
 # Guide MedHub
 
-Ce guide explique comment installer, lancer, tester et déployer MedHub. Il complète `CLAUDE.md` (règles du projet) et `docs/` (spécifications). L'état d'avancement détaillé est tenu dans `docs/avancement.md`.
+Ce guide explique comment installer, lancer, tester et déployer MedHub. Il complète `AGENTS.md` (règles du projet) et `docs/` (spécifications). L'état d'avancement détaillé est tenu dans `docs/avancement.md`.
 
 ## 1. Où en est le projet
 
@@ -11,7 +11,11 @@ Le jalon **J0 Fondations** est construit :
 - prototype de synchronisation hors connexion validé : 500 opérations sur deux postes avec coupures et réponses perdues, zéro perte, zéro doublon, convergence ;
 - base locale IndexedDB chiffrée, déverrouillée par code PIN, avec recherche floue hors connexion ;
 - application web au design MedHub (teal) : page publique, connexion, activation du poste, tableau de bord, patients, fiche patient avec constantes, diagnostic ;
-- worker cron pour les tâches de fond, scripts de déploiement cPanel, CI GitHub Actions.
+- worker cron pour les tâches de fond, scripts de déploiement cPanel, CI GitHub Actions ;
+- thème clair, sombre ou automatique (selon le système) sur toute l'application ;
+- début de J1 (S4) : double authentification TOTP avec codes de secours, limitation de débit en base, règles d'IP, politique CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes.
+
+Le journal complet de tout ce qui a été fait se trouve dans `walkthrough.md`.
 
 Les modules suivants (rendez-vous, consultation, facturation, pharmacie, laboratoire, super-admin) arrivent dans l'ordre de `docs/11-feuille-de-route.md`. Ils apparaissent dans le menu avec la mention « bientôt ».
 
@@ -99,7 +103,7 @@ Collez les lignes affichées dans `.env.local`. Sur votre poste, `.env.local` ex
 | `TEST_DATABASE_URL` | Base des tests d'intégration et d'isolation | `postgres://medhub_app:...@localhost:5432/medhub_test` |
 | `DATABASE_POOL_MAX` | Taille du pool (5 à 10 sur cPanel) | `10` |
 | `MEDHUB_SESSION_SECRET` | Signature HMAC des cookies de session (48 octets aléatoires) | généré |
-| `MEDHUB_FIELD_MASTER_KEY` | Clé maîtresse du chiffrement des champs sensibles (32 octets, base64) | généré |
+| `MEDHUB_FIELD_MASTER_KEY` | Clé maîtresse du chiffrement des champs sensibles, dont les secrets de double authentification (32 octets, base64, **obligatoire**). La changer rend illisibles les secrets 2FA déjà enregistrés | généré |
 | `MEDHUB_FILE_MASTER_KEY` | Clé maîtresse du chiffrement des fichiers | généré |
 | `MEDHUB_BACKUP_ENCRYPTION_KEY` | Chiffrement des sauvegardes `pg_dump` | généré |
 | `MEDHUB_SIGNING_KID` | Identifiant de la clé de signature (rotation) | généré |
@@ -113,6 +117,7 @@ Collez les lignes affichées dans `.env.local`. Sur votre poste, `.env.local` ex
 | `MEDHUB_PAYMENT_PROVIDER` | Adaptateur de paiement (agrégateur non choisi) | `manual` |
 | `MEDHUB_TELEMETRY_ADAPTER` | Observabilité : `internal` ou `batela` | `internal` |
 | `MEDHUB_LOG_DIR`, `LOG_LEVEL` | Journaux | `./logs`, `info` |
+| `MEDHUB_SLOW_REQUEST_MS` | Seuil (ms) au-delà duquel une requête est journalisée avec l'état du pool de connexions | `2000` |
 | `MEDHUB_BACKUP_REMOTE_URL` | Destination externe des sauvegardes | vide |
 | `MEDHUB_SEED_PASSWORD` | Mot de passe des comptes fictifs créés par `pnpm db:seed` (développement uniquement) | généré |
 
@@ -291,6 +296,27 @@ Le script fait une sauvegarde `pg_dump`, applique les migrations, bascule le lie
 - Messages au format Conventional Commits : `feat(pat): ...`, `fix(sync): ...`, `docs: ...`, `chore: ...`.
 - Ne jamais committer `.env.local`, des sauvegardes ou des données réelles.
 
+## 10 bis. Sécurité de connexion et apparence
+
+### Double authentification (2FA)
+
+- Les rôles **privilégiés** ou marqués « 2FA obligatoire » (administrateur de structure, direction dans les rôles modèles) doivent configurer une application d'authentification (Google Authenticator, Microsoft Authenticator, FreeOTP, Aegis...) à leur première connexion : code QR ou clé manuelle, premier code, puis **10 codes de secours** à imprimer ou noter (ils ne sont affichés qu'une fois).
+- Ensuite, chaque connexion demande le mot de passe puis le code à 6 chiffres. Un code de secours remplace le téléphone une seule fois.
+- Les autres rôles peuvent l'activer eux-mêmes : menu utilisateur, « Mon compte et sécurité » (`/app/compte`). Le même écran régénère les codes de secours, désactive la 2FA (sauf si le rôle l'impose) et liste les sessions ouvertes pour les déconnecter.
+- Le secret TOTP est chiffré en base (AES-256-GCM, clé dérivée de `MEDHUB_FIELD_MASTER_KEY` et de la structure). Un même code n'est jamais accepté deux fois.
+- **Utilisateur qui a perdu téléphone et codes de secours** : un administrateur de la structure devra réinitialiser sa 2FA (écran de gestion des utilisateurs prévu en S5). En attendant, en développement seulement : `update user_account set mfa_secret_enc = null, mfa_enabled_at = null where username = '...'` dans la structure concernée.
+
+### Limitation de débit et règles d'IP
+
+- 30 tentatives de connexion par adresse et 10 par compte en 5 minutes, 8 vérifications de code par utilisateur en 5 minutes. Au-delà : réponse 429 avec `Retry-After`.
+- Une adresse qui dépasse trois fois une limite est **bloquée automatiquement 15 minutes** (table `ip_rule`, origine `auto`) et un événement critique est écrit dans `security_event`.
+- Règles manuelles : table `ip_rule` (adresse ou plage CIDR, `block`, `allow` ou `monitor`, portée `platform`, `admin` ou `tenant`, expiration). Une règle `allow` de portée `tenant` transforme les règles de la structure en liste blanche. L'écran du super-admin arrive avec SADM (J2) ; en attendant, insertion SQL. Les règles sont relues toutes les 60 secondes.
+- Le worker purge chaque heure les compteurs de plus de 24 h (`security.purge_rate_limits`).
+
+### Thème sombre
+
+Sélecteur Système, Clair ou Sombre en haut des pages publiques et de la connexion, dans le menu utilisateur et dans « Mon compte ». Le choix est propre au poste (cookie `medhub_theme`) ; « Système » suit le réglage du téléphone ou de l'ordinateur.
+
 ## 11. Ce qui reste à faire et décisions attendues
 
 Pour clore J0 :
@@ -311,4 +337,7 @@ Décisions qui vous reviennent (marqueurs `TODO(medhub-decision)`) :
 | L'écran demande le PIN après chaque rechargement | Comportement voulu : les clés ne restent qu'en mémoire | Naviguer avec les liens de l'application |
 | Indicateur rouge « Attention requise » | Rejets, conflits, horloge du poste en retard ou session expirée | Ouvrir `Diagnostic` ; se reconnecter si la session a expiré |
 | Code PIN oublié | Le PIN ne peut pas être retrouvé | « Utiliser le code de récupération » sur l'écran verrouillé |
-| Poste volé ou perdu | Données chiffrées sur le poste | Révocation d'appareil (écran prévu en S5) |
+| Poste volé ou perdu | Données chiffrées sur le poste | Révocation d'appareil (écran prévu en S5) ; en attendant, « Mon compte », « Déconnecter les autres » |
+| « Trop de tentatives » à la connexion | Limitation de débit atteinte | Patienter 5 minutes ; vérifier la table `ip_rule` si l'adresse a été bloquée automatiquement |
+| Code 2FA toujours refusé | Heure du téléphone décalée de plus de 30 s | Activer l'heure automatique sur le téléphone, ou utiliser un code de secours |
+| `Invalid environment configuration: MEDHUB_FIELD_MASTER_KEY` | Clé absente ou pas de 32 octets en base64 | `pnpm keys:generate` et copier la ligne dans `.env.local` |
