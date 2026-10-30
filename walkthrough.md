@@ -70,7 +70,10 @@ Consignes reçues et appliquées pendant les sessions :
 | `68f2e0c` | 29/10/2026 | `docs` : `guide.md`, journal d'avancement, identité teal |
 | `71517a7` | 30/10/2026 | `test(e2e)` : banc Playwright à deux navigateurs sur build de production |
 | `829036a` | 30/10/2026 | `docs` : résultats du banc et points ouverts de J0 |
-| (cette session) | 30/10/2026 | Thème sombre sur toute l'application ; S4 : 2FA TOTP, codes de secours, limitation de débit, règles d'IP, événements de sécurité, CSP à nonce, écran « Mon compte », mesure de la durée des requêtes ; ce document |
+| `3040626` | 30/10/2026 | `feat(web)` : thème sombre sur toute l'application |
+| `65c6e36` | 30/10/2026 | `feat(core)` : 2FA TOTP, codes de secours, limitation de débit, règles d'IP, événements de sécurité, CSP à nonce, écran « Mon compte », mesure de la durée des requêtes (S4, première partie) |
+| `3a832e5` | 30/10/2026 | `docs` : ce document, avancement S4, guide |
+| (suite) | 30/10/2026 | S4, seconde partie : organisation (structure, sites, services), confirmation par second facteur (step-up) avec rotation de session, détection des connexions inhabituelles, journal de sécurité de la structure |
 
 ---
 
@@ -141,6 +144,8 @@ Code pur, sans Node.js, DOM ni Dexie, utilisé à l'identique par le client et l
 - `dpi/vital-signs.ts` : plausibilité des constantes ; une valeur hors limites exige un motif (`DPI_VITAL_IMPLAUSIBLE`).
 - `phar/stock.ts` : solde = somme des mouvements, alerte de stock négatif.
 - `core/numbering.ts` : numérotation hors connexion sans collision (`{PREFIX}-{DEVICE}-{YY}-{SEQ:5}` par défaut, configurable).
+- `core/organization.ts` (S4) : schémas Zod partagés du profil de structure (nom usuel, raison sociale, langue, devise USD ou CDF, fuseau Kinshasa ou Lubumbashi, contact, adresse congolaise : province, ville ou territoire, commune, quartier, avenue), des sites (code de 3 lettres immuable) et des services (code de 2 à 8 caractères, type clinique, technique, administratif, pharmacie, laboratoire ou caisse) ; règle « au moins un site actif » ; liste des champs réellement modifiés pour l'audit.
+- `core/sign-in-risk.ts` (S4) : signature d'appareil (navigateur et système) et détection des connexions inhabituelles (nouvel appareil, horaire éloigné de toutes les connexions habituelles dans le fuseau de la structure, à partir de 10 connexions d'historique). Utilisé par le serveur et par l'écran « Mon compte ».
 
 ---
 
@@ -163,12 +168,12 @@ Code pur, sans Node.js, DOM ni Dexie, utilisé à l'identique par le client et l
 
 ## 8. `packages/db` : base PostgreSQL, sécurité et migrations
 
-### 8.1 Schéma (27 tables)
+### 8.1 Schéma (28 tables)
 
 | Domaine | Tables |
 | --- | --- |
-| Plateforme | `tenant`, `site`, `person_global` (point d'accroche du dossier partagé phase 2), `permission` (catalogue), `platform_audit_log` |
-| Identité | `user_account` (dont, depuis S4, `mfa_secret_enc`, `mfa_enabled_at`, `mfa_last_step`), `role`, `role_permission`, `user_role`, `session`, `mfa_recovery_code` (S4) |
+| Plateforme et organisation | `tenant`, `site`, `department` (S4), `person_global` (point d'accroche du dossier partagé phase 2), `permission` (catalogue), `platform_audit_log` |
+| Identité | `user_account` (dont, depuis S4, `mfa_secret_enc`, `mfa_enabled_at`, `mfa_last_step`), `role`, `role_permission`, `user_role`, `session` (dont, depuis S4, `mfa_verified_at` et `rotated_from`), `mfa_recovery_code` (S4) |
 | Traçabilité | `audit_log` (chaîné par hachage), `data_access_log` |
 | Appareils et numérotation | `device`, `number_series` |
 | Clinique | `patient` (avec `field_meta` pour la fusion par champ), `vital_sign` |
@@ -181,7 +186,7 @@ Colonnes communes, index composites commençant par `tenant_id`, contraintes `ch
 
 ### 8.2 Isolation des structures
 
-- `rls.ts` (`ensureRls`) : après chaque migration, **toute** table possédant `tenant_id` (sauf `job`) reçoit `ENABLE` et `FORCE ROW LEVEL SECURITY`, la politique `tenant_isolation` (`tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid`) et la politique `platform_scope` en lecture seule. Aucune table ne peut être oubliée. 17 tables protégées aujourd'hui.
+- `rls.ts` (`ensureRls`) : après chaque migration, **toute** table possédant `tenant_id` (sauf `job`) reçoit `ENABLE` et `FORCE ROW LEVEL SECURITY`, la politique `tenant_isolation` (`tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid`) et la politique `platform_scope` en lecture seule. Aucune table ne peut être oubliée. 18 tables protégées aujourd'hui.
 - Les tables de plateforme de S4 (`rate_limit`, `ip_rule`, `security_event`) n'ont volontairement pas de colonne `tenant_id` (elles protègent la plateforme avant qu'une structure soit connue) ; elles utilisent `target_tenant_id`.
 - `context.ts` : `withTenant` (transaction avec `set_config(..., true)` de la structure, de l'utilisateur et de l'appareil), `withPlatformScope` (lecture seule, réservée à `server/platform` et `sadm`), `withSystem` (tables de plateforme).
 
@@ -204,8 +209,9 @@ Colonnes communes, index composites commençant par `tenant_id`, contraintes `ch
 
 - `migrations/0000_init.sql` : schéma initial.
 - `migrations/0001_s4_mfa_security.sql` : colonnes 2FA de `user_account`, tables `mfa_recovery_code`, `rate_limit`, `ip_rule`, `security_event` et leurs index.
+- `migrations/0002_s4_organization.sql` : table `department`, colonnes `session.mfa_verified_at` et `session.rotated_from`.
 - `scripts/migrate.ts` : extensions, migrations Drizzle, `ensureRls`, `ensureGuards`, données de référence. Option `--test` pour la base de test.
-- `scripts/seed.ts` : structure fictive `HOP-DEM-0001` et comptes `admin`, `accueil`, `infirmier`, `medecin`, `pharmacie`, `caisse` (mot de passe `MEDHUB_SEED_PASSWORD`). Option `--tenant CODE` pour créer une structure de test neuve (utilisée par Playwright : `TST-BNC-NNNN`).
+- `scripts/seed.ts` : structure fictive `HOP-DEM-0001` et comptes `admin`, `accueil`, `infirmier`, `medecin`, `pharmacie`, `caisse` (mot de passe `MEDHUB_SEED_PASSWORD`) et services fictifs du site `KIN` (accueil, consultations externes, laboratoire, pharmacie, caisse). Option `--tenant CODE` pour créer une structure de test neuve (utilisée par Playwright : `TST-BNC-NNNN`).
 - `scripts/reference-data.ts`, `seeds/platform/plans.json` (grille indicative, marqueur `TODO(medhub-decision)`).
 
 ---
@@ -251,6 +257,9 @@ Colonnes communes, index composites commençant par `tenant_id`, contraintes `ch
 | `/app/diagnostic` | Opérationnelle | État du poste : appareil, opérations en attente, rejets, conflits, dernière synchronisation, stockage, version, synchronisation forcée |
 | `/app/bientot?m=` | Opérationnelle | Page d'attente des modules à venir avec la semaine prévue |
 | `/app/compte` | En ligne seulement (S4) | Mon compte : double authentification, sessions ouvertes, apparence (thème et langue) |
+| `/app/parametres` | En ligne seulement (S4) | Accueil des paramètres filtré par permission : organisation, journal de sécurité, Mon compte ; utilisateurs, rôles, appareils et référentiels annoncés pour S5 |
+| `/app/parametres/organisation` | En ligne seulement (S4) | Profil de la structure, sites (ajout, modification, désactivation), services par site |
+| `/app/parametres/securite` | En ligne seulement (S4) | Journal de sécurité de la structure : connexions inhabituelles, tentatives excessives, blocages, changements de 2FA |
 
 La coquille `/app` (`features/shell`) comprend la barre latérale repliable filtrée par permissions, la recherche globale, l'**indicateur de synchronisation** permanent (connecté, synchronisation, hors connexion, attention requise) avec panneau de détail, le bandeau de base de formation, le menu utilisateur (thème, langue, « Mon compte et sécurité », verrouillage `Alt+L`, déconnexion) et le verrouillage automatique après 5 minutes d'inactivité.
 
@@ -284,6 +293,11 @@ Toutes les routes passent par `defineRoute` (`server/platform/http.ts`) : identi
 | `POST /api/v1/account/mfa/recovery-codes` | Nouveaux codes de secours, avec code frais (S4) |
 | `POST /api/v1/account/mfa/disable` | Désactivation, refusée si le rôle l'impose (S4) |
 | `POST /api/v1/account/sessions/revoke` | Déconnexion d'une session ou de toutes les autres (S4) |
+| `POST /api/v1/auth/step-up` | Nouvelle preuve du second facteur dans la session ; l'identifiant de session est renouvelé (S4) |
+| `GET /api/v1/organization`, `PATCH /api/v1/organization` | Lecture de l'organisation (`configuration:read`) ; modification du profil de la structure (`configuration:edit` et step-up) (S4) |
+| `POST /api/v1/sites`, `PATCH /api/v1/sites` | Création et modification ou désactivation d'un site (S4) |
+| `POST /api/v1/departments`, `PATCH /api/v1/departments` | Création et modification ou désactivation d'un service (S4) |
+| `GET /api/v1/security/events` | Journal de sécurité de la structure (`audit:review`) (S4) |
 
 ### 11.5 Serveur (`src/server`)
 
@@ -293,7 +307,7 @@ Toutes les routes passent par `defineRoute` (`server/platform/http.ts`) : identi
 - `platform/tenant.ts` : résolution unique de la structure depuis la session signée (jamais depuis le corps, l'URL ou un en-tête).
 - `platform/logger.ts` (pino, JSON), `platform/telemetry.ts` (interface `Telemetry`, adaptateur interne, emplacement pour l'adaptateur Batela).
 - `platform/mfa.ts`, `platform/ip.ts`, `platform/security.ts` : voir section 13.
-- `modules/core` : connexion, 2FA, profil, compte, enregistrement d'appareil.
+- `modules/core` : connexion, 2FA, step-up, profil, compte, enregistrement d'appareil (`service.ts`, `routes.ts`) ; organisation et journal de sécurité (`organization.ts`, `organization-routes.ts`).
 - `modules/sync` : magasin PostgreSQL du moteur de synchronisation (`pgSyncStore`), routes push, pull et statut.
 
 ---
@@ -359,7 +373,18 @@ Table `security_event` en ajout seul (triggers) : `rate_limited`, `ip_auto_block
 
 Chaque document reçoit une CSP avec **nonce neuf** (`src/proxy.ts`) : `script-src 'self' 'nonce-...' 'strict-dynamic'` (plus `'unsafe-eval'` en développement uniquement, exigé par React), `style-src 'self' 'unsafe-inline'` (attributs `style` de React et des graphiques ; aucun script en ligne), `img-src 'self' blob: data:`, `connect-src 'self'`, `worker-src 'self'`, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'`, et `upgrade-insecure-requests` quand l'adresse publique est en HTTPS. Next.js applique le nonce à ses scripts ; toutes les pages sont rendues dynamiquement.
 
-### 13.6 Mesure de la durée des requêtes
+### 13.6 Confirmation par second facteur (step-up) et rotation de session
+
+- Toute modification de configuration (profil de la structure, sites, services, et à venir utilisateurs et rôles) exige `configuration:edit` **et** une preuve du second facteur datant de moins de **15 minutes** (`session.mfa_verified_at`). Une session ouverte avec un code TOTP ou un code de secours en bénéficie d'emblée.
+- Au-delà, le serveur répond `AUTH_STEP_UP_REQUIRED` ; l'interface (`useStepUp`) ouvre une boîte « Confirmez votre identité », envoie le code à `/api/v1/auth/step-up` puis rejoue la modification. Sans 2FA configurée, la boîte renvoie vers « Mon compte ».
+- **Rotation** : à chaque élévation (step-up, activation de la 2FA depuis « Mon compte »), la session courante est révoquée et une nouvelle est émise (`rotated_from` garde le lien). Un jeton volé avant l'élévation ne porte jamais les droits élevés.
+- Les échecs de code comptent dans le verrouillage du compte et la limitation de débit ; chaque step-up est audité (`step_up`).
+
+### 13.7 Connexions inhabituelles
+
+À chaque connexion réussie, l'historique des sessions de l'utilisateur (180 jours) est comparé à la nouvelle : **nouvel appareil** (couple navigateur et système jamais vu) ou **horaire inhabituel** (aucune connexion habituelle à moins d'une heure, dans le fuseau de la structure, à partir de 10 connexions d'historique). Une anomalie écrit un événement `sign_in_anomaly` (gravité « attention ») et figure dans l'audit de connexion. Les administrateurs (`audit:review`) la voient dans **Paramètres, Journal de sécurité**. L'envoi par courriel ou SMS arrivera avec le module de notifications ; aucune géolocalisation n'est disponible pour l'instant.
+
+### 13.8 Mesure de la durée des requêtes
 
 Réponse au point ouvert de J0 (une connexion restée 20 s sans réponse) : chaque route renvoie `Server-Timing: app;dur=N`, la métrique `http.duration_ms` est émise, et toute requête plus lente que `MEDHUB_SLOW_REQUEST_MS` (2 s par défaut) est journalisée avec l'état du pool (`total`, `idle`, `waiting`) pour distinguer pool saturé, requête lente ou verrou.
 
@@ -395,16 +420,18 @@ Réponse au point ouvert de J0 (une connexion restée 20 s sans réponse) : chaq
 | `packages/shared` | UUID, HLC, argent, codes | 9 tests verts |
 | `packages/domain` | Commandes, recherche, plausibilité, stock, numérotation | 10 tests verts |
 | `packages/db` (unitaires) | Hachage d'audit | 2 tests verts |
-| `packages/db` (isolation, `pnpm db:test-isolation`) | RLS activée et forcée partout, une fabrique par table, lectures, mises à jour et insertions croisées refusées, triggers, chaîne d'audit | **75 tests verts** (71 avant S4 + `mfa_recovery_code`) |
+| `packages/db` (isolation, `pnpm db:test-isolation`) | RLS activée et forcée partout, une fabrique par table, lectures, mises à jour et insertions croisées refusées, triggers, chaîne d'audit | **79 tests verts** (71 avant S4, puis `mfa_recovery_code` et `department`) |
 | `packages/local-db` | Chiffrement, PIN, récupération, absence de nom en clair | 5 tests verts |
 | `packages/sync` | Banc de propriétés : 500 opérations, deux postes, coupures, réponses perdues, doublons absorbés | 11 tests verts |
 | `apps/worker` | Analyseur cron, tick, reprises, lettres mortes | 3 tests verts (budget du tick porté à 20 s dans le test : il échouait sous forte charge) |
 | `apps/web` (unitaires, S4) | Correspondance d'adresses et décisions d'IP, chiffrement du secret, TOTP sans rejeu, codes de secours, défis signés | 11 tests verts |
-| `apps/web` (intégration PostgreSQL) | Synchronisation réelle (160 opérations, RLS, triggers, audit) ; 2FA de bout en bout (rôle non privilégié, configuration imposée, code faux, rejeu refusé, code de secours à usage unique, désactivation refusée par le rôle, chaîne d'audit intacte, limitation de débit et événement) | 7 tests verts |
+| `apps/web` (intégration PostgreSQL) | Synchronisation réelle (160 opérations, RLS, triggers, audit) ; 2FA de bout en bout (rôle non privilégié, configuration imposée, code faux, rejeu refusé, code de secours à usage unique, désactivation refusée par le rôle, chaîne d'audit intacte, limitation de débit et événement) | 7 tests verts (23 au total pour `apps/web` avec l'organisation et les tests unitaires) |
 | Playwright `sync-bench.spec.ts` | Deux navigateurs réels, 500 opérations, coupures, réponses perdues | 500 opérations (226 enregistrements, 96 modifications, 178 constantes), 109 cycles coupés, 41 réponses perdues ; zéro rejet, zéro doublon, convergence, aucun nom en clair |
 | Playwright `sync-bench.spec.ts` (second scénario) | Enregistrement hors connexion par le formulaire, rechargement, synchronisation | Vert |
 | Playwright `public.spec.ts` | Page publique vers connexion ; bouton désactivé hors connexion ; projet tablette | Vert |
-| Playwright `mfa.spec.ts` (S4) | Configuration imposée de la 2FA à l'écran, codes de secours, seconde connexion avec code faux puis bon code, activation du poste, « Mon compte » en thème sombre ; CSP à nonce neuf | 2 tests verts (1,4 min et 0,5 s) |
+| Playwright `mfa.spec.ts` (S4) | Configuration imposée de la 2FA à l'écran, codes de secours, seconde connexion avec code faux puis bon code, activation du poste, « Mon compte » en thème sombre, création d'un site, modification après expiration de la preuve avec boîte de step-up ; CSP à nonce neuf | 2 tests verts (55,6 s et 0,2 s) |
+| `packages/domain` (S4) | Schémas d'organisation, règle du dernier site actif, champs modifiés, détection des connexions inhabituelles, heures dans le fuseau de la structure | 9 tests verts (19 au total pour le paquet) |
+| `apps/web` intégration organisation (S4) | Permission refusée à l'accueil, step-up exigé puis périmé, profil, sites et services avec codes uniques et dernier site actif, audit chaîné intact, nouvel appareil signalé et visible des seuls administrateurs, rotation de session à l'activation de la 2FA | 5 tests verts |
 
 Commandes de contrôle avant chaque commit : `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm db:test-isolation` (table métier touchée), `pnpm test:props` (synchronisation touchée).
 
@@ -444,6 +471,9 @@ Commandes de contrôle avant chaque commit : `pnpm typecheck`, `pnpm lint`, `pnp
 | 30/10/2026 | Tables de sécurité | `rate_limit`, `ip_rule`, `security_event` sans `tenant_id` (colonne `target_tenant_id`) car elles servent avant la résolution de la structure (à valider) |
 | 30/10/2026 | Clé des secrets 2FA | Dérivée par HKDF de `MEDHUB_FIELD_MASTER_KEY` et de la structure, en attendant l'enveloppe complète (DEK par structure en base) prévue par `docs/03` section 5 (à valider) |
 | 30/10/2026 | CSP | `style-src 'unsafe-inline'` conservé pour les attributs `style` de React ; aucun script en ligne autorisé (conforme à `docs/03` section 7) |
+| 30/10/2026 | Step-up | Fenêtre de 15 minutes après la dernière preuve du second facteur pour toute modification de configuration, valeur codée en attendant la configuration versionnée de S5 (à valider) |
+| 30/10/2026 | Organisation | Modifications appliquées directement avec audit ; le cycle brouillon et publication de `docs/06` arrive avec la configuration versionnée (S5). Sites et services pas encore distribués aux postes par la synchronisation (S5, référentiels) (à valider) |
+| 30/10/2026 | Connexions inhabituelles | Signalées dans le journal de sécurité de la structure ; notification par courriel ou SMS reportée au module NOTIF ; pas de pays (aucune source de géolocalisation) (à valider) |
 
 ---
 
@@ -462,10 +492,7 @@ Commandes de contrôle avant chaque commit : `pnpm typecheck`, `pnpm lint`, `pnp
 
 ## 20. Suite du plan de développement
 
-Reste de S4 (`docs/11-feuille-de-route.md`) :
-- gestion des structures et des sites par l'administrateur de structure (écrans) ;
-- rotation de l'identifiant de session à l'élévation de privilège ;
-- détection d'anomalies de connexion (nouvel appareil, horaire atypique) notifiée à l'administrateur.
+S4 est terminée (`docs/11-feuille-de-route.md`) : authentification complète avec 2FA, structures, sites et services, RLS sur toutes les tables, rôles et permissions vérifiés côté serveur, audit chaîné, coquille PWA, mise en page, indicateur de synchronisation, protections de la plateforme. Les salles, horaires d'ouverture et jours fériés de `docs/modules/core.md` arrivent avec les rendez-vous et files (S7).
 
 S5 : appareils (révocation, effacement à distance), jeton hors connexion et jeton de licence signés Ed25519, configuration versionnée (`config_entry`, brouillon et publication), catalogues de référence, i18n complète, base de formation, gestion des utilisateurs (dont réinitialisation de la 2FA).
 

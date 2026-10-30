@@ -313,6 +313,13 @@ Le script fait une sauvegarde `pg_dump`, applique les migrations, bascule le lie
 - Règles manuelles : table `ip_rule` (adresse ou plage CIDR, `block`, `allow` ou `monitor`, portée `platform`, `admin` ou `tenant`, expiration). Une règle `allow` de portée `tenant` transforme les règles de la structure en liste blanche. L'écran du super-admin arrive avec SADM (J2) ; en attendant, insertion SQL. Les règles sont relues toutes les 60 secondes.
 - Le worker purge chaque heure les compteurs de plus de 24 h (`security.purge_rate_limits`).
 
+### Paramètres de la structure
+
+Menu **Paramètres** (permission `configuration:read`, administrateur de structure dans les rôles modèles), en ligne seulement :
+- **Organisation** : nom usuel, raison sociale, langue et devise par défaut, fuseau horaire (Kinshasa ou Lubumbashi), contact, adresse, mentions légales des documents ; sites (code de 3 lettres définitif, nom, adresse, téléphone, désactivation, au moins un site actif) ; services de chaque site.
+- **Journal de sécurité** (permission `audit:review`) : connexions inhabituelles (nouvel appareil, horaire inhabituel), tentatives excessives, adresses bloquées, activation ou désactivation de la 2FA.
+- Toute modification demande une **preuve récente du second facteur** : si la dernière date de plus de 15 minutes, une fenêtre « Confirmez votre identité » demande un code, puis la modification est enregistrée. Chaque modification est tracée dans l'audit.
+
 ### Thème sombre
 
 Sélecteur Système, Clair ou Sombre en haut des pages publiques et de la connexion, dans le menu utilisateur et dans « Mon compte ». Le choix est propre au poste (cookie `medhub_theme`) ; « Système » suit le réglage du téléphone ou de l'ordinateur.
