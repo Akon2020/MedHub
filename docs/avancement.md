@@ -5,7 +5,8 @@ Tenu à jour par Claude Code à la fin de chaque session de travail. Le porteur 
 ## État courant
 
 - Jalon en cours : **J0 Fondations** terminé côté code (critère de sortie atteint en tests automatisés) ; **J1, semaine S4, commencée** sur instruction du porteur du projet du 30/10/2026 (« poursuis avec l'étape suivante »). Reste à faire pour clore formellement J0 : liste de contrôle cPanel sur l'hébergement réel et premier déploiement, validation de la décision d'architecture et des écarts par le porteur du projet.
-- S4 livré : double authentification TOTP (imposée aux rôles privilégiés, codes de secours, sans rejeu), limitation de débit en base, règles d'IP et blocage automatique, journal `security_event`, CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes. Seconde partie de S4 livrée le même jour : écrans Paramètres (organisation : structure, sites, services ; journal de sécurité), confirmation par second facteur (step-up, 15 minutes) avec rotation de l'identifiant de session, détection des connexions inhabituelles (nouvel appareil, horaire inhabituel). **S4 terminée.** Prochaine étape : S5.
+- S4 livré : double authentification TOTP (imposée aux rôles privilégiés, codes de secours, sans rejeu), limitation de débit en base, règles d'IP et blocage automatique, journal `security_event`, CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes. Seconde partie de S4 livrée le même jour : écrans Paramètres (organisation : structure, sites, services ; journal de sécurité), confirmation par second facteur (step-up, 15 minutes) avec rotation de l'identifiant de session, détection des connexions inhabituelles (nouvel appareil, horaire inhabituel). **S4 terminée.**
+- S5 en cours : appareils (liste, retrait, perte, effacement à distance) et jetons signés Ed25519 (hors connexion 14 jours, licence) livrés. Reste : configuration versionnée (`config_entry`), utilisateurs (dont réinitialisation de la 2FA), catalogues de référence, i18n complète, diagnostic, base de formation.
 - Thème sombre livré sur toute l'application (demande du porteur du 30/10/2026).
 - Récapitulatif complet de tout ce qui a été fait : `walkthrough.md`.
 - Dernière mise à jour : 30/10/2026
@@ -66,6 +67,8 @@ Environnement de développement constaté sur le poste du porteur du projet : Wi
 | 30/10/2026 | `docs/03-multitenant-securite.md` section 2 | Step-up : toute modification de configuration exige une preuve du second facteur de moins de 15 minutes (valeur codée en attendant la configuration versionnée de S5) ; rotation de l'identifiant de session à chaque step-up et à l'activation de la 2FA | À valider |
 | 30/10/2026 | `docs/06-configuration.md` | Organisation (structure, sites, services) modifiée directement avec audit, sans cycle brouillon et publication (S5) ; sites et services pas encore distribués aux postes (S5) | À valider |
 | 30/10/2026 | `docs/03-multitenant-securite.md` section 2 | Connexions inhabituelles : nouvel appareil et horaire inhabituel seulement (aucune géolocalisation), signalées dans le journal de sécurité de la structure ; notification courriel ou SMS avec le module NOTIF | À valider |
+| 30/10/2026 | `docs/02-offline-sync.md` section 9 | Clés publiques des jetons remises au poste à l'activation et conservées localement, au lieu d'être compilées dans l'application | À valider |
+| 30/10/2026 | `docs/02-offline-sync.md` section 9 | Licence calquée sur l'état de la structure, tous les modules MVP, sans plan ni limite, jusqu'à SADM (S14) ; postes activés avant S5 tolérés sans jeton jusqu'à leur prochaine synchronisation | À valider |
 | 30/10/2026 | `docs/03-multitenant-securite.md` section 7 | CSP : `style-src 'unsafe-inline'` conservé pour les attributs `style` de React et des graphiques ; scripts uniquement par nonce et `strict-dynamic` | À valider |
 
 ## Marqueurs `TODO(medhub-decision)` ouverts
@@ -118,6 +121,11 @@ Constats :
 - Le compte `admin` de la structure de démonstration `HOP-DEM-0001` (rôle privilégié) devra configurer la 2FA à sa prochaine connexion.
 - Le test du worker échouait sous forte charge (build Playwright en parallèle) : le budget de 5 s du tick était dépassé avant le traitement du job de test. Budget du test porté à 20 s ; deux passes complètes de `pnpm test` vertes ensuite.
 - L'annonceur de route de Next.js porte `role="alert"` : les tests doivent cibler le texte du message d'erreur.
+
+S5, appareils et jetons (même jour) :
+- Migration `0003_s5_devices` (colonnes de retrait), jetons JWS Ed25519 (`packages/sync/src/tokens.ts`), règles de licence (`packages/domain/src/core/license.ts`), émission serveur (`platform/tokens.ts`), écran `/app/parametres/appareils`, effacement à distance côté client, bandeaux de licence et d'expiration, écran de verrouillage « accès hors connexion expiré ».
+- CI : une paire de clés de signature jetable est générée à chaque exécution (`pnpm keys:generate`), aucune clé n'est stockée dans le dépôt.
+- Tests : 3 tests de jetons, 3 tests de licence, 4 tests d'intégration du cycle de vie d'un appareil, scénario Playwright d'effacement à distance. `pnpm test` (92 tests), `pnpm db:test-isolation` (79), `pnpm test:props`, typecheck, lint verts.
 
 Seconde partie de S4 (même jour) :
 - Migration `0002_s4_organization` : table `department` (RLS forcée automatiquement, fabrique d'isolation ajoutée), colonnes `session.mfa_verified_at` et `session.rotated_from`.
