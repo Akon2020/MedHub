@@ -36,6 +36,11 @@ export const userAccount = pgTable(
     defaultSiteId: uuid('default_site_id'),
     isPlatformStaff: boolean('is_platform_staff').notNull().default(false),
     lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+    /** TOTP secret sealed with a key derived from MEDHUB_FIELD_MASTER_KEY; pending until mfa_enabled_at. */
+    mfaSecretEnc: text('mfa_secret_enc'),
+    mfaEnabledAt: timestamp('mfa_enabled_at', { withTimezone: true }),
+    /** Last accepted TOTP time step: a code is never accepted twice. */
+    mfaLastStep: bigint('mfa_last_step', { mode: 'number' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -101,6 +106,18 @@ export const userRole = pgTable(
     validUntil: timestamp('valid_until', { withTimezone: true }),
   },
   (t) => [index('user_role_user_idx').on(t.tenantId, t.userId)],
+);
+
+/** Ten single-use recovery codes per user; only their SHA-256 is stored. */
+export const mfaRecoveryCode = pgTable(
+  'mfa_recovery_code',
+  {
+    ...tenantColumns(),
+    userId: uuid('user_id').notNull(),
+    codeHash: text('code_hash').notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+  },
+  (t) => [index('mfa_recovery_user_idx').on(t.tenantId, t.userId)],
 );
 
 export const session = pgTable(

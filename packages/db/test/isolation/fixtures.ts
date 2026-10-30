@@ -5,6 +5,7 @@ import {
   changeLog,
   dataAccessLog,
   device,
+  mfaRecoveryCode,
   numberSeries,
   opLog,
   patient,
@@ -59,6 +60,11 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
     await tx
       .insert(userRole)
       .values({ id: uuidv7(), tenantId, userId: uuidv7(), roleId: uuidv7() });
+  },
+  mfa_recovery_code: async (tx, tenantId) => {
+    await tx
+      .insert(mfaRecoveryCode)
+      .values({ id: uuidv7(), tenantId, userId: uuidv7(), codeHash: uuidv7() });
   },
   session: async (tx, tenantId) => {
     await tx.insert(session).values({

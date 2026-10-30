@@ -8,6 +8,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Search,
+  UserCog,
   X,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -17,6 +18,7 @@ import { Suspense, useEffect, useState, type FormEvent, type ReactNode } from 'r
 import { useRuntime } from '@/client/runtime';
 import { Logo, LogoMark } from '@/components/brand/logo';
 import { LocaleSwitcher } from '@/components/locale-switcher';
+import { ThemeSwitcher } from '@/components/theme-switcher';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { NAVIGATION, type NavItem } from './navigation';
@@ -140,7 +142,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-dvh bg-background">
       <aside
         className={cn(
-          'sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-border bg-white px-3 py-5 transition-[width] lg:flex',
+          'sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-border bg-card px-3 py-5 transition-[width] lg:flex',
           collapsed ? 'w-[76px]' : 'w-64',
         )}
       >
@@ -196,7 +198,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             aria-label={t('nav.collapse')}
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="relative flex h-full w-72 flex-col bg-white px-3 py-5 shadow-xl">
+          <aside className="relative flex h-full w-72 flex-col bg-card px-3 py-5 shadow-xl">
             <div className="mb-6 flex items-center justify-between px-2">
               <Logo />
               <Button
@@ -219,12 +221,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {identity.isTraining && (
-          <div className="flex items-center justify-center gap-2 bg-info px-4 py-1.5 text-xs font-medium text-white">
+          <div className="flex items-center justify-center gap-2 bg-info px-4 py-1.5 text-xs font-medium text-background">
             <GraduationCap className="size-3.5" aria-hidden />
             {t('training')}
           </div>
         )}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-white/85 px-4 backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-card/85 px-4 backdrop-blur sm:px-6">
           <Button
             variant="ghost"
             size="icon-sm"
@@ -242,9 +244,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('header.search')}
               aria-label={t('header.search')}
-              className="h-10 w-full rounded-full border border-border bg-muted/60 pl-10 pr-10 text-sm outline-none transition focus:border-ring focus:bg-white focus:ring-[3px] focus:ring-ring/20"
+              className="h-10 w-full rounded-full border border-border bg-muted/60 pl-10 pr-10 text-sm outline-none transition focus:border-ring focus:bg-card focus:ring-[3px] focus:ring-ring/20"
             />
-            <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-white px-1.5 text-[11px] text-muted-foreground sm:block">
+            <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-card px-1.5 text-[11px] text-muted-foreground sm:block">
               /
             </kbd>
           </form>
@@ -272,11 +274,21 @@ export function AppShell({ children }: { children: ReactNode }) {
               {menuOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 top-12 z-50 w-60 rounded-2xl bg-white p-2 shadow-xl ring-1 ring-border"
+                  className="absolute right-0 top-12 z-50 w-60 rounded-2xl bg-card p-2 shadow-xl ring-1 ring-border"
                 >
-                  <div className="px-2 py-2">
+                  <div className="flex flex-wrap items-center gap-2 px-2 py-2">
+                    <ThemeSwitcher />
                     <LocaleSwitcher />
                   </div>
+                  <Link
+                    role="menuitem"
+                    href="/app/compte"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted"
+                  >
+                    <UserCog className="size-4" aria-hidden />
+                    {t('header.account')}
+                  </Link>
                   <button
                     role="menuitem"
                     type="button"

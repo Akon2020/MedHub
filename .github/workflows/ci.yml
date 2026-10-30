@@ -31,6 +31,7 @@ jobs:
       DATABASE_URL: postgres://medhub_app:ci_password@localhost:5432/medhub_test
       TEST_DATABASE_URL: postgres://medhub_app:ci_password@localhost:5432/medhub_test
       MEDHUB_SESSION_SECRET: ci-only-session-secret-not-used-in-production-0000
+      MEDHUB_FIELD_MASTER_KEY: Y2ktb25seS1maWVsZC1rZXktMDAwMDAwMDAwMDAwMDA=
       MEDHUB_BASE_URL: http://localhost:3000
       NEXT_TELEMETRY_DISABLED: '1'
     steps:
@@ -115,6 +116,7 @@ jobs:
     env:
       DATABASE_URL: postgres://medhub_app:ci_password@localhost:5432/medhub_e2e
       MEDHUB_SESSION_SECRET: ci-only-session-secret-not-used-in-production-0000
+      MEDHUB_FIELD_MASTER_KEY: Y2ktb25seS1maWVsZC1rZXktMDAwMDAwMDAwMDAwMDA=
       MEDHUB_BASE_URL: http://localhost:3100
       MEDHUB_SEED_PASSWORD: ci-demo-password-0000
       NEXT_TELEMETRY_DISABLED: '1'

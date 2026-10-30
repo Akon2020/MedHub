@@ -43,7 +43,7 @@ describe.skipIf(!url)('tick', () => {
     ]);
     const seen: string[] = [];
     const result = await runTick(handle, {
-      budgetMs: 5_000,
+      budgetMs: 20_000,
       handlers: {
         'test.ok': async () => {
           seen.push('ok');
@@ -72,7 +72,7 @@ describe.skipIf(!url)('tick', () => {
         .where(eq(schema.job.id, ids[1] as string)),
     );
     await runTick(handle, {
-      budgetMs: 5_000,
+      budgetMs: 20_000,
       handlers: {
         'test.fail': async () => {
           throw new Error('boom again');

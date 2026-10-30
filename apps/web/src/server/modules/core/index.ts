@@ -1,2 +1,16 @@
-export { loginRoute, logoutRoute, meRoute, registerDeviceRoute } from './routes';
+export {
+  accountMfaConfirmRoute,
+  accountMfaDisableRoute,
+  accountMfaSetupRoute,
+  accountRecoveryCodesRoute,
+  accountRevokeSessionsRoute,
+  accountSecurityRoute,
+  loginRoute,
+  logoutRoute,
+  meRoute,
+  mfaActivateRoute,
+  mfaEnrollRoute,
+  mfaVerifyRoute,
+  registerDeviceRoute,
+} from './routes';
 export type { Profile } from './service';

@@ -1,4 +1,11 @@
-import { schema, verifyAuditChain, withSystem, withTenant, type Db } from '@medhub/db';
+import {
+  purgeRateLimits,
+  schema,
+  verifyAuditChain,
+  withSystem,
+  withTenant,
+  type Db,
+} from '@medhub/db';
 
 export type JobContext = {
   db: Db;
@@ -35,9 +42,15 @@ export const HANDLERS: Record<string, JobHandler> = {
     }
     log(`audit chains verified for ${tenants.length} structures`);
   },
+
+  'security.purge_rate_limits': async ({ db, log }) => {
+    const removed = await withSystem(db, (tx) => purgeRateLimits(tx));
+    log(`${removed} stale rate limit windows removed`);
+  },
 };
 
 /** Recurring jobs created on first run; editable afterwards in `job_schedule`. */
 export const DEFAULT_SCHEDULES: { type: string; cron: string }[] = [
   { type: 'audit.verify_chains', cron: '30 1 * * *' },
+  { type: 'security.purge_rate_limits', cron: '15 * * * *' },
 ];

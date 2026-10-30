@@ -13,6 +13,7 @@ const NO_DELETE = [
   'change_log',
   'data_access_log',
   'platform_audit_log',
+  'security_event',
   'patient',
 ];
 const NO_UPDATE = [
@@ -22,6 +23,7 @@ const NO_UPDATE = [
   'change_log',
   'data_access_log',
   'platform_audit_log',
+  'security_event',
 ];
 const STATUS_ONLY_UPDATE = ['vital_sign'];
 

@@ -17,7 +17,13 @@
     "optional": "optional",
     "fictitiousData": "Fictitious data",
     "years": "{count, plural, one {# year} other {# years}}",
-    "never": "never"
+    "never": "never",
+    "theme": {
+      "label": "Theme",
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    }
   },
   "public": {
     "nav": {
@@ -256,7 +262,37 @@
       "VALIDATION_FAILED": "Check the fields you entered.",
       "RATE_LIMITED": "Too many attempts. Wait a minute.",
       "NETWORK": "The server cannot be reached. Check the connection.",
-      "UNKNOWN": "An unexpected error occurred."
+      "UNKNOWN": "An unexpected error occurred.",
+      "AUTH_MFA_INVALID": "Wrong or already used code.",
+      "AUTH_MFA_CHALLENGE_EXPIRED": "Time is up. Start signing in again.",
+      "AUTH_MFA_REQUIRED_BY_ROLE": "Your role requires two-factor authentication: it cannot be turned off.",
+      "AUTH_MFA_ALREADY_ENABLED": "Two-factor authentication is already on.",
+      "AUTH_MFA_NOT_ENROLLED": "Two-factor authentication is not set up.",
+      "IP_BLOCKED": "Access refused from this network address."
+    },
+    "mfa": {
+      "verifyTitle": "Two-factor authentication",
+      "verifyText": "Enter the 6-digit code shown by your authenticator app.",
+      "recoveryText": "Enter one of your recovery codes. Each code works only once.",
+      "code": "6-digit code",
+      "recoveryCode": "Recovery code",
+      "verify": "Verify",
+      "useRecovery": "Use a recovery code",
+      "useApp": "Use the authenticator app",
+      "enrollTitle": "Protect your account",
+      "enrollText": "Your role requires two-factor authentication. Install an authenticator app (Google Authenticator, Microsoft Authenticator, FreeOTP, Aegis...) on your phone.",
+      "enrollStart": "Set it up now",
+      "enrollStep1": "Open the authenticator app on your phone.",
+      "enrollStep2": "Scan the QR code or type the key manually.",
+      "enrollStep3": "Enter the 6-digit code shown by the app.",
+      "qrAlt": "QR code to scan with your authenticator app",
+      "manualKey": "Manual setup key",
+      "activate": "Turn on two-factor authentication",
+      "recoveryCodesTitle": "Recovery codes",
+      "recoveryCodesText": "If you lose your phone, each of these codes allows a single sign-in. Print them or write them down somewhere safe: they will not be shown again.",
+      "print": "Print",
+      "recoveryConfirm": "I have stored these codes somewhere safe",
+      "continue": "Continue"
     }
   },
   "app": {
@@ -285,7 +321,8 @@
       "lock": "Lock workstation",
       "signOut": "Sign out",
       "diagnostic": "Diagnostics",
-      "menu": "Menu"
+      "menu": "Menu",
+      "account": "My account and security"
     },
     "training": "Training database"
   },
@@ -339,8 +376,16 @@
       "phone": "Phone",
       "status": "Sync"
     },
-    "sex": { "M": "Male", "F": "Female", "U": "Unspecified" },
-    "state": { "synced": "Synced", "pending": "Pending", "rejected": "Rejected" },
+    "sex": {
+      "M": "Male",
+      "F": "Female",
+      "U": "Unspecified"
+    },
+    "state": {
+      "synced": "Synced",
+      "pending": "Pending",
+      "rejected": "Rejected"
+    },
     "form": {
       "title": "Quick registration",
       "subtitle": "The rest of the record can be completed later.",
@@ -434,5 +479,42 @@
     "DPI_VITAL_IMPLAUSIBLE": "Value outside plausible limits: a reason is required.",
     "NOT_FOUND": "Item not found.",
     "UNKNOWN": "An unexpected error occurred."
+  },
+  "account": {
+    "title": "My account",
+    "subtitle": "Sign-in security, open sessions and appearance.",
+    "offline": "This screen is only available online. Reconnect this device to manage account security.",
+    "done": "Done",
+    "cancel": "Cancel",
+    "mfa": {
+      "title": "Two-factor authentication",
+      "text": "A 6-digit code from your phone is required at every sign-in, in addition to the password.",
+      "on": "On",
+      "off": "Off",
+      "since": "Turned on {date}",
+      "codesLeft": "{count, plural, =0 {no recovery code left} one {# recovery code left} other {# recovery codes left}}",
+      "requiredByRole": "Your role requires two-factor authentication: you will be asked to set it up at your next sign-in.",
+      "enable": "Turn on",
+      "regenerate": "New recovery codes",
+      "disable": "Turn off",
+      "confirmRegenerate": "The old recovery codes will stop working. Confirm with an app code or a recovery code.",
+      "confirmDisable": "Confirm with an app code or a recovery code.",
+      "codeLabel": "Verification code"
+    },
+    "sessions": {
+      "title": "Open sessions",
+      "text": "Devices signed in to your account. Sign out the ones you do not recognise.",
+      "current": "This device",
+      "lastSeen": "Last activity: {date}",
+      "revoke": "Sign out",
+      "revokeOthers": "Sign out the others",
+      "unknownBrowser": "Unknown browser"
+    },
+    "appearance": {
+      "title": "Appearance",
+      "text": "Preferences of this device.",
+      "theme": "Theme",
+      "language": "Language"
+    }
   }
 }

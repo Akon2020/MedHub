@@ -24,7 +24,7 @@ const internalTelemetry: Telemetry = {
     logger.error({ ...ctx, err: { message: err.message, stack: err.stack } }, 'error');
   },
   recordMetric(name, value, tags) {
-    logger.info({ metric: name, value, tags }, 'metric');
+    logger.debug({ metric: name, value, tags }, 'metric');
   },
   securityEvent(kind, ctx) {
     logger.warn({ security: kind, ...ctx }, 'security_event');

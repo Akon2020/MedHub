@@ -7,12 +7,20 @@ const schema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(20).default(10),
   MEDHUB_SESSION_SECRET: z.string().min(32, 'MEDHUB_SESSION_SECRET must be at least 32 characters'),
+  MEDHUB_FIELD_MASTER_KEY: z
+    .string()
+    .refine(
+      (v) => Buffer.from(v, 'base64').length === 32,
+      'MEDHUB_FIELD_MASTER_KEY must be 32 bytes in base64',
+    ),
   MEDHUB_SIGNING_KID: z.string().min(1).optional(),
   MEDHUB_SIGNING_PRIVATE_KEY: z.string().min(1).optional(),
   MEDHUB_SIGNING_PUBLIC_KEY: z.string().min(1).optional(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   MEDHUB_SESSION_IDLE_HOURS: z.coerce.number().positive().default(12),
   MEDHUB_SESSION_ABSOLUTE_DAYS: z.coerce.number().positive().default(7),
+  /** Requests slower than this are logged with connection pool statistics. */
+  MEDHUB_SLOW_REQUEST_MS: z.coerce.number().int().positive().default(2000),
 });
 
 export type Env = z.infer<typeof schema>;

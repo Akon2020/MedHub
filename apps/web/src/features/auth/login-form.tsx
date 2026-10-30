@@ -13,6 +13,7 @@ import { identityFromProfile, writeIdentity, type ServerProfile } from '@/client
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { MfaEnrollStep, MfaVerifyStep } from './mfa-step';
 
 const KNOWN_ERRORS = new Set([
   'AUTH_INVALID_CREDENTIALS',
@@ -22,6 +23,10 @@ const KNOWN_ERRORS = new Set([
   'VALIDATION_FAILED',
   'RATE_LIMITED',
 ]);
+
+type LoginResponse =
+  | { status: 'signed_in'; profile: ServerProfile }
+  | { status: 'mfa_required' | 'mfa_enrollment_required'; challenge: string };
 
 function Field({
   id,
@@ -60,6 +65,17 @@ export function LoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [step, setStep] = useState<{ kind: 'verify' | 'enroll'; challenge: string } | null>(null);
+
+  async function finish(profile: ServerProfile) {
+    const identity = identityFromProfile(profile);
+    writeIdentity(identity);
+    setPassword('');
+    const db = openLocalDb(identity);
+    const ready = await isInitialized(db);
+    db.close();
+    router.push(ready ? '/app' : '/connexion/activation');
+  }
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -71,7 +87,7 @@ export function LoginForm() {
     }
     setSubmitting(true);
     try {
-      const { profile } = await apiFetch<{ profile: ServerProfile }>('/api/v1/auth/login', {
+      const result = await apiFetch<LoginResponse>('/api/v1/auth/login', {
         method: 'POST',
         body: JSON.stringify({
           tenantCode: code,
@@ -79,13 +95,15 @@ export function LoginForm() {
           password,
         }),
       });
-      const identity = identityFromProfile(profile);
-      writeIdentity(identity);
-      setPassword('');
-      const db = openLocalDb(identity);
-      const ready = await isInitialized(db);
-      db.close();
-      router.push(ready ? '/app' : '/connexion/activation');
+      if (result.status === 'signed_in') {
+        await finish(result.profile);
+      } else {
+        setPassword('');
+        setStep({
+          kind: result.status === 'mfa_required' ? 'verify' : 'enroll',
+          challenge: result.challenge,
+        });
+      }
     } catch (err) {
       if (err instanceof ApiError) {
         setError(t(`errors.${KNOWN_ERRORS.has(err.code) ? err.code : 'UNKNOWN'}`));
@@ -96,6 +114,11 @@ export function LoginForm() {
       setSubmitting(false);
     }
   }
+
+  if (step?.kind === 'verify')
+    return <MfaVerifyStep challenge={step.challenge} onSignedIn={finish} />;
+  if (step?.kind === 'enroll')
+    return <MfaEnrollStep challenge={step.challenge} onSignedIn={finish} />;
 
   return (
     <div>
