@@ -14,7 +14,7 @@ Le jalon **J0 Fondations** est construit :
 - worker cron pour les tâches de fond, scripts de déploiement cPanel, CI GitHub Actions ;
 - thème clair, sombre ou automatique (selon le système) sur toute l'application ;
 - début de J1 (S4) : double authentification TOTP avec codes de secours, limitation de débit en base, règles d'IP, politique CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes, organisation de la structure ;
-- S5 (en cours) : appareils et effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs, éditeur de rôles.
+- S5 (en cours) : appareils et effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs, éditeur de rôles, référentiels.
 
 Le journal complet de tout ce qui a été fait se trouve dans `walkthrough.md`.
 
@@ -350,6 +350,15 @@ Menu **Paramètres** (permission `configuration:read`, administrateur de structu
 - Un rôle qui accorde un droit d'administration est **privilégié** : la double authentification y est toujours exigée. Pour les autres, la case « Double authentification obligatoire » reste au choix.
 - **Dupliquer** un rôle (ou partir d'un rôle vide) pour créer une variante ; le code du rôle ne change plus ensuite. Un rôle copié d'un modèle MedHub indique ses différences avec le modèle et peut **revenir au modèle**.
 - Les changements s'appliquent dès la requête suivante et, sur chaque poste, à la synchronisation suivante. Un changement qui laisserait la structure sans administrateur capable de gérer les rôles est refusé.
+
+### Référentiels
+
+**Paramètres, Référentiels** (`/app/parametres/referentiels`, lecture `configuration:read`, modification `configuration:edit` avec confirmation du second facteur).
+- **Listes de choix** de la structure (mode d'arrivée, profession...) : code de liste définitif, nom en français et en anglais, éléments avec code, libellés et ordre. Un élément n'est jamais supprimé : il est désactivé, et son code ne change plus une fois enregistré.
+- **Import CSV** : téléchargez le modèle (`code;libelle;libelle_en;ordre`), choisissez le fichier ou collez son contenu, puis **Vérifier le fichier** : chaque ligne fautive est signalée et rien n'est enregistré. Les lignes valides sont reprises dans la liste ; « Enregistrer la liste » les écrit.
+- **Catalogues de la plateforme**, en lecture seule : devises (USD, CDF, ISO 4217), unités de mesure (codes UCUM), les 26 provinces (Constitution de 2006, codes ISO 3166-2:CD).
+- Les territoires, villes et communes se chargent depuis un **fichier officiel**, par la plateforme : `pnpm db:import-areas fichier.csv --source="Document, date"` (colonnes `code;niveau;type;nom;code_parent`). Sans `--apply`, c'est une simulation qui ne fait que lister les erreurs.
+- Chaque poste garde une **copie locale** des référentiels (sites, services, listes actives, provinces, devises, unités), vérifiée au plus toutes les dix minutes après une synchronisation, pour les formulaires hors connexion. Le champ « Province » des adresses propose désormais la liste des provinces.
 
 ### Thème sombre
 

@@ -77,7 +77,8 @@ Consignes reçues et appliquées pendant les sessions :
 | `5bffff0` et précédent | 30/10/2026 | `feat(core)` : jetons hors connexion et de licence signés Ed25519, retrait et perte d'appareil, effacement à distance (S5) |
 | `11c8420` | 30/10/2026 | `feat(core)` : configuration versionnée (`config_entry`, brouillon, publication, archivage, restauration), réglages de sécurité des postes appliqués hors connexion (S5) |
 | `57b129c` | 30/10/2026 | `feat(core)` : gestion des utilisateurs (création avec mot de passe temporaire, profil et rôles, désactivation, réinitialisation du mot de passe et de la 2FA, déverrouillage, dernier administrateur protégé), politique de mot de passe, changement à la première connexion et depuis « Mon compte » |
-| (S5, rôles) | 30/10/2026 | `feat(core)` : éditeur de rôles (grille ressource et action avec périmètre, duplication, retour au modèle, rôle privilégié et 2FA automatiques, dernier administrateur protégé), libellés des nouveaux événements de sécurité |
+| `e49e687` | 30/10/2026 | `feat(core)` : éditeur de rôles (grille ressource et action avec périmètre, duplication, retour au modèle, rôle privilégié et 2FA automatiques, dernier administrateur protégé), libellés des nouveaux événements de sécurité |
+| (S5, référentiels) | 30/10/2026 | `feat(core)` : référentiels (listes de choix avec import CSV vérifié, devises, unités UCUM, 26 provinces, import plateforme des zones administratives, copie locale sur les postes, province des adresses en liste) |
 
 ---
 
@@ -153,6 +154,7 @@ Code pur, sans Node.js, DOM ni Dexie, utilisé à l'identique par le client et l
 - `core/password-policy.ts` (S5) : longueur minimale de 10 (jamais abaissée par la configuration), 128 au plus, liste embarquée de mots de passe courants (comparaison sans casse, sans accents ni séparateurs, chiffres finaux ignorés), refus d'un mot de passe contenant le nom ou l'identifiant, aucune règle de composition.
 - `core/users.ts` (S5) : schémas Zod de création et de modification d'un utilisateur (identifiant normalisé et définitif, au moins un rôle, 20 au plus, site et service principaux), calcul des rôles à ajouter et à clore.
 - `core/roles.ts` (S5) : schémas de création (code normalisé, duplication) et de modification d'un rôle (permissions connues du catalogue, périmètre autorisé pour la ressource, aucune permission en double), rôle privilégié (modèle privilégié ou droit d'administration accordé), différences entre deux grilles (ajoutées, retirées, périmètre modifié), grille du rôle modèle.
+- `core/reference.ts` (S5) : schémas des listes de choix et de leurs éléments (codes stables, doublons refusés), lecture d'un fichier CSV de liste (en-têtes français ou anglais, accents ignorés, ordre complété, rapport d'erreurs par ligne, 2 000 lignes au plus), lecture d'un fichier de zones administratives (parent connu et d'un niveau au-dessus, types par niveau), forme de la copie locale des référentiels (`CatalogSnapshot`).
 - `core/license.ts` (S5) : « maintenant » jamais antérieur à la dernière heure serveur connue, état de l'accès hors connexion (valide, expire dans moins de 3 jours, expiré ; 14 jours par défaut, 30 au plus) et phase de licence (normale, retard, lecture seule, suspendue) calculée hors connexion à partir des dates du jeton.
 - `core/sign-in-risk.ts` (S4) : signature d'appareil (navigateur et système) et détection des connexions inhabituelles (nouvel appareil, horaire éloigné de toutes les connexions habituelles dans le fuseau de la structure, à partir de 10 connexions d'historique). Utilisé par le serveur et par l'écran « Mon compte ».
 
@@ -178,7 +180,7 @@ Code pur, sans Node.js, DOM ni Dexie, utilisé à l'identique par le client et l
 
 ## 8. `packages/db` : base PostgreSQL, sécurité et migrations
 
-### 8.1 Schéma (29 tables)
+### 8.1 Schéma (34 tables)
 
 | Domaine | Tables |
 | --- | --- |
@@ -219,6 +221,8 @@ Colonnes communes, index composites commençant par `tenant_id`, contraintes `ch
 
 - `migrations/0000_init.sql` : schéma initial.
 - `migrations/0001_s4_mfa_security.sql` : colonnes 2FA de `user_account`, tables `mfa_recovery_code`, `rate_limit`, `ip_rule`, `security_event` et leurs index.
+- `migrations/0006_s5_reference.sql` : tables plateforme `currency`, `unit`, `admin_area` (sans `tenant_id`, en lecture pour toutes les structures) et tables de structure `choice_list`, `choice_item` (RLS forcée).
+- `scripts/import-areas.ts` (`pnpm db:import-areas`) : import plateforme des zones administratives depuis un fichier officiel, simulation par défaut, `--apply` pour écrire, mise à jour sans suppression.
 - `migrations/0005_s5_users.sql` : colonne `user_account.default_department_id` (service principal, prévu par `docs/04`).
 - `migrations/0004_s5_configuration.sql` : table `config_entry` et index partiels (un seul brouillon et une seule version publiée par clé).
 - `migrations/0003_s5_devices.sql` : colonnes de retrait des appareils.
@@ -271,10 +275,11 @@ Colonnes communes, index composites commençant par `tenant_id`, contraintes `ch
 | `/app/diagnostic` | Opérationnelle | État du poste : appareil, opérations en attente, rejets, conflits, dernière synchronisation, stockage, version, synchronisation forcée |
 | `/app/bientot?m=` | Opérationnelle | Page d'attente des modules à venir avec la semaine prévue |
 | `/app/compte` | En ligne seulement (S4) | Mon compte : double authentification, changement de mot de passe (S5), sessions ouvertes, apparence (thème et langue) |
-| `/app/parametres` | En ligne seulement (S4) | Accueil des paramètres filtré par permission : organisation, journal de sécurité, Mon compte, postes et sécurité, utilisateurs, rôles, appareils ; référentiels annoncés |
+| `/app/parametres` | En ligne seulement (S4) | Accueil des paramètres filtré par permission : organisation, journal de sécurité, Mon compte, postes et sécurité, utilisateurs, rôles, appareils, référentiels |
 | `/app/parametres/organisation` | En ligne seulement (S4) | Profil de la structure, sites (ajout, modification, désactivation), services par site |
 | `/app/parametres/utilisateurs` | En ligne seulement (S5) | Comptes de la structure : recherche, création avec mot de passe temporaire affiché une fois, profil, site et service principaux, rôles, réinitialisation du mot de passe et de la 2FA, déverrouillage, désactivation et réactivation avec motif |
 | `/app/parametres/roles` | En ligne seulement (S5) | Rôles de la structure : membres et nombre de permissions, grille par domaine (patients et soins, laboratoire, pharmacie, finances, administration) avec actions et périmètre, 2FA, duplication, différences et retour au rôle modèle, résumé des changements avant enregistrement |
+| `/app/parametres/referentiels` | En ligne seulement (S5) | Listes de choix (création, éléments, ordre, activation, import CSV avec vérification ligne par ligne et modèle téléchargeable) ; catalogues de la plateforme (zones administratives, provinces, devises, unités) |
 | `/app/parametres/synchronisation` | En ligne seulement (S5) | Postes et sécurité : réglages versionnés (brouillon, publication, historique, restauration) |
 | `/app/parametres/appareils` | En ligne seulement (S5) | Postes de la structure : utilisateur, dernière synchronisation, version, état ; retrait (avec dernier envoi autorisé ou non) et déclaration de perte ; recommandation de chiffrement des disques |
 | `/app/parametres/securite` | En ligne seulement (S4) | Journal de sécurité de la structure : connexions inhabituelles, tentatives excessives, blocages, changements de 2FA |
@@ -290,6 +295,7 @@ La coquille `/app` (`features/shell`) comprend la barre latérale repliable filt
 - `browser-state.ts` : état réseau et valeurs mémorisées via `useSyncExternalStore`.
 - `service-worker.tsx` : enregistrement et mises à jour contrôlées.
 - Sur `AUTH_USER_DISABLED` (S5), la boucle de synchronisation s'arrête, le runtime vide le jeton hors connexion (`revokeOfflineToken` de `packages/local-db`) puis verrouille : le PIN n'ouvre plus le poste, mais les opérations en attente sont conservées si le compte est réactivé.
+- `catalogs.ts` (S5) : copie locale des référentiels dans `meta` (`saveCatalogs`, `loadCatalogs` de `packages/local-db`), vérifiée au plus toutes les dix minutes après une synchronisation avec l'empreinte du serveur ; `reloadCatalogs` du runtime la force après une modification. Les données de structure qu'elle contient (sites, services, listes) ne sont pas des données de patient.
 - `device-tokens.ts` (S5) : stockage, renouvellement (au plus une fois par heure après une synchronisation réussie) et vérification hors connexion des jetons ; au déverrouillage, un jeton expiré est renouvelé si le réseau est là, sinon le poste reste verrouillé avec « Me connecter en ligne » (l'outbox est conservée). Sur `DEVICE_REVOKED`, le runtime arrête la synchronisation, efface la base locale et l'identité, puis la page de connexion explique le retrait.
 - `e2e-hook.ts` : `window.__medhubTest`, compilé **uniquement** quand `NEXT_PUBLIC_MEDHUB_E2E=1` (build Playwright séparé, jamais déployé).
 
@@ -303,6 +309,9 @@ Toutes les routes passent par `defineRoute` (`server/platform/http.ts`) : identi
 | `POST /api/v1/auth/login` | Mot de passe ; renvoie `signed_in`, `password_change_required` (S5), `mfa_required` ou `mfa_enrollment_required` ; refuse `AUTH_NO_ACTIVE_ROLE` un compte sans rôle actif (S5) |
 | `POST /api/v1/auth/password` | Mot de passe personnel après un mot de passe temporaire, avec le défi signé de l'étape précédente ; poursuit vers la 2FA ou la session (S5) |
 | `POST /api/v1/account/password` | Changement de son mot de passe avec l'actuel ; autres sessions fermées (S5) |
+| `GET /api/v1/reference` | Listes de choix et catalogues de la plateforme (`configuration:read`) (S5) |
+| `GET /api/v1/reference/catalogs?etag=` | Copie des référentiels pour les postes (tout utilisateur connecté) ; `unchanged` si l'empreinte n'a pas changé (S5) |
+| `POST /api/v1/choice-lists`, `.../update`, `.../items`, `.../import` | Création, modification, enregistrement des éléments (step-up) et vérification d'un fichier CSV sans écriture (`configuration:edit`) (S5) |
 | `GET /api/v1/roles`, `POST /api/v1/roles`, `POST /api/v1/roles/update` | Rôles avec grilles et membres (`role:read`) ; création ou duplication et modification complète de la grille (`role:manage`, step-up) (S5) |
 | `GET /api/v1/users`, `POST /api/v1/users` | Liste des comptes, rôles, sites et services (`user:read`) ; création (`user:create`, step-up) (S5) |
 | `POST /api/v1/users/update`, `.../status`, `.../reset-password`, `.../reset-mfa`, `.../unlock` | Profil et rôles (`user:update`), désactivation et réactivation (`user:disable`), réinitialisations et déverrouillage (`user:reset_password`), toujours avec step-up (S5) |
@@ -338,6 +347,7 @@ Toutes les routes passent par `defineRoute` (`server/platform/http.ts`) : identi
 - `modules/core/configuration.ts` (S5) : lecture des valeurs publiées (`loadConfig`), brouillon, publication avec audit `config_publish` (ancienne et nouvelle valeur), archivage, restauration en brouillon ; `requireRecentStepUp` lit la fenêtre de confirmation dans la configuration. La durée du jeton hors connexion et la configuration remise aux postes en dépendent.
 - `platform/tokens.ts` (S5) : émission des jetons avec `MEDHUB_SIGNING_*` (`SIGNING_KEY_MISSING` si absentes), clés publiques acceptées (actuelle et `MEDHUB_SIGNING_PREVIOUS_KEYS`), licence calquée sur l'état de la structure et ouvrant tous les modules MVP tant que les abonnements n'existent pas.
 - `platform/session.ts` (S5) : `sessionEndReason` ; `platform/tenant.ts` répond `DEVICE_REVOKED` au lieu de `UNAUTHENTICATED` quand la session a été fermée par le retrait de son poste, pour que le poste s'efface au lieu de demander une connexion, et `AUTH_USER_DISABLED` quand son utilisateur a été désactivé, pour que le poste retire l'accès hors connexion.
+- `modules/core/reference.ts`, `reference-routes.ts` (S5) : catalogues de la plateforme, listes de choix (création, modification, enregistrement des éléments par code avec désactivation des absents, version incrémentée), vérification d'import sans écriture, copie des référentiels pour les postes avec empreinte SHA-256 ; audit `choice_list_create`, `choice_list_update`, `choice_items_save`.
 - `modules/core/roles.ts`, `roles-routes.ts` (S5) : liste avec grilles et nombre d'utilisateurs actifs, création vide ou par duplication (le rôle copié n'est plus rattaché au modèle), modification du nom, de la description, de la 2FA et de toute la grille (version incrémentée), drapeaux privilégié et 2FA recalculés à chaque enregistrement, audit `role_create` et `role_update` (ajouts, retraits, périmètres), événement `role_privileges_changed` quand un droit d'administration change, règle du dernier administrateur.
 - `modules/core/users.ts`, `users-routes.ts` (S5) : liste, création avec mot de passe temporaire lisible (`xxxx-xxxx-xxxx`, au moins la longueur minimale configurée), modification du profil et des rôles (affectations closes par `valid_until`, jamais supprimées), désactivation et réactivation, réinitialisation du mot de passe et de la 2FA, déverrouillage ; règle du dernier administrateur vérifiée dans la même transaction (tout changement qui laisserait la structure sans utilisateur actif titulaire de `role:manage` est annulé, `USER_LAST_ADMIN`) ; aucune action sur son propre compte (`USER_IS_SELF`) ; audit et événements de sécurité.
 - `modules/sync` (S5) : un poste retiré avec dernier envoi autorisé peut encore pousser ; tout autre contact d'un poste retiré ou perdu ferme ses sessions et répond `DEVICE_REVOKED`.
@@ -440,6 +450,12 @@ Chaque document reçoit une CSP avec **nonce neuf** (`src/proxy.ts`) : `script-s
 - Les permissions sont relues à chaque requête : un changement de rôle s'applique tout de suite côté serveur ; les postes le reçoivent avec leurs jetons à la synchronisation suivante.
 - Pas encore livrés : conditions ABAC (horaires, sites, plafonds), évaluation des périmètres (ils sont enregistrés et seront appliqués par les modules concernés), aperçu « voir comme ».
 
+### 13.12 Référentiels (S5)
+
+- Données de la plateforme livrées avec leur source (`packages/shared/src/reference.ts`) : devises ISO 4217, unités UCUM, 26 provinces (Constitution de 2006, codes ISO 3166-2:CD). Aucun niveau inférieur n'est inventé : territoires, villes et communes viennent d'un fichier officiel importé par la plateforme.
+- Lecteur CSV partagé (`packages/shared/src/csv.ts`) : séparateur « ; », « , » ou tabulation détecté, guillemets, retours à la ligne dans un champ, marque d'ordre d'octets d'Excel, numéros de ligne du fichier.
+- Les imports de listes suivent les étapes de `docs/06` section 7 (modèle, vérification, rapport, confirmation) sans passer par un job : une liste de choix reste petite (2 000 lignes au plus).
+
 ### 13.9 Mesure de la durée des requêtes
 
 Réponse au point ouvert de J0 (une connexion restée 20 s sans réponse) : chaque route renvoie `Server-Timing: app;dur=N`, la métrique `http.duration_ms` est émise, et toute requête plus lente que `MEDHUB_SLOW_REQUEST_MS` (2 s par défaut) est journalisée avec l'état du pool (`total`, `idle`, `waiting`) pour distinguer pool saturé, requête lente ou verrou.
@@ -476,7 +492,7 @@ Réponse au point ouvert de J0 (une connexion restée 20 s sans réponse) : chaq
 | `packages/shared` | UUID, HLC, argent, codes | 9 tests verts |
 | `packages/domain` | Commandes, recherche, plausibilité, stock, numérotation | 10 tests verts |
 | `packages/db` (unitaires) | Hachage d'audit | 2 tests verts |
-| `packages/db` (isolation, `pnpm db:test-isolation`) | RLS activée et forcée partout, une fabrique par table, lectures, mises à jour et insertions croisées refusées, triggers, chaîne d'audit | **83 tests verts** (71 avant S4, puis `mfa_recovery_code`, `department` et `config_entry`) |
+| `packages/db` (isolation, `pnpm db:test-isolation`) | RLS activée et forcée partout, une fabrique par table, lectures, mises à jour et insertions croisées refusées, triggers, chaîne d'audit | **91 tests verts** (71 avant S4, puis `mfa_recovery_code`, `department`, `config_entry`, `choice_list` et `choice_item`) |
 | `packages/local-db` | Chiffrement, PIN, récupération, absence de nom en clair | 5 tests verts |
 | `packages/sync` | Banc de propriétés : 500 opérations, deux postes, coupures, réponses perdues, doublons absorbés | 11 tests verts |
 | `apps/worker` | Analyseur cron, tick, reprises, lettres mortes | 3 tests verts (le test des deux ticks réels dispose de 60 s : il dépassait les 5 s par défaut de Vitest quand toutes les suites tournent ensemble) |
@@ -485,8 +501,10 @@ Réponse au point ouvert de J0 (une connexion restée 20 s sans réponse) : chaq
 | Playwright `sync-bench.spec.ts` | Deux navigateurs réels, 500 opérations, coupures, réponses perdues | 500 opérations (226 enregistrements, 96 modifications, 178 constantes), 109 cycles coupés, 41 réponses perdues ; zéro rejet, zéro doublon, convergence, aucun nom en clair |
 | Playwright `sync-bench.spec.ts` (second scénario) | Enregistrement hors connexion par le formulaire, rechargement, synchronisation | Vert |
 | Playwright `public.spec.ts` | Page publique vers connexion ; bouton désactivé hors connexion ; projet tablette | Vert |
-| Playwright `mfa.spec.ts` (S4) | Configuration imposée de la 2FA à l'écran, codes de secours, seconde connexion avec code faux puis bon code, activation du poste, « Mon compte » en thème sombre, création d'un site, modification après expiration de la preuve avec boîte de step-up, **effacement à distance** d'une tablette déclarée perdue (second navigateur : identité et IndexedDB vides, message sur la page de connexion) ; création d'un utilisateur à l'écran, mot de passe temporaire, première connexion dans un autre navigateur avec mot de passe refusé puis accepté, désactivation, duplication d'un rôle puis modification de sa grille (S5) ; CSP à nonce neuf | 2 tests verts |
+| Playwright `mfa.spec.ts` (S4) | Configuration imposée de la 2FA à l'écran, codes de secours, seconde connexion avec code faux puis bon code, activation du poste, « Mon compte » en thème sombre, création d'un site, modification après expiration de la preuve avec boîte de step-up, **effacement à distance** d'une tablette déclarée perdue (second navigateur : identité et IndexedDB vides, message sur la page de connexion) ; création d'un utilisateur à l'écran, mot de passe temporaire, première connexion dans un autre navigateur avec mot de passe refusé puis accepté, désactivation, duplication d'un rôle puis modification de sa grille, liste de choix importée d'un CSV avec ligne fautive puis enregistrée, provinces proposées dans les adresses (S5) ; CSP à nonce neuf | 2 tests verts |
 | `apps/web` intégration configuration (S5) | Valeurs par défaut, validation, brouillon par un rédacteur et publication refusée sans `configuration:publish`, archivage, trigger d'immuabilité (modification et suppression refusées), restauration, jeton de 21 jours après publication, fenêtre de step-up configurée, audit chaîné | 5 tests verts (32 au total pour `apps/web`) |
+| `apps/web` intégration référentiels (S5) | Catalogues de la plateforme, permission refusée, step-up, code de liste pris, vérification d'import sans écriture, enregistrement, désactivation au lieu de suppression, copie des postes avec empreinte, sans éléments inactifs ni autre structure, audit chaîné | 5 tests verts (51 au total pour `apps/web`) |
+| `packages/domain` et `packages/shared` référentiels (S5) | Lecture CSV (Excel français, guillemets, BOM, lignes), 26 provinces uniques, import de listes et de zones administratives avec rapport d'erreurs | 6 tests verts |
 | `apps/web` intégration rôles (S5) | Lecture sans droit de gestion, step-up exigé, grille avec périmètres appliquée dès la requête suivante, rôle devenu privilégié avec 2FA et événement de sécurité, duplication et code pris, dernier administrateur protégé, catalogue et périmètres refusés hors liste, audit détaillé et chaîné | 6 tests verts (46 au total pour `apps/web`) |
 | `packages/domain` rôles (S5) | Permissions et périmètres du catalogue, doublons, codes, rôle privilégié, différences de grilles, rôle modèle | 4 tests verts (32 au total pour le paquet) |
 | `apps/web` intégration utilisateurs (S5) | Création avec mot de passe temporaire, step-up et permission exigés, identifiant pris, rôle inconnu ; première connexion avec mot de passe refusé (courant, réutilisé) puis accepté ; profil et rôles avec affectation close conservée ; dernier administrateur protégé par rôle et par désactivation, action sur soi refusée ; sessions d'un utilisateur désactivé fermées avec motif `user_disabled` ; déverrouillage, réinitialisation de la 2FA et du mot de passe ; refus sans rôle actif ; changement de son mot de passe ; audit chaîné | 8 tests verts (40 au total pour `apps/web`) |
@@ -537,6 +555,8 @@ Commandes de contrôle avant chaque commit : `pnpm typecheck`, `pnpm lint`, `pnp
 | 30/10/2026 | Clés publiques des jetons | Remises au poste à son activation (en ligne, TLS) puis conservées localement, au lieu d'être compilées dans l'application : un même build sert tous les environnements (à valider) |
 | 30/10/2026 | Licence avant SADM | Jeton calqué sur l'état de la structure, tous les modules MVP, aucun plan ni limite inventés (à valider) |
 | 30/10/2026 | Postes activés avant S5 | Sans jeton, ils restent utilisables jusqu'à leur prochaine synchronisation, qui leur en remet un (à valider) |
+| 30/10/2026 | Données de référence | Tables plateforme sans `tenant_id` (`currency`, `unit`, `admin_area`) ; provinces livrées avec leur source, niveaux inférieurs importés d'un fichier officiel par la plateforme ; listes de choix par structure (à valider) |
+| 30/10/2026 | Copie locale des référentiels | Récupérée par empreinte après la synchronisation plutôt que par le journal des changements ; non chiffrée car sans donnée de patient (à valider) |
 | 30/10/2026 | Périmètres des permissions | « Toute la structure » proposé pour chaque ressource en plus des périmètres de `docs/05` (défaut des rôles modèles tant que magasins, caisses et affectations n'existent pas) ; un seul périmètre par ligne de ressource à l'écran (à valider) |
 | 30/10/2026 | Rôle privilégié | Calculé : rôle modèle privilégié ou rôle qui accorde un droit d'administration ; la 2FA y est alors imposée (à valider) |
 | 30/10/2026 | Grille d'un rôle | Remplacée en entier à chaque enregistrement (lignes de configuration), l'historique étant dans l'audit (à valider) |
@@ -566,6 +586,6 @@ Commandes de contrôle avant chaque commit : `pnpm typecheck`, `pnpm lint`, `pnp
 
 S4 est terminée (`docs/11-feuille-de-route.md`) : authentification complète avec 2FA, structures, sites et services, RLS sur toutes les tables, rôles et permissions vérifiés côté serveur, audit chaîné, coquille PWA, mise en page, indicateur de synchronisation, protections de la plateforme. Les salles, horaires d'ouverture et jours fériés de `docs/modules/core.md` arrivent avec les rendez-vous et files (S7).
 
-S5 (en cours ; appareils, effacement à distance, jetons signés, configuration versionnée et gestion des utilisateurs livrés) : reste les catalogues de référence, l'i18n complète, les compléments du diagnostic et la base de formation.
+S5 (en cours ; appareils, effacement à distance, jetons signés, configuration versionnée et gestion des utilisateurs livrés) : reste l'i18n complète, les compléments du diagnostic et la base de formation.
 
 S6 : patients (recherche floue complète, dédoublonnage, fusion supervisée et réversible, carte et QR), périmètre de synchronisation. Puis S7 à S9 jusqu'au critère de sortie de J1 : un patient parcourt accueil, triage et consultation hors connexion et se synchronise sans erreur.
