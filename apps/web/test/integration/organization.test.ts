@@ -124,7 +124,7 @@ describe.skipIf(!url)('organization settings against PostgreSQL', () => {
       phone: null,
     };
     await expectCode(org.createSite(ctxFor(adminId, null), input, { ip }), 'AUTH_STEP_UP_REQUIRED');
-    const stale = new Date(Date.now() - core.STEP_UP_WINDOW_MS - 1000);
+    const stale = new Date(Date.now() - 16 * 60_000);
     await expectCode(
       org.createSite(ctxFor(adminId, stale), input, { ip }),
       'AUTH_STEP_UP_REQUIRED',

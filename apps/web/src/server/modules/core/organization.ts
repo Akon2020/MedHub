@@ -14,7 +14,7 @@ import { desc, eq, inArray } from 'drizzle-orm';
 import { database } from '../../platform/db';
 import { loadPermissions, requirePermission } from '../../platform/permissions';
 import type { RequestContext } from '../../platform/tenant';
-import { requireStepUp } from './service';
+import { requireRecentStepUp } from './configuration';
 
 type Client = { ip: string | null };
 type SiteRow = typeof schema.site.$inferSelect;
@@ -54,7 +54,7 @@ function isUniqueViolation(error: unknown): boolean {
 async function withEditor<T>(ctx: RequestContext, fn: (tx: Tx) => Promise<T>): Promise<T> {
   return withTenant(database().db, { tenantId: ctx.tenantId, userId: ctx.userId }, async (tx) => {
     requirePermission(await loadPermissions(tx, ctx.userId), 'configuration:edit');
-    requireStepUp(ctx);
+    await requireRecentStepUp(tx, ctx);
     return fn(tx);
   });
 }

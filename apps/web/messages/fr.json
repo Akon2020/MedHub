@@ -579,6 +579,10 @@
       "reference": {
         "title": "Référentiels",
         "text": "Listes de choix, catalogues, numérotation"
+      },
+      "workstations": {
+        "title": "Postes et sécurité",
+        "text": "Verrouillage, code PIN, accès hors connexion, confirmation"
       }
     },
     "organization": {
@@ -718,6 +722,50 @@
         "PERMISSION_DENIED": "Vous n'avez pas la permission d'effectuer cette action.",
         "VALIDATION_FAILED": "Indiquez un motif (3 caractères au moins).",
         "AUTH_STEP_UP_REQUIRED": "Confirmation de votre identité annulée : rien n'a été modifié."
+      }
+    },
+    "configuration": {
+      "title": "Postes et sécurité",
+      "subtitle": "Réglages appliqués à tous les postes de la structure, publiés par version.",
+      "lifecycle": "Chaque changement passe par un brouillon, puis une publication. Une version publiée n'est jamais modifiée : la précédente est archivée et peut être restaurée. Les postes reçoivent les valeurs publiées à leur prochaine synchronisation.",
+      "current": "Valeur en vigueur",
+      "defaultValue": "Valeur par défaut",
+      "defaultHint": "valeur par défaut de MedHub",
+      "publishedVersion": "Version {version} publiée",
+      "draftPending": "Brouillon en attente",
+      "newValue": "Nouvelle valeur",
+      "saveDraft": "Enregistrer le brouillon",
+      "publish": "Publier ({value})",
+      "discard": "Abandonner le brouillon",
+      "history": "Historique ({count})",
+      "restore": "Restaurer en brouillon",
+      "status": {
+        "draft": "Brouillon",
+        "published": "En vigueur",
+        "archived": "Archivée"
+      },
+      "units": {
+        "days": "jours",
+        "minutes": "minutes",
+        "attempts": "essais"
+      },
+      "keys": {
+        "offline_token_days": {
+          "title": "Accès hors connexion",
+          "text": "Durée pendant laquelle un poste peut travailler sans se synchroniser (1 à 30 jours). Au-delà, une connexion en ligne est demandée ; rien n'est perdu."
+        },
+        "auto_lock_minutes": {
+          "title": "Verrouillage automatique",
+          "text": "Délai d'inactivité avant que le poste demande le code PIN (1 à 60 minutes)."
+        },
+        "pin_max_attempts": {
+          "title": "Essais de code PIN",
+          "text": "Nombre d'essais avant blocage (3 à 20). Les données ne sont effacées que si aucune opération n'attend d'être envoyée."
+        },
+        "step_up_minutes": {
+          "title": "Confirmation des changements sensibles",
+          "text": "Durée de validité de la dernière preuve du second facteur avant une modification de configuration (5 à 60 minutes)."
+        }
       }
     }
   }

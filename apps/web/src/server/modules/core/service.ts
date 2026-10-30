@@ -29,6 +29,8 @@ import {
 import { loadPermissions, requirePermission } from '../../platform/permissions';
 import { enforceRateLimit, RATE_LIMITS, securityEvent } from '../../platform/security';
 import { createSession, rotateSession } from '../../platform/session';
+import { loadConfig } from './configuration';
+import { deviceConfig, type DeviceConfig } from '@medhub/domain';
 import { issueLicenseToken, issueOfflineToken, platformSigningKeys } from '../../platform/tokens';
 import type { RequestContext } from '../../platform/tenant';
 
@@ -39,8 +41,6 @@ const LOCKOUT_STEPS: { failures: number; minutes: number }[] = [
 ];
 const SUSPENDED_STATES = new Set(['suspended', 'terminated', 'archived']);
 const DEVICE_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-/** Sensitive configuration changes need the second factor proven this recently. */
-export const STEP_UP_WINDOW_MS = 15 * 60_000;
 const SIGN_IN_HISTORY_DAYS = 180;
 
 export type Profile = {
@@ -650,17 +650,6 @@ export async function stepUp(
   return outcome.session;
 }
 
-/**
- * Sensitive configuration changes require a recent proof of the second factor
- * (docs/modules/core.md: changes to roles and privileged users need the 2FA of
- * their author). The client asks for a code and calls stepUp, then retries.
- */
-export function requireStepUp(ctx: RequestContext, now = Date.now()): void {
-  if (!ctx.mfaVerifiedAt || now - ctx.mfaVerifiedAt.getTime() > STEP_UP_WINDOW_MS) {
-    throw new AppError('AUTH_STEP_UP_REQUIRED', 403);
-  }
-}
-
 /** Sensitive account changes require a fresh second factor, not just the session. */
 async function requireFreshFactor(
   tx: Tx,
@@ -812,7 +801,11 @@ export async function registerDevice(
     return {
       deviceId,
       deviceCode,
-      tokens: deviceTokensFor(tenant, { userId: ctx.userId, deviceId, permissions }),
+      tokens: deviceTokensFor(tenant, await loadConfig(tx), {
+        userId: ctx.userId,
+        deviceId,
+        permissions,
+      }),
     };
   });
 }
@@ -823,14 +816,22 @@ export type DeviceTokens = {
   licenseToken: string;
   signingKeys: Record<string, string>;
   serverTime: number;
+  /** Published settings the device applies offline (auto-lock, PIN attempts). */
+  config: DeviceConfig;
 };
 
 export function deviceTokensFor(
   tenant: { id: string; status: string },
+  config: Awaited<ReturnType<typeof loadConfig>>,
   input: { userId: string; deviceId: string; permissions: Iterable<string> },
 ): DeviceTokens {
   return {
-    offlineToken: issueOfflineToken({ tenantId: tenant.id, ...input }),
+    config: deviceConfig(config),
+    offlineToken: issueOfflineToken({
+      tenantId: tenant.id,
+      ...input,
+      days: config['security.offline_token_days'],
+    }),
     licenseToken: issueLicenseToken(tenant),
     signingKeys: platformSigningKeys(),
     serverTime: Date.now(),
@@ -853,6 +854,10 @@ export async function refreshDeviceTokens(
     if (!device || device.userId !== ctx.userId) throw new AppError('DEVICE_UNKNOWN', 403);
     if (device.status !== 'active') throw new AppError('DEVICE_REVOKED', 403);
     const permissions = await loadPermissions(tx, ctx.userId);
-    return deviceTokensFor(tenant, { userId: ctx.userId, deviceId, permissions });
+    return deviceTokensFor(tenant, await loadConfig(tx), {
+      userId: ctx.userId,
+      deviceId,
+      permissions,
+    });
   });
 }

@@ -6,6 +6,7 @@ import {
   siteCreateSchema,
   tenantProfileSchema,
 } from './organization';
+import { deviceConfig, isConfigKey, resolveConfig } from './config-schemas';
 import { effectiveNow, licensePhase, offlineAccess } from './license';
 import { assessSignIn, deviceLabel, localHour } from './sign-in-risk';
 
@@ -161,5 +162,20 @@ describe('offline token and license', () => {
     expect(licensePhase(license, now + 11 * day)).toBe('suspended');
     expect(licensePhase({ ...license, graceAt: null }, now)).toBe('ok');
     expect(licensePhase({ ...license, state: 'suspended' }, now - 2 * day)).toBe('suspended');
+  });
+});
+
+describe('configuration values', () => {
+  it('falls back to the documented default for missing or invalid values', () => {
+    const values = resolveConfig({
+      'security.offline_token_days': 21,
+      'security.auto_lock_minutes': 500,
+      'security.unknown': 1,
+    });
+    expect(values['security.offline_token_days']).toBe(21);
+    expect(values['security.auto_lock_minutes']).toBe(5);
+    expect(deviceConfig(values)).toEqual({ autoLockMinutes: 5, pinMaxAttempts: 10 });
+    expect(isConfigKey('security.pin_max_attempts')).toBe(true);
+    expect(isConfigKey('security.unknown')).toBe(false);
   });
 });

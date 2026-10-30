@@ -24,4 +24,11 @@ export {
   siteUpdateRoute,
 } from './organization-routes';
 export { deviceRevokeRoute, devicesRoute, deviceTokensRoute } from './devices-routes';
+export {
+  configDiscardRoute,
+  configDraftRoute,
+  configPublishRoute,
+  configRestoreRoute,
+  configurationRoute,
+} from './configuration-routes';
 export type { Profile } from './service';

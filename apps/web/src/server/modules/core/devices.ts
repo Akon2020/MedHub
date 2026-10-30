@@ -5,7 +5,7 @@ import { and, desc, eq, isNull } from 'drizzle-orm';
 import { database } from '../../platform/db';
 import { loadPermissions, requirePermission } from '../../platform/permissions';
 import type { RequestContext } from '../../platform/tenant';
-import { requireStepUp } from './service';
+import { requireRecentStepUp } from './configuration';
 
 export type DeviceView = {
   id: string;
@@ -70,7 +70,7 @@ export async function revokeDevice(
   if (input.deviceId === ctx.deviceId) throw new AppError('DEVICE_IS_CURRENT', 409);
   await withTenant(database().db, { tenantId: ctx.tenantId, userId: ctx.userId }, async (tx) => {
     requirePermission(await loadPermissions(tx, ctx.userId), 'device:revoke');
-    requireStepUp(ctx);
+    await requireRecentStepUp(tx, ctx);
     const [device] = await tx
       .select()
       .from(schema.device)

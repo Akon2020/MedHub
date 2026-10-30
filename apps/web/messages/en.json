@@ -574,6 +574,10 @@
       "reference": {
         "title": "Reference data",
         "text": "Choice lists, catalogues, numbering"
+      },
+      "workstations": {
+        "title": "Devices and security",
+        "text": "Auto-lock, PIN, offline access, confirmation"
       }
     },
     "organization": {
@@ -713,6 +717,50 @@
         "PERMISSION_DENIED": "You are not allowed to do this.",
         "VALIDATION_FAILED": "Give a reason (at least 3 characters).",
         "AUTH_STEP_UP_REQUIRED": "Identity confirmation cancelled: nothing was changed."
+      }
+    },
+    "configuration": {
+      "title": "Devices and security",
+      "subtitle": "Settings applied to every device of the structure, published by version.",
+      "lifecycle": "Every change goes through a draft, then a publication. A published version is never changed: the previous one is archived and can be restored. Devices receive the published values at their next sync.",
+      "current": "Current value",
+      "defaultValue": "Default value",
+      "defaultHint": "MedHub default",
+      "publishedVersion": "Version {version} published",
+      "draftPending": "Draft pending",
+      "newValue": "New value",
+      "saveDraft": "Save draft",
+      "publish": "Publish ({value})",
+      "discard": "Discard draft",
+      "history": "History ({count})",
+      "restore": "Restore as draft",
+      "status": {
+        "draft": "Draft",
+        "published": "Current",
+        "archived": "Archived"
+      },
+      "units": {
+        "days": "days",
+        "minutes": "minutes",
+        "attempts": "attempts"
+      },
+      "keys": {
+        "offline_token_days": {
+          "title": "Offline access",
+          "text": "How long a device may work without syncing (1 to 30 days). After that, an online sign-in is required; nothing is lost."
+        },
+        "auto_lock_minutes": {
+          "title": "Auto-lock",
+          "text": "Inactivity delay before the device asks for the PIN (1 to 60 minutes)."
+        },
+        "pin_max_attempts": {
+          "title": "PIN attempts",
+          "text": "Attempts before blocking (3 to 20). Data is only erased when no operation is waiting to be sent."
+        },
+        "step_up_minutes": {
+          "title": "Confirmation of sensitive changes",
+          "text": "How long the last proof of the second factor stays valid before a configuration change (5 to 60 minutes)."
+        }
       }
     }
   }

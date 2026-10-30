@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Database,
   KeyRound,
+  MonitorCog,
   ShieldAlert,
   Smartphone,
   UserCog,
@@ -39,6 +40,12 @@ const ENTRIES: Entry[] = [
     permission: 'audit:review',
   },
   { key: 'account', icon: UserCog, href: '/app/compte', permission: '' },
+  {
+    key: 'workstations',
+    icon: MonitorCog,
+    href: '/app/parametres/synchronisation',
+    permission: 'configuration:read',
+  },
   { key: 'users', icon: Users, permission: 'user:read', soon: 'S5' },
   { key: 'roles', icon: KeyRound, permission: 'role:read', soon: 'S5' },
   {

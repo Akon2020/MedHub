@@ -2,7 +2,9 @@
 
 import type { CommandName, CommandPayload } from '@medhub/domain';
 import {
+  DEFAULT_MAX_PIN_ATTEMPTS,
   isInitialized,
+  loadTokens,
   loadDevice,
   nextCounter,
   openLocalDb,
@@ -72,7 +74,8 @@ type RuntimeValue = {
 
 const RuntimeContext = createContext<RuntimeValue | null>(null);
 
-const AUTO_LOCK_MS = 5 * 60 * 1000;
+/** Defaults until the structure publishes its own values (docs/06, config_entry). */
+const DEFAULT_AUTO_LOCK_MINUTES = 5;
 
 async function startSession(
   identity: StoredIdentity,
@@ -114,6 +117,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<SyncStatus | null>(null);
   const [revision, setRevision] = useState(0);
   const [tokens, setTokens] = useState<TokenStatus | null>(null);
+  const [autoLockMs, setAutoLockMs] = useState(DEFAULT_AUTO_LOCK_MINUTES * 60_000);
   const dbRef = useRef<MedHubLocalDb | null>(null);
 
   useEffect(() => {
@@ -164,10 +168,10 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (phase !== 'ready') return;
-    let timer = setTimeout(lock, AUTO_LOCK_MS);
+    let timer = setTimeout(lock, autoLockMs);
     const reset = () => {
       clearTimeout(timer);
-      timer = setTimeout(lock, AUTO_LOCK_MS);
+      timer = setTimeout(lock, autoLockMs);
     };
     const events = ['pointerdown', 'keydown', 'touchstart'] as const;
     events.forEach((e) => window.addEventListener(e, reset, { passive: true }));
@@ -175,7 +179,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
       clearTimeout(timer);
       events.forEach((e) => window.removeEventListener(e, reset));
     };
-  }, [phase, lock]);
+  }, [phase, lock, autoLockMs]);
 
   /** Remote wipe ordered by the server (device retired or declared lost). */
   const wipeDevice = useCallback(() => {
@@ -215,6 +219,8 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
       // Devices activated before the tokens existed keep working until their next sync.
       if (current.offline === 'expired' || current.offline === 'invalid') return 'expired';
       setTokens(current);
+      const stored = await loadTokens(unlocked.db);
+      if (stored?.config) setAutoLockMs(stored.config.autoLockMinutes * 60_000);
       const next = await startSession(identity, unlocked, {
         afterSync: async (deviceId) => {
           if (!(await tokensDue(unlocked.db))) return;
@@ -234,7 +240,12 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
     async (pin: string): Promise<UnlockOutcome> => {
       const db = dbRef.current;
       if (!db || !identity) return { ok: false, reason: 'NOT_ACTIVATED' };
-      const result = await unlockWithPin(db, pin);
+      const stored = await loadTokens(db);
+      const result = await unlockWithPin(
+        db,
+        pin,
+        stored?.config?.pinMaxAttempts ?? DEFAULT_MAX_PIN_ATTEMPTS,
+      );
       if (!result.ok) {
         if (result.reason === 'WIPED') setPhase('not-activated');
         return result;

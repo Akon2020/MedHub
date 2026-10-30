@@ -88,6 +88,38 @@ export const department = pgTable(
   ],
 );
 
+/**
+ * Versioned simple settings (docs/06-configuration.md section 2). A published
+ * version is never changed: a change is a new version, the previous one is
+ * archived. Only drafts may be edited or discarded (enforced by a trigger).
+ */
+export const configEntry = pgTable(
+  'config_entry',
+  {
+    ...tenantColumns(),
+    domain: text('domain').notNull(),
+    key: text('key').notNull(),
+    version: integer('version').notNull(),
+    status: text('status').notNull().default('draft'),
+    value: jsonb('value').$type<unknown>().notNull(),
+    note: text('note'),
+    effectiveFrom: timestamp('effective_from', { withTimezone: true }),
+    createdBy: uuid('created_by'),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    publishedBy: uuid('published_by'),
+  },
+  (t) => [
+    uniqueIndex('config_entry_version_uq').on(t.tenantId, t.key, t.version),
+    uniqueIndex('config_entry_draft_uq')
+      .on(t.tenantId, t.key)
+      .where(sql`${t.status} = 'draft'`),
+    uniqueIndex('config_entry_published_uq')
+      .on(t.tenantId, t.key)
+      .where(sql`${t.status} = 'published'`),
+    check('config_entry_status_check', sql`${t.status} in ('draft','published','archived')`),
+  ],
+);
+
 export const device = pgTable(
   'device',
   {

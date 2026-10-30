@@ -57,6 +57,8 @@ export type StoredTokens = {
   offlineToken: string;
   licenseToken: string;
   signingKeys: Record<string, string>;
+  /** Published structure settings applied offline. */
+  config?: { autoLockMinutes: number; pinMaxAttempts: number };
   refreshedAt: number;
 };
 
