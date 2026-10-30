@@ -14,7 +14,7 @@ Le jalon **J0 Fondations** est construit :
 - worker cron pour les tâches de fond, scripts de déploiement cPanel, CI GitHub Actions ;
 - thème clair, sombre ou automatique (selon le système) sur toute l'application ;
 - début de J1 (S4) : double authentification TOTP avec codes de secours, limitation de débit en base, règles d'IP, politique CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes, organisation de la structure ;
-- S5 (en cours) : appareils et effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs.
+- S5 (en cours) : appareils et effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs, éditeur de rôles.
 
 Le journal complet de tout ce qui a été fait se trouve dans `walkthrough.md`.
 
@@ -342,6 +342,14 @@ Menu **Paramètres** (permission `configuration:read`, administrateur de structu
 - **Désactiver** ou **réactiver** (`user:disable`, avec motif) : sessions fermées immédiatement ; chaque poste de l'utilisateur retire son accès hors connexion à sa synchronisation suivante, sans perdre les opérations en attente.
 - Garde-fous : on n'agit jamais sur son propre compte depuis cet écran (« Mon compte » sert à cela) ; la structure garde toujours au moins un administrateur actif capable de gérer les rôles (`role:manage`) ; un compte sans rôle actif ne peut pas se connecter.
 - **Politique de mot de passe** : 10 caractères au moins (réglable de 10 à 64 dans Postes et sécurité), refus des mots de passe courants (liste embarquée) et de ceux qui contiennent le nom ou l'identifiant, aucune règle de composition. Chacun peut changer son mot de passe dans « Mon compte » (ses autres sessions sont fermées).
+
+### Rôles et permissions
+
+**Paramètres, Rôles et permissions** (`/app/parametres/roles`, lecture `role:read`, modification `role:manage` avec confirmation du second facteur).
+- Chaque rôle a une **grille** : une ligne par ressource (patients, constantes, factures, stock...), les actions permises en cases à cocher et un **périmètre** (toute la structure, son site, son service, ses propres éléments, magasins ou caisses assignés selon la ressource). Le bouclier marque les droits d'administration.
+- Un rôle qui accorde un droit d'administration est **privilégié** : la double authentification y est toujours exigée. Pour les autres, la case « Double authentification obligatoire » reste au choix.
+- **Dupliquer** un rôle (ou partir d'un rôle vide) pour créer une variante ; le code du rôle ne change plus ensuite. Un rôle copié d'un modèle MedHub indique ses différences avec le modèle et peut **revenir au modèle**.
+- Les changements s'appliquent dès la requête suivante et, sur chaque poste, à la synchronisation suivante. Un changement qui laisserait la structure sans administrateur capable de gérer les rôles est refusé.
 
 ### Thème sombre
 
