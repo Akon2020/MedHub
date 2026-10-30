@@ -151,7 +151,7 @@ export function VitalsPanel({ patientId, vitals }: { patientId: string; vitals: 
                   value={code}
                   disabled={Boolean(supersedes)}
                   onChange={(e) => setCode(e.target.value as VitalSignCode)}
-                  className="h-11 rounded-lg border border-input bg-white px-3 text-[15px] outline-none focus:border-ring focus:ring-[3px] focus:ring-ring/25"
+                  className="h-11 rounded-lg border border-input bg-card px-3 text-[15px] outline-none focus:border-ring focus:ring-[3px] focus:ring-ring/25"
                 >
                   {COMMON_CODES.map((c) => (
                     <option key={c} value={c}>

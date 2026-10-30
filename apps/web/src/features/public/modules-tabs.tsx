@@ -42,7 +42,7 @@ export function ModulesTabs() {
             className={cn(
               'inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-sm transition-all',
               active === key
-                ? 'bg-white font-medium text-foreground shadow-sm ring-1 ring-border'
+                ? 'bg-card font-medium text-foreground shadow-sm ring-1 ring-border'
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >
@@ -79,9 +79,7 @@ export function ModulesTabs() {
               key={point}
               className={cn(
                 'flex min-h-24 flex-col justify-between rounded-2xl p-4 ring-1',
-                i === 0
-                  ? 'bg-primary text-primary-foreground ring-primary'
-                  : 'bg-white ring-border',
+                i === 0 ? 'bg-primary text-primary-foreground ring-primary' : 'bg-card ring-border',
               )}
             >
               <Check

@@ -74,7 +74,7 @@ function PatientsScreen() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('searchPlaceholder')}
               aria-label={t('searchPlaceholder')}
-              className="h-10 w-full rounded-full border border-border bg-muted/50 pl-10 pr-4 text-sm outline-none focus:border-ring focus:bg-white focus:ring-[3px] focus:ring-ring/20"
+              className="h-10 w-full rounded-full border border-border bg-muted/50 pl-10 pr-4 text-sm outline-none focus:border-ring focus:bg-card focus:ring-[3px] focus:ring-ring/20"
             />
           </div>
           <p className="text-sm text-muted-foreground">

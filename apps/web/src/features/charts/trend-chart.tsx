@@ -33,30 +33,32 @@ export default function TrendChart({
         <AreaChart data={data} margin={{ top: 10, right: 8, bottom: 0, left: -12 }}>
           <defs>
             <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#6aafba" stopOpacity={0.45} />
-              <stop offset="100%" stopColor="#6aafba" stopOpacity={0} />
+              <stop offset="0%" stopColor="var(--teal-mid)" stopOpacity={0.45} />
+              <stop offset="100%" stopColor="var(--teal-mid)" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid vertical={false} stroke="#e1eaec" />
+          <CartesianGrid vertical={false} stroke="var(--border)" />
           <XAxis
             dataKey="label"
             tickLine={false}
             axisLine={false}
-            tick={{ fontSize: 12, fill: '#5d6a78' }}
+            tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
           />
           <YAxis
             tickLine={false}
             axisLine={false}
             allowDecimals={allowDecimals}
             width={44}
-            tick={{ fontSize: 12, fill: '#5d6a78' }}
+            tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
             domain={['auto', 'auto']}
           />
           <Tooltip
-            cursor={{ stroke: '#0f6b6b', strokeDasharray: '4 4' }}
+            cursor={{ stroke: 'var(--primary)', strokeDasharray: '4 4' }}
             contentStyle={{
               borderRadius: 12,
-              border: '1px solid #e1eaec',
+              border: '1px solid var(--border)',
+              background: 'var(--popover)',
+              color: 'var(--popover-foreground)',
               boxShadow: '0 12px 30px -16px rgb(13 29 29 / 0.25)',
               fontSize: 13,
             }}
@@ -66,10 +68,10 @@ export default function TrendChart({
           <Area
             type="monotone"
             dataKey="value"
-            stroke="#0f6b6b"
+            stroke="var(--primary)"
             strokeWidth={2}
             fill="url(#trendFill)"
-            activeDot={{ r: 5, fill: '#0f6b6b', stroke: '#fff', strokeWidth: 2 }}
+            activeDot={{ r: 5, fill: 'var(--primary)', stroke: 'var(--card)', strokeWidth: 2 }}
           />
         </AreaChart>
       </ResponsiveContainer>

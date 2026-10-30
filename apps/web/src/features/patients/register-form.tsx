@@ -143,7 +143,7 @@ export function RegisterForm({
                     'h-10 rounded-full px-4 text-sm ring-1 transition-colors',
                     sex === value
                       ? 'bg-primary text-primary-foreground ring-primary'
-                      : 'bg-white ring-border hover:bg-muted',
+                      : 'bg-card ring-border hover:bg-muted',
                   )}
                 >
                   {t(`sex.${value}`)}

@@ -46,9 +46,9 @@ export async function HeroPreview() {
   return (
     <div className="relative mx-auto mt-14 w-full max-w-5xl [perspective:1800px]">
       <div className="glass rounded-[28px] p-2 [transform:rotateX(8deg)] sm:p-3">
-        <div className="overflow-hidden rounded-[22px] bg-[#f7fafb] ring-1 ring-black/5">
+        <div className="overflow-hidden rounded-[22px] bg-background ring-1 ring-black/5">
           <div className="flex">
-            <aside className="hidden w-48 shrink-0 border-r border-border bg-white p-4 lg:block">
+            <aside className="hidden w-48 shrink-0 border-r border-border bg-card p-4 lg:block">
               <div className="mb-6 flex items-center gap-2">
                 <LogoMark className="size-6" />
                 <span className="font-display text-sm font-semibold">MedHub</span>
@@ -74,7 +74,7 @@ export async function HeroPreview() {
             </aside>
             <div className="min-w-0 flex-1 p-4 sm:p-5">
               <div className="flex items-center gap-3">
-                <div className="flex h-9 flex-1 items-center gap-2 rounded-full bg-white px-3 text-xs text-muted-foreground ring-1 ring-border">
+                <div className="flex h-9 flex-1 items-center gap-2 rounded-full bg-card px-3 text-xs text-muted-foreground ring-1 ring-border">
                   <Search className="size-3.5" aria-hidden />
                   <span className="truncate">{t('search')}</span>
                 </div>
@@ -82,7 +82,7 @@ export async function HeroPreview() {
                   <CloudOff className="size-3" aria-hidden />
                   {t('offline')}
                 </span>
-                <span className="grid size-9 place-items-center rounded-full bg-white ring-1 ring-border">
+                <span className="grid size-9 place-items-center rounded-full bg-card ring-1 ring-border">
                   <Bell className="size-4 text-slate-ink" aria-hidden />
                 </span>
               </div>
@@ -99,7 +99,7 @@ export async function HeroPreview() {
 
               <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
                 {stats.map(({ icon: Icon, label, value, tone }) => (
-                  <div key={label} className="rounded-2xl bg-white p-3.5 ring-1 ring-border">
+                  <div key={label} className="rounded-2xl bg-card p-3.5 ring-1 ring-border">
                     <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                       <Icon className="size-3.5" aria-hidden />
                       {label}
@@ -110,26 +110,26 @@ export async function HeroPreview() {
               </div>
 
               <div className="mt-3 grid gap-3 md:grid-cols-5">
-                <div className="rounded-2xl bg-white p-4 ring-1 ring-border md:col-span-3">
+                <div className="rounded-2xl bg-card p-4 ring-1 ring-border md:col-span-3">
                   <p className="text-[13px] font-semibold">{t('activity')}</p>
                   <svg viewBox="0 0 360 120" className="mt-3 h-28 w-full" aria-hidden>
                     <defs>
                       <linearGradient id="hp-fill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0" stopColor="#6aafba" stopOpacity="0.45" />
-                        <stop offset="1" stopColor="#6aafba" stopOpacity="0" />
+                        <stop offset="0" stopColor="var(--teal-mid)" stopOpacity="0.45" />
+                        <stop offset="1" stopColor="var(--teal-mid)" stopOpacity="0" />
                       </linearGradient>
                     </defs>
                     <path d={`${line} L360,120 L0,120 Z`} fill="url(#hp-fill)" />
                     <path
                       d={line}
                       fill="none"
-                      stroke="#0f6b6b"
+                      stroke="var(--primary)"
                       strokeWidth="2"
                       strokeLinejoin="round"
                     />
                   </svg>
                 </div>
-                <div className="rounded-2xl bg-white p-4 ring-1 ring-border md:col-span-2">
+                <div className="rounded-2xl bg-card p-4 ring-1 ring-border md:col-span-2">
                   <p className="text-[13px] font-semibold">{t('queue')}</p>
                   <div className="mt-3 flex h-28 items-end gap-2">
                     {WEEK.map((v, i) => (

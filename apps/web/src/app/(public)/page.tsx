@@ -23,7 +23,7 @@ import { PublicNav } from '@/features/public/public-nav';
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-ink ring-1 ring-border">
+    <span className="inline-flex rounded-full bg-card px-3 py-1 text-xs font-medium text-slate-ink ring-1 ring-border">
       {children}
     </span>
   );
@@ -89,7 +89,7 @@ export default async function HomePage() {
       </div>
 
       <section id="fonctionnalites" className="mx-auto -mt-12 max-w-6xl scroll-mt-28 px-4 sm:px-6">
-        <div className="rounded-[32px] bg-white p-6 shadow-[0_30px_80px_-50px_rgb(13_29_29/0.35)] ring-1 ring-border sm:p-10">
+        <div className="rounded-[32px] bg-card p-6 shadow-[0_30px_80px_-50px_rgb(13_29_29/0.35)] ring-1 ring-border sm:p-10">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <Eyebrow>{t('pillars.eyebrow')}</Eyebrow>
@@ -105,7 +105,7 @@ export default async function HomePage() {
           <div className="mt-10 grid gap-4 md:grid-cols-3">
             {pillars.map(({ key, icon: Icon }) => (
               <article key={key} className="rounded-[22px] bg-secondary/70 p-6 ring-1 ring-border">
-                <span className="inline-grid size-11 place-items-center rounded-xl bg-white text-primary ring-1 ring-border">
+                <span className="inline-grid size-11 place-items-center rounded-xl bg-card text-primary ring-1 ring-border">
                   <Icon className="size-5" aria-hidden />
                 </span>
                 <h3 className="mt-5 text-lg font-semibold">{t(`pillars.${key}.title`)}</h3>
@@ -117,18 +117,18 @@ export default async function HomePage() {
           </div>
           <article className="mt-4 overflow-hidden rounded-[22px] bg-primary p-6 text-primary-foreground sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-8">
             <div className="flex items-start gap-4">
-              <span className="inline-grid size-11 shrink-0 place-items-center rounded-xl bg-white/15">
+              <span className="inline-grid size-11 shrink-0 place-items-center rounded-xl bg-primary-foreground/15">
                 <SlidersHorizontal className="size-5" aria-hidden />
               </span>
               <div>
                 <h3 className="text-lg font-semibold">{t('pillars.config.title')}</h3>
-                <p className="mt-1 max-w-xl text-sm leading-relaxed text-white/80">
+                <p className="mt-1 max-w-xl text-sm leading-relaxed text-primary-foreground/80">
                   {t('pillars.config.text')}
                 </p>
               </div>
             </div>
             <Lock
-              className="mt-6 hidden size-16 shrink-0 text-white/15 sm:mt-0 sm:block"
+              className="mt-6 hidden size-16 shrink-0 text-primary-foreground/15 sm:mt-0 sm:block"
               aria-hidden
             />
           </article>
@@ -170,7 +170,7 @@ export default async function HomePage() {
               {why.map(({ key, icon: Icon }, index) => (
                 <li
                   key={key}
-                  className={`flex gap-4 rounded-2xl p-4 ${index === 1 ? 'bg-white ring-1 ring-border' : ''}`}
+                  className={`flex gap-4 rounded-2xl p-4 ${index === 1 ? 'bg-card ring-1 ring-border' : ''}`}
                 >
                   <Icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
                   <div>
@@ -183,10 +183,10 @@ export default async function HomePage() {
               ))}
             </ul>
           </div>
-          <div className="relative flex min-h-80 items-center justify-center overflow-hidden rounded-[26px] bg-gradient-to-br from-primary to-[#0a4a4a] p-8">
+          <div className="relative flex min-h-80 items-center justify-center overflow-hidden rounded-[26px] bg-gradient-to-br from-brand to-brand-deep p-8">
             <div className="absolute inset-0 opacity-30 [background-image:repeating-linear-gradient(90deg,transparent_0,transparent_46px,rgb(255_255_255/0.25)_48px,transparent_52px)]" />
             <div className="relative grid w-full max-w-sm gap-3">
-              <div className="rounded-2xl bg-white/95 p-4 shadow-xl">
+              <div className="rounded-2xl bg-card/95 p-4 shadow-xl">
                 <p className="text-xs text-muted-foreground">{t('preview.lastVitals')}</p>
                 <div className="mt-3 flex items-end justify-between">
                   <div>
@@ -197,13 +197,13 @@ export default async function HomePage() {
                     <path
                       d="M0,30 L20,26 L40,28 L60,18 L80,20 L100,8 L120,12"
                       fill="none"
-                      stroke="#0f6b6b"
+                      stroke="var(--primary)"
                       strokeWidth="2.5"
                     />
                   </svg>
                 </div>
               </div>
-              <div className="ml-8 rounded-2xl bg-white/95 p-4 shadow-xl">
+              <div className="ml-8 rounded-2xl bg-card/95 p-4 shadow-xl">
                 <div className="flex items-center justify-between">
                   <p className="text-[13px] font-medium">{t('preview.offline')}</p>
                   <span className="rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-medium text-warning">
@@ -256,7 +256,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <footer className="border-t border-border bg-white/60">
+      <footer className="border-t border-border bg-card/60">
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-[2fr_1fr_1fr]">
           <div>
             <Logo />

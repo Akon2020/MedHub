@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { Logo } from '@/components/brand/logo';
 import { LocaleSwitcher } from '@/components/locale-switcher';
+import { ThemeSwitcher } from '@/components/theme-switcher';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -60,6 +61,7 @@ export function PublicNav() {
           ))}
         </ul>
         <div className="flex items-center gap-2">
+          <ThemeSwitcher className="hidden sm:inline-flex" />
           <LocaleSwitcher className="hidden sm:inline-flex" />
           <Button asChild variant="secondary" className="hidden sm:inline-flex">
             <Link href="/connexion">{t('signIn')}</Link>
@@ -84,15 +86,18 @@ export function PublicNav() {
                 <a
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className="block rounded-lg px-3 py-2.5 text-[15px] hover:bg-white/70"
+                  className="block rounded-lg px-3 py-2.5 text-[15px] hover:bg-card/70"
                 >
                   {t(link.key)}
                 </a>
               </li>
             ))}
           </ul>
-          <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/70 pt-3">
-            <LocaleSwitcher />
+          <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <ThemeSwitcher />
+              <LocaleSwitcher />
+            </div>
             <Button asChild>
               <Link href="/connexion">{t('signIn')}</Link>
             </Button>

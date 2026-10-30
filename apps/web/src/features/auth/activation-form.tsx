@@ -74,7 +74,7 @@ export function ActivationForm() {
         </span>
         <h1 className="mt-5 text-2xl font-semibold">{t('recovery.title')}</h1>
         <p className="mt-2 text-[15px] text-muted-foreground">{t('recovery.text')}</p>
-        <p className="mt-6 select-all break-all rounded-2xl bg-white p-5 text-center font-mono text-lg font-semibold tracking-widest ring-1 ring-border">
+        <p className="mt-6 select-all break-all rounded-2xl bg-card p-5 text-center font-mono text-lg font-semibold tracking-widest ring-1 ring-border">
           {recovery}
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
@@ -155,7 +155,7 @@ export function ActivationForm() {
               <label
                 key={k}
                 className={`flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2.5 text-sm ring-1 transition-colors ${
-                  kind === k ? 'bg-accent ring-primary' : 'bg-white ring-border hover:bg-muted'
+                  kind === k ? 'bg-accent ring-primary' : 'bg-card ring-border hover:bg-muted'
                 }`}
               >
                 <input

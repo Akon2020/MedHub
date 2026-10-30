@@ -27,7 +27,7 @@ export function LocaleSwitcher({ className }: { className?: string }) {
       role="group"
       aria-label={t('language')}
       className={cn(
-        'inline-flex items-center gap-0.5 rounded-full bg-white/70 p-1 ring-1 ring-border',
+        'inline-flex items-center gap-0.5 rounded-full bg-card/70 p-1 ring-1 ring-border',
         className,
       )}
     >

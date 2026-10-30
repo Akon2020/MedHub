@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { Logo } from '@/components/brand/logo';
 import { LocaleSwitcher } from '@/components/locale-switcher';
+import { ThemeSwitcher } from '@/components/theme-switcher';
 
 export default async function AuthLayout({ children }: { children: ReactNode }) {
   const t = await getTranslations('auth');
@@ -13,11 +14,14 @@ export default async function AuthLayout({ children }: { children: ReactNode }) 
         <Link href="/" aria-label="MedHub">
           <Logo />
         </Link>
-        <LocaleSwitcher />
+        <div className="flex items-center gap-2">
+          <ThemeSwitcher />
+          <LocaleSwitcher />
+        </div>
       </header>
       <main className="flex flex-1 items-center justify-center px-4 pb-10 sm:px-8">
         <div className="grid w-full max-w-5xl overflow-hidden rounded-[32px] lg:grid-cols-[1.05fr_1fr]">
-          <section className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-primary to-[#093f3f] p-10 text-primary-foreground lg:flex">
+          <section className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-brand to-brand-deep p-10 text-white lg:flex">
             <div className="absolute inset-0 opacity-25 [background-image:repeating-linear-gradient(90deg,transparent_0,transparent_46px,rgb(255_255_255/0.3)_48px,transparent_52px)]" />
             <div className="relative">
               <span className="inline-grid size-12 place-items-center rounded-2xl bg-white/15">

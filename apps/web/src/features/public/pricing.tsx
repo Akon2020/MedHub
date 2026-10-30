@@ -35,7 +35,7 @@ export function Pricing({ plans, currency, annualMonthsCharged }: Props) {
 
   return (
     <div>
-      <div className="mx-auto flex w-fit items-center gap-1 rounded-full bg-white/80 p-1 ring-1 ring-border">
+      <div className="mx-auto flex w-fit items-center gap-1 rounded-full bg-card/80 p-1 ring-1 ring-border">
         {[false, true].map((value) => (
           <button
             key={String(value)}
@@ -54,7 +54,7 @@ export function Pricing({ plans, currency, annualMonthsCharged }: Props) {
               <span
                 className={cn(
                   'ml-2 rounded-full px-2 py-0.5 text-[11px]',
-                  annual ? 'bg-white/20' : 'bg-accent text-accent-foreground',
+                  annual ? 'bg-primary-foreground/20' : 'bg-accent text-accent-foreground',
                 )}
               >
                 {t('annualNote')}
@@ -77,11 +77,11 @@ export function Pricing({ plans, currency, annualMonthsCharged }: Props) {
                 'relative flex flex-col rounded-[24px] p-6 ring-1 transition-transform',
                 highlighted
                   ? 'bg-primary text-primary-foreground shadow-[0_30px_60px_-30px_rgb(15_107_107/0.7)] ring-primary xl:-translate-y-3'
-                  : 'bg-white ring-border',
+                  : 'bg-card ring-border',
               )}
             >
               {highlighted && (
-                <span className="absolute right-5 top-5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium">
+                <span className="absolute right-5 top-5 rounded-full bg-primary-foreground/15 px-3 py-1 text-xs font-medium">
                   {t('popular')}
                 </span>
               )}
@@ -89,7 +89,7 @@ export function Pricing({ plans, currency, annualMonthsCharged }: Props) {
               <p
                 className={cn(
                   'mt-1 text-sm',
-                  highlighted ? 'text-white/75' : 'text-muted-foreground',
+                  highlighted ? 'text-primary-foreground/75' : 'text-muted-foreground',
                 )}
               >
                 {plan.profile[locale]}
@@ -99,7 +99,7 @@ export function Pricing({ plans, currency, annualMonthsCharged }: Props) {
                   <p
                     className={cn(
                       'text-xs',
-                      highlighted ? 'text-white/70' : 'text-muted-foreground',
+                      highlighted ? 'text-primary-foreground/70' : 'text-muted-foreground',
                     )}
                   >
                     {t('from')}
@@ -110,7 +110,7 @@ export function Pricing({ plans, currency, annualMonthsCharged }: Props) {
                   <span
                     className={cn(
                       'ml-1 text-sm font-normal',
-                      highlighted ? 'text-white/70' : 'text-muted-foreground',
+                      highlighted ? 'text-primary-foreground/70' : 'text-muted-foreground',
                     )}
                   >
                     {annual ? t('perYear') : t('perMonth')}
@@ -123,7 +123,7 @@ export function Pricing({ plans, currency, annualMonthsCharged }: Props) {
                     <span
                       className={cn(
                         'mt-0.5 grid size-5 shrink-0 place-items-center rounded-full',
-                        highlighted ? 'bg-white/15' : 'bg-accent text-primary',
+                        highlighted ? 'bg-primary-foreground/15' : 'bg-accent text-primary',
                       )}
                     >
                       <Check className="size-3" aria-hidden />

@@ -54,7 +54,7 @@ export function SyncIndicator() {
         <Icon className={cn('size-4', status.state === 'syncing' && 'animate-spin')} aria-hidden />
         <span className="hidden sm:inline">{label}</span>
         {status.pending > 0 && (
-          <span className="rounded-full bg-white/80 px-1.5 text-[11px] tabular-nums">
+          <span className="rounded-full bg-card/80 px-1.5 text-[11px] tabular-nums">
             {status.pending}
           </span>
         )}
@@ -63,7 +63,7 @@ export function SyncIndicator() {
         <div
           role="dialog"
           aria-label={label}
-          className="absolute right-0 top-11 z-50 w-72 rounded-2xl bg-white p-4 text-sm shadow-xl ring-1 ring-border"
+          className="absolute right-0 top-11 z-50 w-72 rounded-2xl bg-card p-4 text-sm shadow-xl ring-1 ring-border"
         >
           <p className="font-semibold">{label}</p>
           <p className="mt-1 text-muted-foreground">{t('lastSync', { time: lastSync })}</p>

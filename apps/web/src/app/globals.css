@@ -37,7 +37,131 @@
   --danger-soft: #fee2e2;
   --info: #2563eb;
   --info-soft: #dbeafe;
+  --brand: #0f6b6b;
+  --brand-deep: #093f3f;
+  --shadow-ink: 13 29 29;
+  --glass-from: rgb(255 255 255 / 0.78);
+  --glass-to: rgb(255 255 255 / 0.52);
+  --glass-edge: rgb(255 255 255 / 0.7);
+  --glass-highlight: rgb(255 255 255 / 0.9);
+  --hero-base: #cfe7ea;
+  --hero-stripe: rgb(255 255 255 / 0.45);
+  --hero-top: #eef8f9;
+  --hero-mid: #cbe6e9;
+  --hero-bottom: #9fd0d5;
+  --backdrop-a: rgb(180 218 221 / 0.55);
+  --backdrop-b: rgb(106 175 186 / 0.35);
   --radius: 0.875rem;
+  color-scheme: light;
+}
+
+/*
+ * Dark theme: explicit choice (data-theme="dark") or system preference when no
+ * explicit choice was made. The two blocks must stay identical.
+ */
+:root[data-theme='dark'] {
+  --background: #0a1515;
+  --foreground: #e3eef0;
+  --card: #102020;
+  --card-foreground: #e3eef0;
+  --popover: #132626;
+  --popover-foreground: #e3eef0;
+  --primary: #4fb3b5;
+  --primary-hover: #6cc4c6;
+  --primary-foreground: #062222;
+  --secondary: #16292a;
+  --secondary-foreground: #d4e6e8;
+  --muted: #142727;
+  --muted-foreground: #95a9ae;
+  --accent: #173739;
+  --accent-foreground: #b4dadd;
+  --teal-soft: #1f4a4c;
+  --teal-mid: #6aafba;
+  --sage: #6f8a83;
+  --slate: #b2c3c6;
+  --border: #203738;
+  --input: #2a4547;
+  --ring: #4fb3b5;
+  --success: #4ade80;
+  --success-soft: #0f2e1b;
+  --warning: #fb923c;
+  --warning-soft: #36200f;
+  --danger: #f87171;
+  --danger-soft: #3a1515;
+  --info: #60a5fa;
+  --info-soft: #11233d;
+  --shadow-ink: 0 0 0;
+  --glass-from: rgb(16 32 32 / 0.82);
+  --glass-to: rgb(16 32 32 / 0.6);
+  --glass-edge: rgb(106 175 186 / 0.18);
+  --glass-highlight: rgb(255 255 255 / 0.06);
+  --hero-base: #0c2324;
+  --hero-stripe: rgb(106 175 186 / 0.07);
+  --hero-top: #123234;
+  --hero-mid: #0c2122;
+  --hero-bottom: #0a1515;
+  --backdrop-a: rgb(31 74 76 / 0.45);
+  --backdrop-b: rgb(15 107 107 / 0.25);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --background: #0a1515;
+    --foreground: #e3eef0;
+    --card: #102020;
+    --card-foreground: #e3eef0;
+    --popover: #132626;
+    --popover-foreground: #e3eef0;
+    --primary: #4fb3b5;
+    --primary-hover: #6cc4c6;
+    --primary-foreground: #062222;
+    --secondary: #16292a;
+    --secondary-foreground: #d4e6e8;
+    --muted: #142727;
+    --muted-foreground: #95a9ae;
+    --accent: #173739;
+    --accent-foreground: #b4dadd;
+    --teal-soft: #1f4a4c;
+    --teal-mid: #6aafba;
+    --sage: #6f8a83;
+    --slate: #b2c3c6;
+    --border: #203738;
+    --input: #2a4547;
+    --ring: #4fb3b5;
+    --success: #4ade80;
+    --success-soft: #0f2e1b;
+    --warning: #fb923c;
+    --warning-soft: #36200f;
+    --danger: #f87171;
+    --danger-soft: #3a1515;
+    --info: #60a5fa;
+    --info-soft: #11233d;
+    --shadow-ink: 0 0 0;
+    --glass-from: rgb(16 32 32 / 0.82);
+    --glass-to: rgb(16 32 32 / 0.6);
+    --glass-edge: rgb(106 175 186 / 0.18);
+    --glass-highlight: rgb(255 255 255 / 0.06);
+    --hero-base: #0c2324;
+    --hero-stripe: rgb(106 175 186 / 0.07);
+    --hero-top: #123234;
+    --hero-mid: #0c2122;
+    --hero-bottom: #0a1515;
+    --backdrop-a: rgb(31 74 76 / 0.45);
+    --backdrop-b: rgb(15 107 107 / 0.25);
+    color-scheme: dark;
+  }
+}
+
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme='light']), :root:not([data-theme='light']) *) {
+      @slot;
+    }
+  }
 }
 
 @theme inline {
@@ -71,6 +195,8 @@
   --color-danger-soft: var(--danger-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
+  --color-brand: var(--brand);
+  --color-brand-deep: var(--brand-deep);
   --radius-sm: calc(var(--radius) - 6px);
   --radius-md: calc(var(--radius) - 3px);
   --radius-lg: var(--radius);
@@ -111,10 +237,10 @@
 @layer components {
   /* Frosted panel used on public pages and the sign-in screen only. */
   .glass {
-    background: linear-gradient(135deg, rgb(255 255 255 / 0.78), rgb(255 255 255 / 0.52));
-    border: 1px solid rgb(255 255 255 / 0.7);
+    background: linear-gradient(135deg, var(--glass-from), var(--glass-to));
+    border: 1px solid var(--glass-edge);
     box-shadow:
-      0 1px 0 rgb(255 255 255 / 0.9) inset,
+      0 1px 0 var(--glass-highlight) inset,
       0 18px 50px -24px rgb(15 107 107 / 0.35);
     backdrop-filter: blur(18px) saturate(140%);
     -webkit-backdrop-filter: blur(18px) saturate(140%);
@@ -122,27 +248,31 @@
 
   /* Vertical light stripes of the hero backdrop. */
   .hero-backdrop {
-    background-color: #cfe7ea;
+    background-color: var(--hero-base);
     background-image:
       repeating-linear-gradient(
         90deg,
-        rgb(255 255 255 / 0) 0,
-        rgb(255 255 255 / 0) 54px,
-        rgb(255 255 255 / 0.45) 58px,
-        rgb(255 255 255 / 0) 66px
+        transparent 0,
+        transparent 54px,
+        var(--hero-stripe) 58px,
+        transparent 66px
       ),
-      radial-gradient(120% 80% at 50% 0%, #eef8f9 0%, #cbe6e9 55%, #9fd0d5 100%);
+      radial-gradient(
+        120% 80% at 50% 0%,
+        var(--hero-top) 0%,
+        var(--hero-mid) 55%,
+        var(--hero-bottom) 100%
+      );
   }
 
   .page-backdrop {
     background:
-      radial-gradient(80% 60% at 0% 0%, rgb(180 218 221 / 0.55), transparent 60%),
-      radial-gradient(70% 60% at 100% 100%, rgb(106 175 186 / 0.35), transparent 60%),
-      var(--background);
+      radial-gradient(80% 60% at 0% 0%, var(--backdrop-a), transparent 60%),
+      radial-gradient(70% 60% at 100% 100%, var(--backdrop-b), transparent 60%), var(--background);
   }
 
   .card-surface {
-    @apply rounded-xl border border-border bg-card shadow-[0_1px_2px_rgb(13_29_29/0.04),0_8px_24px_-16px_rgb(13_29_29/0.12)];
+    @apply rounded-xl border border-border bg-card shadow-[0_1px_2px_rgb(var(--shadow-ink)/0.04),0_8px_24px_-16px_rgb(var(--shadow-ink)/0.12)];
   }
 }
 
