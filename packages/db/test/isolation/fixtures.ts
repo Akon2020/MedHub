@@ -4,6 +4,7 @@ import { appendAudit } from '../../src/audit';
 import {
   changeLog,
   dataAccessLog,
+  department,
   device,
   mfaRecoveryCode,
   numberSeries,
@@ -27,6 +28,16 @@ import {
 export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<void>> = {
   site: async (tx, tenantId) => {
     await tx.insert(site).values({ id: uuidv7(), tenantId, code: 'KIN', name: 'Site test' });
+  },
+  department: async (tx, tenantId) => {
+    await tx.insert(department).values({
+      id: uuidv7(),
+      tenantId,
+      siteId: uuidv7(),
+      code: 'CONS',
+      name: 'Consultations',
+      kind: 'clinical',
+    });
   },
   device: async (tx, tenantId) => {
     await tx.insert(device).values({

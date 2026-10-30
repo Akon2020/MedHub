@@ -12,5 +12,15 @@ export {
   mfaEnrollRoute,
   mfaVerifyRoute,
   registerDeviceRoute,
+  stepUpRoute,
 } from './routes';
+export {
+  departmentCreateRoute,
+  departmentUpdateRoute,
+  organizationRoute,
+  organizationUpdateRoute,
+  securityEventsRoute,
+  siteCreateRoute,
+  siteUpdateRoute,
+} from './organization-routes';
 export type { Profile } from './service';

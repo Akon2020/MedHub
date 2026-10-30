@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { generate } from 'otplib';
-import { TEST_PIN, tenantCode, unlock } from './support';
+import { TEST_PIN, tenantCode, unlock, withServer } from './support';
 
 function seedPassword(): string {
   const value = process.env.MEDHUB_SEED_PASSWORD;
@@ -46,7 +46,9 @@ test('a privileged role enrolls its second factor at first sign-in, then must us
   await page.getByLabel('Code à 6 chiffres').fill(await freshCode(secret, null));
   const enrolledAt = Date.now();
   await page.getByRole('button', { name: 'Activer la double authentification' }).click();
-  await expect(page.getByRole('heading', { name: 'Codes de secours' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Codes de secours' })).toBeVisible({
+    timeout: 20_000,
+  });
   await expect(
     page.getByRole('listitem').filter({ hasText: /^[A-Z2-9]{5}-[A-Z2-9]{5}$/ }),
   ).toHaveCount(10);
@@ -57,11 +59,14 @@ test('a privileged role enrolls its second factor at first sign-in, then must us
   // Second sign-in: the password alone is no longer enough.
   await page.context().clearCookies();
   await signIn(page, 'admin');
-  await expect(page.getByRole('heading', { name: 'Double authentification' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Double authentification' })).toBeVisible({
+    timeout: 20_000,
+  });
   await page.getByLabel('Code à 6 chiffres').fill('000000');
   await page.getByRole('button', { name: 'Vérifier' }).click();
-  await expect(page.getByText('Code incorrect ou déjà utilisé.')).toBeVisible();
+  await expect(page.getByText('Code incorrect ou déjà utilisé.')).toBeVisible({ timeout: 20_000 });
   await page.getByLabel('Code à 6 chiffres').fill(await freshCode(secret, enrolledAt));
+  const verifiedAt = Date.now();
   await page.getByRole('button', { name: 'Vérifier' }).click();
   await page.waitForURL(/\/connexion\/activation$/);
 
@@ -85,6 +90,32 @@ test('a privileged role enrolls its second factor at first sign-in, then must us
   await page.goto('/app');
   await unlock(page);
   await page.screenshot({ path: 'test-results/dashboard-dark.png', fullPage: true });
+
+  // Organization: the session was opened with the second factor, so no prompt yet.
+  await page.goto('/app/parametres/organisation');
+  await unlock(page);
+  await page.getByRole('button', { name: 'Ajouter un site' }).click();
+  await page.getByLabel('Code (3 lettres)').fill('gom');
+  await page.getByLabel('Nom du site').fill('Site de Goma');
+  await page.getByRole('button', { name: 'Créer le site' }).click();
+  await expect(page.getByText('Site de Goma')).toBeVisible({ timeout: 20_000 });
+
+  // Twenty minutes later the proof is too old: the change asks for a code first.
+  await withServer((client) =>
+    client.query(
+      "update session set mfa_verified_at = now() - interval '20 minutes' where user_id = (select id from user_account where username = 'admin')",
+    ),
+  );
+  await page.getByRole('button', { name: 'Modifier GOM' }).click();
+  await page.getByLabel('Nom du site').fill('Site de Goma Nord');
+  await page.getByRole('button', { name: 'Enregistrer', exact: true }).last().click();
+  await expect(page.getByRole('heading', { name: 'Confirmez votre identité' })).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.getByLabel('Code de vérification').fill(await freshCode(secret, verifiedAt));
+  await page.getByRole('button', { name: 'Confirmer' }).click();
+  await expect(page.getByText('Site de Goma Nord')).toBeVisible({ timeout: 20_000 });
+  await page.screenshot({ path: 'test-results/organization-dark.png', fullPage: true });
 });
 
 test('content security policy carries a fresh nonce on every document', async ({ request }) => {

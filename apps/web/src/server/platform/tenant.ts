@@ -7,6 +7,8 @@ export type RequestContext = {
   userId: string;
   sessionId: string;
   deviceId: string | null;
+  /** Last proof of the second factor in this session, for step-up checks. */
+  mfaVerifiedAt: Date | null;
 };
 
 function readCookie(request: Request, name: string): string | undefined {
@@ -32,5 +34,6 @@ export async function resolveTenant(request: Request): Promise<RequestContext> {
     userId: session.userId,
     sessionId: session.sessionId,
     deviceId: session.deviceId,
+    mfaVerifiedAt: session.mfaVerifiedAt,
   };
 }

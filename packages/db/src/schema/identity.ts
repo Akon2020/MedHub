@@ -134,6 +134,10 @@ export const session = pgTable(
     ip: text('ip'),
     userAgent: text('user_agent'),
     revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    /** Last time the second factor was proven in this session (step-up for sensitive changes). */
+    mfaVerifiedAt: timestamp('mfa_verified_at', { withTimezone: true }),
+    /** Session this one replaced when its identifier was rotated. */
+    rotatedFrom: uuid('rotated_from'),
   },
   (t) => [
     uniqueIndex('session_token_uq').on(t.tenantId, t.tokenHash),

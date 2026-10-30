@@ -15,6 +15,13 @@
       "when": 1793330694585,
       "tag": "0001_s4_mfa_security",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793334376797,
+      "tag": "0002_s4_organization",
+      "breakpoints": true
     }
   ]
 }

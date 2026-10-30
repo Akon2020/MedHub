@@ -1,9 +1,17 @@
 import 'server-only';
 import { createHash } from 'node:crypto';
-import { appendAudit, schema, withSystem, withTenant, type Tx } from '@medhub/db';
+import {
+  appendAudit,
+  recordSecurityEvent,
+  schema,
+  withSystem,
+  withTenant,
+  type Tx,
+} from '@medhub/db';
+import { assessSignIn, deviceLabel } from '@medhub/domain';
 import { verifyPassword } from '@medhub/db/password';
 import { AppError, normalizeTenantCode, uuidv7, type DeviceKind } from '@medhub/shared';
-import { and, eq, gt, isNull, ne, or } from 'drizzle-orm';
+import { and, desc, eq, gt, isNull, ne, or } from 'drizzle-orm';
 import { database } from '../../platform/db';
 import {
   checkTotp,
@@ -20,7 +28,7 @@ import {
 } from '../../platform/mfa';
 import { loadPermissions, requirePermission } from '../../platform/permissions';
 import { enforceRateLimit, RATE_LIMITS, securityEvent } from '../../platform/security';
-import { createSession } from '../../platform/session';
+import { createSession, rotateSession } from '../../platform/session';
 import type { RequestContext } from '../../platform/tenant';
 
 const LOCKOUT_STEPS: { failures: number; minutes: number }[] = [
@@ -30,6 +38,9 @@ const LOCKOUT_STEPS: { failures: number; minutes: number }[] = [
 ];
 const SUSPENDED_STATES = new Set(['suspended', 'terminated', 'archived']);
 const DEVICE_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+/** Sensitive configuration changes need the second factor proven this recently. */
+export const STEP_UP_WINDOW_MS = 15 * 60_000;
+const SIGN_IN_HISTORY_DAYS = 180;
 
 export type Profile = {
   user: { id: string; displayName: string; title: string | null; username: string };
@@ -158,15 +169,18 @@ async function openSession(
   client: Client,
   method: 'password' | 'totp' | 'recovery_code' | 'mfa_enrollment',
 ): Promise<SignedIn> {
+  const now = new Date();
   await tx
     .update(schema.userAccount)
-    .set({ failedLogins: 0, lockedUntil: null, lastLoginAt: new Date() })
+    .set({ failedLogins: 0, lockedUntil: null, lastLoginAt: now })
     .where(eq(schema.userAccount.id, user.id));
+  const anomalies = await detectAnomalies(tx, tenant, user, client, now);
   const session = await createSession(tx, {
     tenantId: tenant.id,
     userId: user.id,
     ip: client.ip,
     userAgent: client.userAgent,
+    mfaVerifiedAt: method === 'password' ? null : now,
   });
   await appendAudit(tx, {
     tenantId: tenant.id,
@@ -175,7 +189,7 @@ async function openSession(
     action: 'login',
     entity: 'user_account',
     entityId: user.id,
-    diff: { method },
+    diff: anomalies.length > 0 ? { method, anomalies } : { method },
   });
   return {
     status: 'signed_in',
@@ -183,6 +197,46 @@ async function openSession(
     expiresAt: session.expiresAt,
     profile: await buildProfile(tx, tenant, user),
   };
+}
+
+/**
+ * Compares this sign-in with the user's previous sessions; anything unusual is
+ * written as a security event that the structure administrators review.
+ */
+async function detectAnomalies(
+  tx: Tx,
+  tenant: TenantRow,
+  user: UserRow,
+  client: Client,
+  now: Date,
+): Promise<string[]> {
+  const history = await tx
+    .select({ at: schema.session.createdAt, userAgent: schema.session.userAgent })
+    .from(schema.session)
+    .where(
+      and(
+        eq(schema.session.userId, user.id),
+        gt(schema.session.createdAt, new Date(now.getTime() - SIGN_IN_HISTORY_DAYS * 86_400_000)),
+      ),
+    )
+    .orderBy(desc(schema.session.createdAt))
+    .limit(200);
+  const anomalies = assessSignIn(
+    history,
+    { at: now, userAgent: client.userAgent },
+    tenant.timezone,
+  );
+  if (anomalies.length > 0) {
+    await recordSecurityEvent(tx, {
+      kind: 'sign_in_anomaly',
+      severity: 'warning',
+      tenantId: tenant.id,
+      userId: user.id,
+      ip: client.ip,
+      detail: { anomalies, device: deviceLabel(client.userAgent) },
+    });
+  }
+  return anomalies;
 }
 
 function accountKey(tenantCode: string, username: string): string {
@@ -534,22 +588,76 @@ export async function beginMfaSetup(ctx: RequestContext): Promise<EnrollmentMate
   return withAccount(ctx, (tx, tenant, user) => prepareSecret(tx, tenant, user));
 }
 
+export type RotatedSession = { cookie: string; expiresAt: Date };
+
+/** Turning the second factor on elevates the session: its identifier is rotated. */
 export async function confirmMfaSetup(
   ctx: RequestContext,
   code: string,
   client: Client,
-): Promise<string[]> {
-  const codes = await withAccount(ctx, (tx, tenant, user) =>
-    activateSecret(tx, tenant, user, code, client),
-  );
-  if (!codes) throw new AppError('AUTH_MFA_INVALID', 401);
+): Promise<{ recoveryCodes: string[]; session: RotatedSession }> {
+  const outcome = await withAccount(ctx, async (tx, tenant, user) => {
+    const codes = await activateSecret(tx, tenant, user, code, client);
+    if (!codes) return null;
+    const session = await rotateSession(tx, ctx, { ...client, mfaVerifiedAt: new Date() });
+    return { recoveryCodes: codes, session };
+  });
+  if (!outcome) throw new AppError('AUTH_MFA_INVALID', 401);
   await securityEvent({
     kind: 'mfa_enabled',
     tenantId: ctx.tenantId,
     userId: ctx.userId,
     ip: client.ip,
   });
-  return codes;
+  return outcome;
+}
+
+/**
+ * Step-up: the second factor proven again inside a session, before a sensitive
+ * change. The session identifier is rotated at the same time.
+ */
+export async function stepUp(
+  ctx: RequestContext,
+  code: string,
+  client: Client,
+): Promise<RotatedSession> {
+  await enforceRateLimit(RATE_LIMITS.mfaByUser, ctx.userId, {
+    ip: client.ip,
+    tenantId: ctx.tenantId,
+  });
+  const outcome = await withAccount(ctx, async (tx, tenant, user) => {
+    if (!user.mfaEnabledAt) return { failure: 'AUTH_MFA_NOT_ENROLLED' as const };
+    const factor = await checkSecondFactor(tx, tenant.id, user, code);
+    if (!factor.ok) {
+      await recordFailure(tx, tenant.id, user, client, 'mfa_failed');
+      return { failure: 'AUTH_MFA_INVALID' as const };
+    }
+    const session = await rotateSession(tx, ctx, { ...client, mfaVerifiedAt: new Date() });
+    await appendAudit(tx, {
+      tenantId: tenant.id,
+      userId: user.id,
+      ip: client.ip,
+      action: 'step_up',
+      entity: 'session',
+      entityId: session.sessionId,
+      diff: { method: factor.method },
+    });
+    return { failure: null, session };
+  });
+  if (outcome.failure === 'AUTH_MFA_NOT_ENROLLED') throw new AppError(outcome.failure, 409);
+  if (outcome.failure === 'AUTH_MFA_INVALID') throw new AppError(outcome.failure, 401);
+  return outcome.session;
+}
+
+/**
+ * Sensitive configuration changes require a recent proof of the second factor
+ * (docs/modules/core.md: changes to roles and privileged users need the 2FA of
+ * their author). The client asks for a code and calls stepUp, then retries.
+ */
+export function requireStepUp(ctx: RequestContext, now = Date.now()): void {
+  if (!ctx.mfaVerifiedAt || now - ctx.mfaVerifiedAt.getTime() > STEP_UP_WINDOW_MS) {
+    throw new AppError('AUTH_STEP_UP_REQUIRED', 403);
+  }
 }
 
 /** Sensitive account changes require a fresh second factor, not just the session. */

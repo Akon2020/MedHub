@@ -67,6 +67,27 @@ export const site = pgTable(
   ],
 );
 
+/** Departments (services) of a site: scope of roles, queues and reports. */
+export const department = pgTable(
+  'department',
+  {
+    ...tenantColumns(),
+    siteId: uuid('site_id').notNull(),
+    code: text('code').notNull(),
+    name: text('name').notNull(),
+    kind: text('kind').notNull(),
+    costCenterCode: text('cost_center_code'),
+    isActive: boolean('is_active').notNull().default(true),
+  },
+  (t) => [
+    uniqueIndex('department_code_uq').on(t.tenantId, t.siteId, t.code),
+    check(
+      'department_kind_check',
+      sql`${t.kind} in ('clinical','technical','administrative','pharmacy','laboratory','cashier')`,
+    ),
+  ],
+);
+
 export const device = pgTable(
   'device',
   {

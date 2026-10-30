@@ -5,7 +5,15 @@ import { appendAudit } from '../src/audit';
 import { createDb } from '../src/client';
 import { withSystem, withTenant } from '../src/context';
 import { hashPassword } from '../src/password';
-import { role, rolePermission, site, tenant, userAccount, userRole } from '../src/schema';
+import {
+  department,
+  role,
+  rolePermission,
+  site,
+  tenant,
+  userAccount,
+  userRole,
+} from '../src/schema';
 import { isMainModule, requireEnv } from './env';
 
 /**
@@ -40,6 +48,15 @@ const DEMO_USERS: {
 
 export type SeedTenant = typeof DEMO_TENANT;
 
+/** Fictitious departments of the demo site. */
+const DEMO_DEPARTMENTS = [
+  { code: 'ACC', name: 'Accueil', kind: 'administrative' },
+  { code: 'CONS', name: 'Consultations externes', kind: 'clinical' },
+  { code: 'LAB', name: 'Laboratoire', kind: 'laboratory' },
+  { code: 'PHAR', name: 'Pharmacie', kind: 'pharmacy' },
+  { code: 'CAIS', name: 'Caisse', kind: 'cashier' },
+];
+
 export async function seedDemo(
   url: string,
   password: string,
@@ -70,6 +87,13 @@ export async function seedDemo(
           name: 'Site principal Kinshasa',
           address: { province: 'Kinshasa', commune: 'Gombe' },
         });
+      }
+
+      for (const d of DEMO_DEPARTMENTS) {
+        await tx
+          .insert(department)
+          .values({ id: uuidv7(), tenantId, siteId, ...d })
+          .onConflictDoNothing();
       }
 
       const roleIds = new Map<string, string>();
