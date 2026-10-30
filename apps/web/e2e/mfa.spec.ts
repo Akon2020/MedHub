@@ -203,6 +203,44 @@ test('a privileged role enrolls its second factor at first sign-in, then must us
   await expect(page.getByText('Rôle enregistré.')).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole('checkbox', { name: 'Rendez-vous : Annuler' })).not.toBeChecked();
   await page.screenshot({ path: 'test-results/roles-dark.png', fullPage: true });
+
+  // Reference data: a pick list filled from a CSV file, checked before saving.
+  await page.goto('/app/parametres/referentiels');
+  await unlock(page);
+  await expect(page.getByText('Voir les 26 provinces')).toBeVisible({ timeout: 20_000 });
+  await page.getByRole('button', { name: 'Nouvelle liste' }).click();
+  await page.getByLabel('Nom (français)').fill("Mode d'arrivée");
+  await page.getByLabel('Code de la liste').fill('ARRIVEE');
+  await page.getByRole('button', { name: 'Créer la liste' }).click();
+  await expect(page.getByRole('heading', { name: "Mode d'arrivée" })).toBeVisible({
+    timeout: 20_000,
+  });
+  await page
+    .getByLabel('Ou collez le contenu du fichier ici')
+    .fill(
+      'code;libelle;libelle_en\nPIED;À pied;On foot\nMOTO;Moto-taxi;Motorbike taxi\n;Sans code;\n',
+    );
+  await page.getByRole('button', { name: 'Vérifier le fichier' }).click();
+  await expect(page.getByText('Ligne 4, colonne code : valeur invalide')).toBeVisible({
+    timeout: 20_000,
+  });
+  await page
+    .getByLabel('Ou collez le contenu du fichier ici')
+    .fill('code;libelle;libelle_en\nPIED;À pied;On foot\nMOTO;Moto-taxi;Motorbike taxi\n');
+  await page.getByRole('button', { name: 'Vérifier le fichier' }).click();
+  await page.getByRole('button', { name: 'Reprendre les 2 lignes dans la liste' }).click();
+  await page.getByRole('button', { name: 'Enregistrer la liste' }).click();
+  await expect(page.getByText('2 ajouté(s), 0 modifié(s), 0 désactivé(s).')).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.screenshot({ path: 'test-results/reference-dark.png', fullPage: true });
+
+  // The device copy of the catalogs now feeds the province of the addresses.
+  await page.goto('/app/parametres/organisation');
+  await unlock(page);
+  await expect(
+    page.getByLabel('Province').first().locator('option', { hasText: 'Kasaï-Oriental' }),
+  ).toHaveCount(1, { timeout: 20_000 });
 });
 
 test('content security policy carries a fresh nonce on every document', async ({ request }) => {

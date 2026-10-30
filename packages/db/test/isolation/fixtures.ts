@@ -3,6 +3,8 @@ import type { Tx } from '../../src/client';
 import { appendAudit } from '../../src/audit';
 import {
   changeLog,
+  choiceItem,
+  choiceList,
   configEntry,
   dataAccessLog,
   department,
@@ -38,6 +40,20 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       key: 'security.auto_lock_minutes',
       version: 1,
       value: 5,
+    });
+  },
+  choice_list: async (tx, tenantId) => {
+    await tx
+      .insert(choiceList)
+      .values({ id: uuidv7(), tenantId, code: 'ARRIVEE', nameFr: "Mode d'arrivée" });
+  },
+  choice_item: async (tx, tenantId) => {
+    await tx.insert(choiceItem).values({
+      id: uuidv7(),
+      tenantId,
+      listId: uuidv7(),
+      code: 'PIED',
+      labelFr: 'À pied',
     });
   },
   department: async (tx, tenantId) => {

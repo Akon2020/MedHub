@@ -600,7 +600,7 @@
       },
       "reference": {
         "title": "Reference data",
-        "text": "Choice lists, catalogues, numbering"
+        "text": "Pick lists, administrative areas, currencies, units"
       },
       "workstations": {
         "title": "Devices and security",
@@ -640,7 +640,8 @@
       "city": "City or territory",
       "commune": "Commune",
       "quarter": "Quarter",
-      "street": "Street and number"
+      "street": "Street and number",
+      "noProvince": "Choose a province"
     },
     "sites": {
       "title": "Sites",
@@ -726,7 +727,8 @@
       "USER_IS_SELF": "This action cannot target your own account. Use \"My account\".",
       "USER_ROLE_UNKNOWN": "One of the selected roles does not exist anymore.",
       "AUTH_MFA_NOT_ENROLLED": "This user has no two-factor authentication to reset.",
-      "ROLE_CODE_TAKEN": "This role code already exists in the facility."
+      "ROLE_CODE_TAKEN": "This role code already exists in the facility.",
+      "REF_LIST_CODE_TAKEN": "This list code already exists in the facility."
     },
     "devices": {
       "title": "Devices",
@@ -1023,6 +1025,74 @@
         "grant_remote_access": "Remote access",
         "activate": "Activate",
         "simulate": "Simulate"
+      }
+    },
+    "reference": {
+      "title": "Reference data",
+      "subtitle": "Pick lists of the facility and catalogs shared by the platform. They are copied to every device for offline work.",
+      "listsTitle": "Pick lists",
+      "listsText": "Values offered in forms (arrival mode, occupation...). An item is never deleted: it is deactivated.",
+      "newList": "New list",
+      "noLists": "No list yet.",
+      "itemCount": "{count, plural, =0 {no active item} one {# active item} other {# active items}}",
+      "version": "version {version}",
+      "close": "Close",
+      "createList": "Create list",
+      "addItem": "Add item",
+      "noItems": "No item: add some or import a file.",
+      "itemsHint": "The code of a saved item never changes (recorded data refers to it). To remove an item, untick \"Active\".",
+      "save": "Save list",
+      "saved": "{added} added, {updated} updated, {deactivated} deactivated.",
+      "fields": {
+        "nameFr": "Name (French)",
+        "nameEn": "Name (English)",
+        "listCode": "List code",
+        "listActive": "Active list (offered in forms)",
+        "code": "Code",
+        "labelFr": "Label (French)",
+        "labelEn": "Label (English)",
+        "order": "Order",
+        "active": "Active"
+      },
+      "import": {
+        "title": "Import from a CSV file",
+        "template": "Download the template",
+        "hint": "Columns: code, libelle, libelle_en (optional), ordre (optional). Separator \";\" or \",\". The file is first checked line by line; nothing is saved before \"Save list\".",
+        "chooseFile": "Choose a file",
+        "paste": "Or paste the file content here",
+        "simulate": "Check the file",
+        "summary": "{valid, plural, =0 {No valid line} one {# valid line} other {# valid lines}}, {errors, plural, =0 {no error} one {# error} other {# errors}}.",
+        "error": "Line {line}, column {field}: {problem}",
+        "apply": "{count, plural, one {Take the line into the list} other {Take the # lines into the list}}",
+        "problems": {
+          "invalid": "invalid value",
+          "duplicate": "duplicate code",
+          "missing_column": "missing column",
+          "too_many_rows": "file too long (2,000 lines at most)",
+          "unknown": "unknown parent",
+          "wrong_level": "wrong parent level"
+        }
+      },
+      "platform": {
+        "title": "Platform catalogs",
+        "text": "Shared by every facility, maintained by MedHub, read-only.",
+        "areas": "Administrative areas",
+        "areasHint": "The 26 provinces are provided (2006 Constitution, ISO 3166-2:CD codes). Territories, cities and communes will be loaded from an official file.",
+        "provinces": "Show the {count} provinces",
+        "currencies": "Currencies",
+        "minorUnit": "{digits} decimals",
+        "units": "Units of measure",
+        "unitsHint": "UCUM codes, used by vital signs and results.",
+        "kinds": {
+          "province": "Provinces",
+          "territory": "Territories",
+          "city": "Cities",
+          "sector": "Sectors",
+          "chiefdom": "Chiefdoms",
+          "commune": "Communes",
+          "groupement": "Groupements",
+          "quarter": "Quarters"
+        }
       }
     }
   }

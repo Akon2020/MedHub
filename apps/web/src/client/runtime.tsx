@@ -4,6 +4,7 @@ import type { CommandName, CommandPayload } from '@medhub/domain';
 import {
   DEFAULT_MAX_PIN_ATTEMPTS,
   isInitialized,
+  loadCatalogs,
   loadTokens,
   loadDevice,
   nextCounter,
@@ -14,6 +15,7 @@ import {
   wipeLocal,
   type EncryptedClientStore,
   type MedHubLocalDb,
+  type StoredCatalogs,
   type UnlockedLocal,
 } from '@medhub/local-db';
 import { systemClock } from '@medhub/shared';
@@ -30,6 +32,7 @@ import {
   type ReactNode,
 } from 'react';
 import { apiFetch } from './api';
+import { refreshCatalogs } from './catalogs';
 import { refreshTokens, tokensDue, tokenStatus, type TokenStatus } from './device-tokens';
 import { installTestHook } from './e2e-hook';
 import { clearIdentity, DEVICE_REVOKED_FLAG, readIdentity, type StoredIdentity } from './identity';
@@ -58,6 +61,10 @@ type RuntimeValue = {
   status: SyncStatus | null;
   /** Offline access and license read from the signed tokens of the device. */
   tokens: TokenStatus | null;
+  /** Local copy of the read-only catalogs (sites, departments, pick lists...). */
+  catalogs: StoredCatalogs | null;
+  /** Downloads the catalogs now, without waiting for the next check. */
+  reloadCatalogs: () => Promise<void>;
   /** Bumped after every local write and every sync cycle; drives local queries. */
   revision: number;
   unlock: (pin: string) => Promise<UnlockOutcome>;
@@ -123,6 +130,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<SyncStatus | null>(null);
   const [revision, setRevision] = useState(0);
   const [tokens, setTokens] = useState<TokenStatus | null>(null);
+  const [catalogs, setCatalogs] = useState<StoredCatalogs | null>(null);
   const [autoLockMs, setAutoLockMs] = useState(DEFAULT_AUTO_LOCK_MINUTES * 60_000);
   const dbRef = useRef<MedHubLocalDb | null>(null);
 
@@ -225,10 +233,12 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
       // Devices activated before the tokens existed keep working until their next sync.
       if (current.offline === 'expired' || current.offline === 'invalid') return 'expired';
       setTokens(current);
+      setCatalogs(await loadCatalogs(unlocked.db));
       const stored = await loadTokens(unlocked.db);
       if (stored?.config) setAutoLockMs(stored.config.autoLockMinutes * 60_000);
       const next = await startSession(identity, unlocked, {
         afterSync: async (deviceId) => {
+          if (await refreshCatalogs(unlocked.db)) setCatalogs(await loadCatalogs(unlocked.db));
           if (!(await tokensDue(unlocked.db))) return;
           if (await refreshTokens(unlocked.db, deviceId)) setTokens(await read());
         },
@@ -309,6 +319,12 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
       store: session?.unlocked.store ?? null,
       status,
       tokens,
+      catalogs,
+      reloadCatalogs: async () => {
+        if (!session) return;
+        await refreshCatalogs(session.unlocked.db, Date.now(), true);
+        setCatalogs(await loadCatalogs(session.unlocked.db));
+      },
       revision,
       unlock,
       recover,
@@ -321,7 +337,20 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
         return nextCounter(session.unlocked.db, name);
       },
     }),
-    [phase, identity, session, status, tokens, revision, unlock, recover, lock, signOut, dispatch],
+    [
+      phase,
+      identity,
+      session,
+      status,
+      tokens,
+      catalogs,
+      revision,
+      unlock,
+      recover,
+      lock,
+      signOut,
+      dispatch,
+    ],
   );
 
   return <RuntimeContext.Provider value={value}>{children}</RuntimeContext.Provider>;

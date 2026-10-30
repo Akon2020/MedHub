@@ -605,7 +605,7 @@
       },
       "reference": {
         "title": "Référentiels",
-        "text": "Listes de choix, catalogues, numérotation"
+        "text": "Listes de choix, zones administratives, devises, unités"
       },
       "workstations": {
         "title": "Postes et sécurité",
@@ -645,7 +645,8 @@
       "city": "Ville ou territoire",
       "commune": "Commune",
       "quarter": "Quartier",
-      "street": "Avenue et numéro"
+      "street": "Avenue et numéro",
+      "noProvince": "Choisir une province"
     },
     "sites": {
       "title": "Sites",
@@ -731,7 +732,8 @@
       "USER_IS_SELF": "Cette action ne peut pas viser votre propre compte. Utilisez « Mon compte ».",
       "USER_ROLE_UNKNOWN": "Un des rôles choisis n'existe pas ou plus.",
       "AUTH_MFA_NOT_ENROLLED": "Cet utilisateur n'a pas de double authentification à réinitialiser.",
-      "ROLE_CODE_TAKEN": "Ce code de rôle existe déjà dans la structure."
+      "ROLE_CODE_TAKEN": "Ce code de rôle existe déjà dans la structure.",
+      "REF_LIST_CODE_TAKEN": "Ce code de liste existe déjà dans la structure."
     },
     "devices": {
       "title": "Appareils",
@@ -1028,6 +1030,74 @@
         "grant_remote_access": "Accès à distance",
         "activate": "Activer",
         "simulate": "Simuler"
+      }
+    },
+    "reference": {
+      "title": "Référentiels",
+      "subtitle": "Listes de choix propres à la structure et catalogues communs de la plateforme. Ils sont copiés sur chaque poste pour le travail hors connexion.",
+      "listsTitle": "Listes de choix",
+      "listsText": "Valeurs proposées dans les formulaires (mode d’arrivée, profession...). Un élément n’est jamais supprimé : il est désactivé.",
+      "newList": "Nouvelle liste",
+      "noLists": "Aucune liste pour le moment.",
+      "itemCount": "{count, plural, =0 {aucun élément actif} one {# élément actif} other {# éléments actifs}}",
+      "version": "version {version}",
+      "close": "Fermer",
+      "createList": "Créer la liste",
+      "addItem": "Ajouter un élément",
+      "noItems": "Aucun élément : ajoutez-en ou importez un fichier.",
+      "itemsHint": "Le code d’un élément enregistré ne change plus (les données saisies y font référence). Pour retirer un élément, décochez « Actif ».",
+      "save": "Enregistrer la liste",
+      "saved": "{added} ajouté(s), {updated} modifié(s), {deactivated} désactivé(s).",
+      "fields": {
+        "nameFr": "Nom (français)",
+        "nameEn": "Nom (anglais)",
+        "listCode": "Code de la liste",
+        "listActive": "Liste active (proposée dans les formulaires)",
+        "code": "Code",
+        "labelFr": "Libellé (français)",
+        "labelEn": "Libellé (anglais)",
+        "order": "Ordre",
+        "active": "Actif"
+      },
+      "import": {
+        "title": "Importer depuis un fichier CSV",
+        "template": "Télécharger le modèle",
+        "hint": "Colonnes : code, libelle, libelle_en (facultatif), ordre (facultatif). Séparateur « ; » ou « , ». Le fichier est d’abord vérifié ligne par ligne ; rien n’est enregistré avant « Enregistrer la liste ».",
+        "chooseFile": "Choisir un fichier",
+        "paste": "Ou collez le contenu du fichier ici",
+        "simulate": "Vérifier le fichier",
+        "summary": "{valid, plural, =0 {Aucune ligne valide} one {# ligne valide} other {# lignes valides}}, {errors, plural, =0 {aucune erreur} one {# erreur} other {# erreurs}}.",
+        "error": "Ligne {line}, colonne {field} : {problem}",
+        "apply": "{count, plural, one {Reprendre la ligne dans la liste} other {Reprendre les # lignes dans la liste}}",
+        "problems": {
+          "invalid": "valeur invalide",
+          "duplicate": "code en double",
+          "missing_column": "colonne absente",
+          "too_many_rows": "fichier trop long (2 000 lignes au plus)",
+          "unknown": "parent inconnu",
+          "wrong_level": "niveau du parent incorrect"
+        }
+      },
+      "platform": {
+        "title": "Catalogues de la plateforme",
+        "text": "Communs à toutes les structures, tenus à jour par MedHub, en lecture seule.",
+        "areas": "Zones administratives",
+        "areasHint": "Les 26 provinces sont fournies (Constitution de 2006, codes ISO 3166-2:CD). Les territoires, villes et communes seront chargés depuis un fichier officiel.",
+        "provinces": "Voir les {count} provinces",
+        "currencies": "Devises",
+        "minorUnit": "{digits} décimales",
+        "units": "Unités de mesure",
+        "unitsHint": "Codes UCUM, utilisés par les constantes et les résultats.",
+        "kinds": {
+          "province": "Provinces",
+          "territory": "Territoires",
+          "city": "Villes",
+          "sector": "Secteurs",
+          "chiefdom": "Chefferies",
+          "commune": "Communes",
+          "groupement": "Groupements",
+          "quarter": "Quartiers"
+        }
       }
     }
   }

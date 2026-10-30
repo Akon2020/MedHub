@@ -43,4 +43,12 @@ export {
   userUpdateRoute,
 } from './users-routes';
 export { roleCreateRoute, rolesRoute, roleUpdateRoute } from './roles-routes';
+export {
+  catalogsRoute,
+  choiceImportRoute,
+  choiceItemsSaveRoute,
+  choiceListCreateRoute,
+  choiceListUpdateRoute,
+  referenceRoute,
+} from './reference-routes';
 export type { Profile } from './service';

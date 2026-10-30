@@ -272,7 +272,9 @@ test('front desk registers a patient offline from the screen, then it syncs', as
   // The write is committed to the encrypted outbox before any navigation. In development
   // there is no service worker, so the record page cannot load offline: the patient must
   // survive that failed navigation and a full reload, then reach the server.
-  await page.waitForTimeout(2_000);
+  await expect
+    .poll(() => page.evaluate(() => window.__medhubTest!.pending()), { timeout: 10_000 })
+    .toBe(1);
   await context.setOffline(false);
   await page.goto('/app');
   await unlock(page);

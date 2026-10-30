@@ -54,7 +54,12 @@ const ENTRIES: Entry[] = [
     href: '/app/parametres/appareils',
     permission: 'device:read',
   },
-  { key: 'reference', icon: Database, permission: 'configuration:read', soon: 'S5' },
+  {
+    key: 'reference',
+    icon: Database,
+    href: '/app/parametres/referentiels',
+    permission: 'configuration:read',
+  },
 ];
 
 /** Settings hub: online-only configuration screens, filtered by permission. */

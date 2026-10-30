@@ -12,7 +12,13 @@ import {
   wrapSecret,
   type LocalKeys,
 } from './crypto';
-import { MedHubLocalDb, localDbName, type MetaRecord, type StoredTokens } from './database';
+import {
+  MedHubLocalDb,
+  localDbName,
+  type MetaRecord,
+  type StoredCatalogs,
+  type StoredTokens,
+} from './database';
 import { EncryptedClientStore } from './store';
 
 export const DEFAULT_MAX_PIN_ATTEMPTS = 10;
@@ -152,6 +158,15 @@ export async function saveTokens(
 export async function loadTokens(db: MedHubLocalDb): Promise<StoredTokens | null> {
   const row = await db.meta.get('tokens');
   return row?.key === 'tokens' ? row.value : null;
+}
+
+export async function saveCatalogs(db: MedHubLocalDb, catalogs: StoredCatalogs): Promise<void> {
+  await db.meta.put({ key: 'catalogs', value: catalogs });
+}
+
+export async function loadCatalogs(db: MedHubLocalDb): Promise<StoredCatalogs | null> {
+  const row = await db.meta.get('catalogs');
+  return row?.key === 'catalogs' ? row.value : null;
 }
 
 /**

@@ -11,6 +11,7 @@ import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { ApiError, apiFetch } from '@/client/api';
 import { useOnline } from '@/client/browser-state';
+import { useRuntime } from '@/client/runtime';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -126,17 +127,37 @@ function AddressFields({
   disabled?: boolean;
 }) {
   const t = useTranslations('settings.address');
+  const provinces = useRuntime().catalogs?.snapshot.provinces ?? [];
   const keys = ['province', 'city', 'commune', 'quarter', 'street'] as const;
   return (
     <>
       {keys.map((key) => (
         <Field key={key} id={`${prefix}-${key}`} label={t(key)}>
-          <Input
-            id={`${prefix}-${key}`}
-            value={value[key] ?? ''}
-            disabled={disabled}
-            onChange={(e) => onChange({ ...value, [key]: e.target.value })}
-          />
+          {key === 'province' && provinces.length > 0 ? (
+            <NativeSelect
+              id={`${prefix}-${key}`}
+              value={value.province ?? ''}
+              disabled={disabled}
+              onChange={(e) => onChange({ ...value, province: e.target.value })}
+            >
+              <option value="">{t('noProvince')}</option>
+              {value.province && !provinces.some((p) => p.name === value.province) && (
+                <option value={value.province}>{value.province}</option>
+              )}
+              {provinces.map((p) => (
+                <option key={p.code} value={p.name}>
+                  {p.name}
+                </option>
+              ))}
+            </NativeSelect>
+          ) : (
+            <Input
+              id={`${prefix}-${key}`}
+              value={value[key] ?? ''}
+              disabled={disabled}
+              onChange={(e) => onChange({ ...value, [key]: e.target.value })}
+            />
+          )}
         </Field>
       ))}
     </>
