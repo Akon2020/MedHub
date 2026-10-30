@@ -1,6 +1,6 @@
 import 'server-only';
 import { AppError } from '@medhub/shared';
-import { lookupSession, SESSION_COOKIE } from './session';
+import { lookupSession, SESSION_COOKIE, sessionDeviceRevoked } from './session';
 
 export type RequestContext = {
   tenantId: string;
@@ -27,8 +27,12 @@ function readCookie(request: Request, name: string): string | undefined {
  * The tenant never comes from the body, the URL or a custom header.
  */
 export async function resolveTenant(request: Request): Promise<RequestContext> {
-  const session = await lookupSession(readCookie(request, SESSION_COOKIE));
-  if (!session) throw new AppError('UNAUTHENTICATED', 401);
+  const cookie = readCookie(request, SESSION_COOKIE);
+  const session = await lookupSession(cookie);
+  if (!session) {
+    if (await sessionDeviceRevoked(cookie)) throw new AppError('DEVICE_REVOKED', 403);
+    throw new AppError('UNAUTHENTICATED', 401);
+  }
   return {
     tenantId: session.tenantId,
     userId: session.userId,

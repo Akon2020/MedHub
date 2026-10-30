@@ -104,6 +104,10 @@ export const device = pgTable(
     appVersion: text('app_version'),
     status: text('status').notNull().default('active'),
     revokedReason: text('revoked_reason'),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    revokedBy: uuid('revoked_by'),
+    /** Retired device allowed to send its pending operations once before it wipes itself. */
+    allowFinalPush: boolean('allow_final_push').notNull().default(false),
   },
   (t) => [
     uniqueIndex('device_code_uq').on(t.tenantId, t.deviceCode),

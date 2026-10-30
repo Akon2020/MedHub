@@ -41,7 +41,12 @@ const ENTRIES: Entry[] = [
   { key: 'account', icon: UserCog, href: '/app/compte', permission: '' },
   { key: 'users', icon: Users, permission: 'user:read', soon: 'S5' },
   { key: 'roles', icon: KeyRound, permission: 'role:read', soon: 'S5' },
-  { key: 'devices', icon: Smartphone, permission: 'device:read', soon: 'S5' },
+  {
+    key: 'devices',
+    icon: Smartphone,
+    href: '/app/parametres/appareils',
+    permission: 'device:read',
+  },
   { key: 'reference', icon: Database, permission: 'configuration:read', soon: 'S5' },
 ];
 

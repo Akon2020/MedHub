@@ -6,6 +6,7 @@ import {
   siteCreateSchema,
   tenantProfileSchema,
 } from './organization';
+import { effectiveNow, licensePhase, offlineAccess } from './license';
 import { assessSignIn, deviceLabel, localHour } from './sign-in-risk';
 
 const CHROME_WINDOWS =
@@ -126,5 +127,39 @@ describe('sign-in risk', () => {
     expect(localHour(at('2026-10-30T23:30:00Z'), 'Africa/Lubumbashi')).toBe(1);
     expect(deviceLabel(CHROME_ANDROID)).toBe('Chrome · Android');
     expect(deviceLabel(null)).toBe('');
+  });
+});
+
+describe('offline token and license', () => {
+  const day = 86_400_000;
+  const now = Date.parse('2026-10-30T12:00:00Z');
+
+  it('never lets a device clock set back extend a token', () => {
+    expect(effectiveNow(now - day, now)).toBe(now);
+    expect(effectiveNow(now, now - day)).toBe(now);
+    expect(effectiveNow(now, null)).toBe(now);
+  });
+
+  it('warns three days before the offline token expires', () => {
+    const exp = (ms: number) => Math.floor(ms / 1000);
+    expect(offlineAccess(exp(now + 10 * day), now)).toBe('valid');
+    expect(offlineAccess(exp(now + 2 * day), now)).toBe('expiring');
+    expect(offlineAccess(exp(now - 1000), now)).toBe('expired');
+  });
+
+  it('applies the unpaid cycle from the dates of the license', () => {
+    const s = (ms: number) => Math.floor(ms / 1000);
+    const license = {
+      state: 'active',
+      validUntil: s(now + 30 * day),
+      graceAt: s(now - day),
+      readOnlyAt: s(now + 5 * day),
+      suspendAt: s(now + 10 * day),
+    };
+    expect(licensePhase(license, now)).toBe('grace');
+    expect(licensePhase(license, now + 6 * day)).toBe('read_only');
+    expect(licensePhase(license, now + 11 * day)).toBe('suspended');
+    expect(licensePhase({ ...license, graceAt: null }, now)).toBe('ok');
+    expect(licensePhase({ ...license, state: 'suspended' }, now - 2 * day)).toBe('suspended');
   });
 });

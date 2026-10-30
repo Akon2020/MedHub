@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  AlertTriangle,
   GraduationCap,
   Lock,
   LogOut,
@@ -13,7 +14,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import { Suspense, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useRuntime } from '@/client/runtime';
 import { Logo, LogoMark } from '@/components/brand/logo';
@@ -29,6 +30,44 @@ function isActive(item: NavItem, pathname: string, moduleKey: string | null): bo
   if (item.href.startsWith('/app/bientot'))
     return pathname === '/app/bientot' && moduleKey === item.key;
   return pathname.startsWith(item.href);
+}
+
+/**
+ * License stage and offline access, read from the signed tokens of the device.
+ * Informative only: no screen, emergency access or export is blocked here.
+ */
+function PlatformBanners() {
+  const t = useTranslations('app.banners');
+  const format = useFormatter();
+  const { tokens } = useRuntime();
+  if (!tokens) return null;
+  const banners: { key: string; text: string; tone: 'warning' | 'danger' }[] = [];
+  if (tokens.license === 'grace') banners.push({ key: 'grace', text: t('grace'), tone: 'warning' });
+  if (tokens.license === 'read_only')
+    banners.push({ key: 'read_only', text: t('readOnly'), tone: 'danger' });
+  if (tokens.license === 'suspended')
+    banners.push({ key: 'suspended', text: t('suspended'), tone: 'danger' });
+  if (tokens.offline === 'expiring' && tokens.offlineExpiresAt)
+    banners.push({
+      key: 'offline',
+      text: t('offlineExpiring', {
+        date: format.dateTime(new Date(tokens.offlineExpiresAt), { dateStyle: 'medium' }),
+      }),
+      tone: 'warning',
+    });
+  return banners.map((b) => (
+    <div
+      key={b.key}
+      role="status"
+      className={cn(
+        'flex items-center justify-center gap-2 px-4 py-1.5 text-center text-xs font-medium',
+        b.tone === 'danger' ? 'bg-danger-soft text-danger' : 'bg-warning-soft text-warning',
+      )}
+    >
+      <AlertTriangle className="size-3.5 shrink-0" aria-hidden />
+      {b.text}
+    </div>
+  ));
 }
 
 function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
@@ -220,6 +259,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
+        <PlatformBanners />
         {identity.isTraining && (
           <div className="flex items-center justify-center gap-2 bg-info px-4 py-1.5 text-xs font-medium text-background">
             <GraduationCap className="size-3.5" aria-hidden />

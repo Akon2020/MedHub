@@ -47,6 +47,10 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      - name: Generate a throwaway token signing key
+        # Fresh Ed25519 pair per run: nothing secret is ever stored in the repository.
+        run: node infra/scripts/generate-keys.mjs | grep '^MEDHUB_SIGNING_' >> "$GITHUB_ENV"
+
       - name: Prepare database role
         env:
           PGPASSWORD: postgres
@@ -129,6 +133,10 @@ jobs:
           cache: pnpm
       - name: Install
         run: pnpm install --frozen-lockfile
+
+      - name: Generate a throwaway token signing key
+        # Fresh Ed25519 pair per run: nothing secret is ever stored in the repository.
+        run: node infra/scripts/generate-keys.mjs | grep '^MEDHUB_SIGNING_' >> "$GITHUB_ENV"
       - name: Prepare database
         env:
           PGPASSWORD: postgres

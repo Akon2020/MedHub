@@ -134,6 +134,24 @@ export async function lookupSession(raw: string | undefined): Promise<SessionRec
   });
 }
 
+/**
+ * A session ended because its device was retired or declared lost: the device
+ * must learn it (DEVICE_REVOKED) to wipe itself, rather than ask for a sign-in.
+ */
+export async function sessionDeviceRevoked(raw: string | undefined): Promise<boolean> {
+  const decoded = decodeSessionCookie(raw);
+  if (!decoded) return false;
+  return withTenant(database().db, { tenantId: decoded.tenantId, userId: null }, async (tx) => {
+    const [row] = await tx
+      .select({ status: schema.device.status })
+      .from(schema.session)
+      .innerJoin(schema.device, eq(schema.device.id, schema.session.deviceId))
+      .where(eq(schema.session.tokenHash, hashToken(decoded.token)))
+      .limit(1);
+    return row !== undefined && row.status !== 'active';
+  });
+}
+
 export async function revokeSession(raw: string | undefined): Promise<void> {
   const decoded = decodeSessionCookie(raw);
   if (!decoded) return;

@@ -25,6 +25,8 @@ const KNOWN_KINDS = new Set([
   'ip_refused',
   'mfa_enabled',
   'mfa_disabled',
+  'device_revoked',
+  'device_lost',
 ]);
 
 const ICONS = { info: Info, warning: AlertTriangle, critical: ShieldAlert } as const;

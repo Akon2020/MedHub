@@ -257,7 +257,9 @@
       "recover": "Récupérer",
       "recoveryFailed": "Code de récupération incorrect.",
       "switchUser": "Changer d'utilisateur",
-      "noLocal": "Ce poste n'est pas encore activé pour cet utilisateur. Connectez-vous en ligne."
+      "noLocal": "Ce poste n'est pas encore activé pour cet utilisateur. Connectez-vous en ligne.",
+      "offlineExpired": "L'accès hors connexion de ce poste a expiré. Connectez-vous en ligne pour le renouveler : vos opérations en attente sont conservées.",
+      "signInOnline": "Me connecter en ligne"
     },
     "errors": {
       "AUTH_INVALID_CREDENTIALS": "Identifiant ou mot de passe incorrect.",
@@ -299,7 +301,8 @@
       "print": "Imprimer",
       "recoveryConfirm": "J'ai conservé ces codes en lieu sûr",
       "continue": "Continuer"
-    }
+    },
+    "deviceRetired": "Ce poste a été retiré ou déclaré perdu par l'administrateur de votre structure : ses données locales ont été effacées. Connectez-vous pour l'activer à nouveau si besoin."
   },
   "app": {
     "nav": {
@@ -330,7 +333,13 @@
       "menu": "Menu",
       "account": "Mon compte et sécurité"
     },
-    "training": "Base de formation"
+    "training": "Base de formation",
+    "banners": {
+      "grace": "Abonnement de la structure en retard de paiement : contactez l'administrateur.",
+      "readOnly": "Abonnement de la structure en lecture seule. L'accès d'urgence et l'export restent disponibles.",
+      "suspended": "Abonnement de la structure suspendu. L'accès d'urgence et l'export restent disponibles.",
+      "offlineExpiring": "L'accès hors connexion de ce poste expire le {date} : synchronisez-le avant cette date."
+    }
   },
   "sync": {
     "online": "Connecté",
@@ -660,7 +669,9 @@
         "ip_refused": "Accès refusé par une règle d'adresse",
         "mfa_enabled": "Double authentification activée",
         "mfa_disabled": "Double authentification désactivée",
-        "other": "Autre événement"
+        "other": "Autre événement",
+        "device_revoked": "Poste retiré",
+        "device_lost": "Poste déclaré perdu ou volé"
       },
       "anomalies": {
         "new_device": "nouvel appareil",
@@ -678,6 +689,36 @@
       "AUTH_STEP_UP_REQUIRED": "Confirmation de votre identité annulée : rien n'a été modifié.",
       "NETWORK": "Le serveur est injoignable. Vérifiez la connexion.",
       "UNKNOWN": "Une erreur inattendue est survenue."
+    },
+    "devices": {
+      "title": "Appareils",
+      "subtitle": "Postes activés dans la structure. Un poste retiré ou perdu efface ses données au prochain contact.",
+      "diskHint": "Recommandation : activez le chiffrement du disque des postes (BitLocker, FileVault, chiffrement Android).",
+      "current": "Ce poste",
+      "never": "jamais",
+      "lastSync": "dernière synchronisation : {date}",
+      "revokedOn": "Retiré le {date}",
+      "status": {
+        "active": "Actif",
+        "revoked": "Retiré",
+        "lost": "Perdu ou volé"
+      },
+      "revoke": "Retirer",
+      "lost": "Déclarer perdu",
+      "reason": "Motif",
+      "revokeWarning": "Le poste ne pourra plus synchroniser. À son prochain contact avec le serveur, il effacera ses données locales.",
+      "lostWarning": "Toutes les sessions du poste sont fermées immédiatement. À son prochain contact, il effacera ses données locales, y compris les opérations non envoyées.",
+      "allowFinalPush": "Autoriser le poste à envoyer une dernière fois ses opérations en attente avant de s'effacer",
+      "confirmRevoke": "Retirer le poste",
+      "confirmLost": "Déclarer perdu ou volé",
+      "cancel": "Annuler",
+      "errors": {
+        "DEVICE_IS_CURRENT": "Vous ne pouvez pas retirer le poste que vous utilisez.",
+        "DEVICE_ALREADY_REVOKED": "Ce poste est déjà retiré.",
+        "PERMISSION_DENIED": "Vous n'avez pas la permission d'effectuer cette action.",
+        "VALIDATION_FAILED": "Indiquez un motif (3 caractères au moins).",
+        "AUTH_STEP_UP_REQUIRED": "Confirmation de votre identité annulée : rien n'a été modifié."
+      }
     }
   }
 }

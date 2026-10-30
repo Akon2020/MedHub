@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { generate } from 'otplib';
-import { TEST_PIN, tenantCode, unlock, withServer } from './support';
+import { activateDevice, TEST_PIN, tenantCode, unlock, withServer } from './support';
 
 function seedPassword(): string {
   const value = process.env.MEDHUB_SEED_PASSWORD;
@@ -28,6 +28,7 @@ async function freshCode(secret: string, after: number | null): Promise<string> 
 
 test('a privileged role enrolls its second factor at first sign-in, then must use it', async ({
   page,
+  browser,
 }) => {
   test.setTimeout(4 * 60_000);
   await signIn(page, 'admin');
@@ -116,6 +117,30 @@ test('a privileged role enrolls its second factor at first sign-in, then must us
   await page.getByRole('button', { name: 'Confirmer' }).click();
   await expect(page.getByText('Site de Goma Nord')).toBeVisible({ timeout: 20_000 });
   await page.screenshot({ path: 'test-results/organization-dark.png', fullPage: true });
+
+  // Remote wipe: another workstation is declared lost, then erases itself on its next contact.
+  const other = await browser.newContext({ locale: 'fr-FR', serviceWorkers: 'block' });
+  const tablet = await other.newPage();
+  await activateDevice(tablet, 'accueil', 'Tablette volée');
+  await page.goto('/app/parametres/appareils');
+  await unlock(page);
+  const row = page.getByRole('listitem').filter({ hasText: 'Tablette volée' });
+  await row.getByRole('button', { name: 'Déclarer perdu' }).click();
+  await page.getByLabel('Motif').fill('Tablette volée pendant la garde (fictif)');
+  await page.getByRole('button', { name: 'Déclarer perdu ou volé' }).click();
+  await expect(row.getByText('Perdu ou volé')).toBeVisible({ timeout: 20_000 });
+  await page.screenshot({ path: 'test-results/devices-dark.png', fullPage: true });
+
+  await tablet.goto('/app');
+  await tablet.waitForLoadState('networkidle');
+  await tablet.getByLabel('Code PIN').fill(TEST_PIN);
+  await tablet.getByRole('button', { name: 'Déverrouiller' }).click();
+  await tablet.waitForURL(/\/connexion$/, { timeout: 30_000 });
+  await expect(tablet.getByText(/a été retiré ou déclaré perdu/)).toBeVisible();
+  expect(await tablet.evaluate(() => localStorage.getItem('medhub.identity'))).toBeNull();
+  const databases = await tablet.evaluate(async () => (await indexedDB.databases()).length);
+  expect(databases).toBe(0);
+  await other.close();
 });
 
 test('content security policy carries a fresh nonce on every document', async ({ request }) => {

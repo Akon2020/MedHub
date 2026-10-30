@@ -49,11 +49,23 @@ export type SearchToken = {
   entityId: string;
 };
 
+/**
+ * Platform tokens of the device. Signed, not secret (identifiers and dates only),
+ * so they stay readable before the PIN unlocks the data key.
+ */
+export type StoredTokens = {
+  offlineToken: string;
+  licenseToken: string;
+  signingKeys: Record<string, string>;
+  refreshedAt: number;
+};
+
 export type MetaRecord =
   | { key: 'pin'; value: WrappedSecret }
   | { key: 'recovery'; value: WrappedSecret }
   | { key: 'device'; value: { deviceId: string; deviceCode: string; enc: Ciphertext } }
   | { key: 'failedPins'; value: number }
+  | { key: 'tokens'; value: StoredTokens }
   | { key: `counter:${string}`; value: number };
 
 export class MedHubLocalDb extends Dexie {

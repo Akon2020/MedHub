@@ -29,6 +29,7 @@ import {
 import { loadPermissions, requirePermission } from '../../platform/permissions';
 import { enforceRateLimit, RATE_LIMITS, securityEvent } from '../../platform/security';
 import { createSession, rotateSession } from '../../platform/session';
+import { issueLicenseToken, issueOfflineToken, platformSigningKeys } from '../../platform/tokens';
 import type { RequestContext } from '../../platform/tenant';
 
 const LOCKOUT_STEPS: { failures: number; minutes: number }[] = [
@@ -776,9 +777,12 @@ export async function registerDevice(
     userAgent: string | null;
     appVersion: string | null;
   },
-): Promise<{ deviceId: string; deviceCode: string }> {
+): Promise<{ deviceId: string; deviceCode: string; tokens: DeviceTokens }> {
+  const tenant = await findTenantById(ctx.tenantId);
+  if (!tenant) throw new AppError('UNAUTHENTICATED', 401);
   return withTenant(database().db, { tenantId: ctx.tenantId, userId: ctx.userId }, async (tx) => {
-    requirePermission(await loadPermissions(tx, ctx.userId), 'device:register');
+    const permissions = await loadPermissions(tx, ctx.userId);
+    requirePermission(permissions, 'device:register');
     const existing = await tx.select({ code: schema.device.deviceCode }).from(schema.device);
     const deviceCode = nextDeviceCode(new Set(existing.map((d) => d.code)));
     const deviceId = uuidv7();
@@ -805,6 +809,50 @@ export async function registerDevice(
       entity: 'device',
       entityId: deviceId,
     });
-    return { deviceId, deviceCode };
+    return {
+      deviceId,
+      deviceCode,
+      tokens: deviceTokensFor(tenant, { userId: ctx.userId, deviceId, permissions }),
+    };
+  });
+}
+
+/** What a device needs to keep working offline: both tokens and the keys that verify them. */
+export type DeviceTokens = {
+  offlineToken: string;
+  licenseToken: string;
+  signingKeys: Record<string, string>;
+  serverTime: number;
+};
+
+export function deviceTokensFor(
+  tenant: { id: string; status: string },
+  input: { userId: string; deviceId: string; permissions: Iterable<string> },
+): DeviceTokens {
+  return {
+    offlineToken: issueOfflineToken({ tenantId: tenant.id, ...input }),
+    licenseToken: issueLicenseToken(tenant),
+    signingKeys: platformSigningKeys(),
+    serverTime: Date.now(),
+  };
+}
+
+/** Renewed after every successful synchronisation, for an active device of the user only. */
+export async function refreshDeviceTokens(
+  ctx: RequestContext,
+  deviceId: string,
+): Promise<DeviceTokens> {
+  const tenant = await findTenantById(ctx.tenantId);
+  if (!tenant) throw new AppError('UNAUTHENTICATED', 401);
+  return withTenant(database().db, { tenantId: ctx.tenantId, userId: ctx.userId }, async (tx) => {
+    const [device] = await tx
+      .select()
+      .from(schema.device)
+      .where(eq(schema.device.id, deviceId))
+      .limit(1);
+    if (!device || device.userId !== ctx.userId) throw new AppError('DEVICE_UNKNOWN', 403);
+    if (device.status !== 'active') throw new AppError('DEVICE_REVOKED', 403);
+    const permissions = await loadPermissions(tx, ctx.userId);
+    return deviceTokensFor(tenant, { userId: ctx.userId, deviceId, permissions });
   });
 }

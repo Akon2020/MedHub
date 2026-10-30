@@ -252,7 +252,9 @@
       "recover": "Recover",
       "recoveryFailed": "Wrong recovery code.",
       "switchUser": "Switch user",
-      "noLocal": "This workstation is not activated for this user yet. Sign in online."
+      "noLocal": "This workstation is not activated for this user yet. Sign in online.",
+      "offlineExpired": "Offline access on this device has expired. Sign in online to renew it: your pending operations are kept.",
+      "signInOnline": "Sign in online"
     },
     "errors": {
       "AUTH_INVALID_CREDENTIALS": "Wrong username or password.",
@@ -294,7 +296,8 @@
       "print": "Print",
       "recoveryConfirm": "I have stored these codes somewhere safe",
       "continue": "Continue"
-    }
+    },
+    "deviceRetired": "This device was retired or declared lost by your structure administrator: its local data has been erased. Sign in to activate it again if needed."
   },
   "app": {
     "nav": {
@@ -325,7 +328,13 @@
       "menu": "Menu",
       "account": "My account and security"
     },
-    "training": "Training database"
+    "training": "Training database",
+    "banners": {
+      "grace": "The structure subscription is overdue: contact the administrator.",
+      "readOnly": "The structure subscription is read-only. Emergency access and export remain available.",
+      "suspended": "The structure subscription is suspended. Emergency access and export remain available.",
+      "offlineExpiring": "Offline access on this device expires on {date}: sync it before then."
+    }
   },
   "sync": {
     "online": "Connected",
@@ -655,7 +664,9 @@
         "ip_refused": "Access refused by an address rule",
         "mfa_enabled": "Two-factor authentication turned on",
         "mfa_disabled": "Two-factor authentication turned off",
-        "other": "Other event"
+        "other": "Other event",
+        "device_revoked": "Device retired",
+        "device_lost": "Device declared lost or stolen"
       },
       "anomalies": {
         "new_device": "new device",
@@ -673,6 +684,36 @@
       "AUTH_STEP_UP_REQUIRED": "Identity confirmation cancelled: nothing was changed.",
       "NETWORK": "The server cannot be reached. Check the connection.",
       "UNKNOWN": "An unexpected error occurred."
+    },
+    "devices": {
+      "title": "Devices",
+      "subtitle": "Devices activated in the structure. A retired or lost device erases its data at its next contact.",
+      "diskHint": "Recommendation: turn on disk encryption on the devices (BitLocker, FileVault, Android encryption).",
+      "current": "This device",
+      "never": "never",
+      "lastSync": "last sync: {date}",
+      "revokedOn": "Retired on {date}",
+      "status": {
+        "active": "Active",
+        "revoked": "Retired",
+        "lost": "Lost or stolen"
+      },
+      "revoke": "Retire",
+      "lost": "Declare lost",
+      "reason": "Reason",
+      "revokeWarning": "The device will no longer sync. At its next contact with the server, it will erase its local data.",
+      "lostWarning": "All sessions of the device end immediately. At its next contact, it will erase its local data, including unsent operations.",
+      "allowFinalPush": "Let the device send its pending operations one last time before erasing itself",
+      "confirmRevoke": "Retire the device",
+      "confirmLost": "Declare lost or stolen",
+      "cancel": "Cancel",
+      "errors": {
+        "DEVICE_IS_CURRENT": "You cannot retire the device you are using.",
+        "DEVICE_ALREADY_REVOKED": "This device is already retired.",
+        "PERMISSION_DENIED": "You are not allowed to do this.",
+        "VALIDATION_FAILED": "Give a reason (at least 3 characters).",
+        "AUTH_STEP_UP_REQUIRED": "Identity confirmation cancelled: nothing was changed."
+      }
     }
   }
 }

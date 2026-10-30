@@ -24,7 +24,11 @@ function seedPassword(): string {
 }
 
 /** Real sign-in and device activation through the screens, then PIN unlock. */
-export async function activateDevice(page: Page, username: string): Promise<void> {
+export async function activateDevice(
+  page: Page,
+  username: string,
+  deviceName = `E2E ${username}`,
+): Promise<void> {
   await page.goto('/connexion');
   await page.waitForLoadState('networkidle');
   await page.getByLabel('Code de la structure').fill(tenantCode());
@@ -49,7 +53,7 @@ export async function activateDevice(page: Page, username: string): Promise<void
 
   await page.getByLabel('Code PIN', { exact: true }).fill(TEST_PIN);
   await page.getByLabel('Confirmer le code PIN').fill(TEST_PIN);
-  await page.getByLabel('Nom du poste').fill(`E2E ${username}`);
+  await page.getByLabel('Nom du poste').fill(deviceName);
   await page.getByRole('button', { name: 'Activer le poste' }).click();
   await expect(page.getByText('Code de récupération', { exact: true })).toBeVisible({
     timeout: 30_000,

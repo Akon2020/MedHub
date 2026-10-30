@@ -23,4 +23,5 @@ export {
   siteCreateRoute,
   siteUpdateRoute,
 } from './organization-routes';
+export { deviceRevokeRoute, devicesRoute, deviceTokensRoute } from './devices-routes';
 export type { Profile } from './service';
