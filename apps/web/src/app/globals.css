@@ -1,0 +1,286 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/*
+ * MedHub palette: deep teal accent, mist backgrounds, ink text.
+ * Red, orange, green and blue are reserved for states (alert, warning,
+ * success, synchronisation in progress).
+ */
+:root {
+  --background: #f3f8f9;
+  --foreground: #0d1d1d;
+  --card: #ffffff;
+  --card-foreground: #0d1d1d;
+  --popover: #ffffff;
+  --popover-foreground: #0d1d1d;
+  --primary: #0f6b6b;
+  --primary-hover: #0b5656;
+  --primary-foreground: #ffffff;
+  --secondary: #e8f2f3;
+  --secondary-foreground: #123333;
+  --muted: #eef4f5;
+  --muted-foreground: #5d6a78;
+  --accent: #dcecee;
+  --accent-foreground: #0d3f40;
+  --teal-soft: #b4dadd;
+  --teal-mid: #6aafba;
+  --sage: #a9c1ba;
+  --slate: #425658;
+  --border: #e1eaec;
+  --input: #d5e2e4;
+  --ring: #2f8f92;
+  --success: #15803d;
+  --success-soft: #dcfce7;
+  --warning: #c2410c;
+  --warning-soft: #ffedd5;
+  --danger: #dc2626;
+  --danger-soft: #fee2e2;
+  --info: #2563eb;
+  --info-soft: #dbeafe;
+  --brand: #0f6b6b;
+  --brand-deep: #093f3f;
+  --shadow-ink: 13 29 29;
+  --glass-from: rgb(255 255 255 / 0.78);
+  --glass-to: rgb(255 255 255 / 0.52);
+  --glass-edge: rgb(255 255 255 / 0.7);
+  --glass-highlight: rgb(255 255 255 / 0.9);
+  --hero-base: #cfe7ea;
+  --hero-stripe: rgb(255 255 255 / 0.45);
+  --hero-top: #eef8f9;
+  --hero-mid: #cbe6e9;
+  --hero-bottom: #9fd0d5;
+  --backdrop-a: rgb(180 218 221 / 0.55);
+  --backdrop-b: rgb(106 175 186 / 0.35);
+  --radius: 0.875rem;
+  color-scheme: light;
+}
+
+/*
+ * Dark theme: explicit choice (data-theme="dark") or system preference when no
+ * explicit choice was made. The two blocks must stay identical.
+ */
+:root[data-theme='dark'] {
+  --background: #0a1515;
+  --foreground: #e3eef0;
+  --card: #102020;
+  --card-foreground: #e3eef0;
+  --popover: #132626;
+  --popover-foreground: #e3eef0;
+  --primary: #4fb3b5;
+  --primary-hover: #6cc4c6;
+  --primary-foreground: #062222;
+  --secondary: #16292a;
+  --secondary-foreground: #d4e6e8;
+  --muted: #142727;
+  --muted-foreground: #95a9ae;
+  --accent: #173739;
+  --accent-foreground: #b4dadd;
+  --teal-soft: #1f4a4c;
+  --teal-mid: #6aafba;
+  --sage: #6f8a83;
+  --slate: #b2c3c6;
+  --border: #203738;
+  --input: #2a4547;
+  --ring: #4fb3b5;
+  --success: #4ade80;
+  --success-soft: #0f2e1b;
+  --warning: #fb923c;
+  --warning-soft: #36200f;
+  --danger: #f87171;
+  --danger-soft: #3a1515;
+  --info: #60a5fa;
+  --info-soft: #11233d;
+  --shadow-ink: 0 0 0;
+  --glass-from: rgb(16 32 32 / 0.82);
+  --glass-to: rgb(16 32 32 / 0.6);
+  --glass-edge: rgb(106 175 186 / 0.18);
+  --glass-highlight: rgb(255 255 255 / 0.06);
+  --hero-base: #0c2324;
+  --hero-stripe: rgb(106 175 186 / 0.07);
+  --hero-top: #123234;
+  --hero-mid: #0c2122;
+  --hero-bottom: #0a1515;
+  --backdrop-a: rgb(31 74 76 / 0.45);
+  --backdrop-b: rgb(15 107 107 / 0.25);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --background: #0a1515;
+    --foreground: #e3eef0;
+    --card: #102020;
+    --card-foreground: #e3eef0;
+    --popover: #132626;
+    --popover-foreground: #e3eef0;
+    --primary: #4fb3b5;
+    --primary-hover: #6cc4c6;
+    --primary-foreground: #062222;
+    --secondary: #16292a;
+    --secondary-foreground: #d4e6e8;
+    --muted: #142727;
+    --muted-foreground: #95a9ae;
+    --accent: #173739;
+    --accent-foreground: #b4dadd;
+    --teal-soft: #1f4a4c;
+    --teal-mid: #6aafba;
+    --sage: #6f8a83;
+    --slate: #b2c3c6;
+    --border: #203738;
+    --input: #2a4547;
+    --ring: #4fb3b5;
+    --success: #4ade80;
+    --success-soft: #0f2e1b;
+    --warning: #fb923c;
+    --warning-soft: #36200f;
+    --danger: #f87171;
+    --danger-soft: #3a1515;
+    --info: #60a5fa;
+    --info-soft: #11233d;
+    --shadow-ink: 0 0 0;
+    --glass-from: rgb(16 32 32 / 0.82);
+    --glass-to: rgb(16 32 32 / 0.6);
+    --glass-edge: rgb(106 175 186 / 0.18);
+    --glass-highlight: rgb(255 255 255 / 0.06);
+    --hero-base: #0c2324;
+    --hero-stripe: rgb(106 175 186 / 0.07);
+    --hero-top: #123234;
+    --hero-mid: #0c2122;
+    --hero-bottom: #0a1515;
+    --backdrop-a: rgb(31 74 76 / 0.45);
+    --backdrop-b: rgb(15 107 107 / 0.25);
+    color-scheme: dark;
+  }
+}
+
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme='light']), :root:not([data-theme='light']) *) {
+      @slot;
+    }
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-teal-soft: var(--teal-soft);
+  --color-teal-mid: var(--teal-mid);
+  --color-sage: var(--sage);
+  --color-slate-ink: var(--slate);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-brand: var(--brand);
+  --color-brand-deep: var(--brand-deep);
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 6px);
+  --radius-2xl: calc(var(--radius) + 12px);
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-heading), var(--font-body), ui-sans-serif, sans-serif;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    font-size: 15px;
+    -webkit-text-size-adjust: 100%;
+  }
+  @media (min-width: 768px) and (max-width: 1279px) {
+    html {
+      font-size: 16px;
+    }
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+}
+
+@layer components {
+  /* Frosted panel used on public pages and the sign-in screen only. */
+  .glass {
+    background: linear-gradient(135deg, var(--glass-from), var(--glass-to));
+    border: 1px solid var(--glass-edge);
+    box-shadow:
+      0 1px 0 var(--glass-highlight) inset,
+      0 18px 50px -24px rgb(15 107 107 / 0.35);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+  }
+
+  /* Vertical light stripes of the hero backdrop. */
+  .hero-backdrop {
+    background-color: var(--hero-base);
+    background-image:
+      repeating-linear-gradient(
+        90deg,
+        transparent 0,
+        transparent 54px,
+        var(--hero-stripe) 58px,
+        transparent 66px
+      ),
+      radial-gradient(
+        120% 80% at 50% 0%,
+        var(--hero-top) 0%,
+        var(--hero-mid) 55%,
+        var(--hero-bottom) 100%
+      );
+  }
+
+  .page-backdrop {
+    background:
+      radial-gradient(80% 60% at 0% 0%, var(--backdrop-a), transparent 60%),
+      radial-gradient(70% 60% at 100% 100%, var(--backdrop-b), transparent 60%), var(--background);
+  }
+
+  .card-surface {
+    @apply rounded-xl border border-border bg-card shadow-[0_1px_2px_rgb(var(--shadow-ink)/0.04),0_8px_24px_-16px_rgb(var(--shadow-ink)/0.12)];
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

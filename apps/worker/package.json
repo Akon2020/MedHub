@@ -1,0 +1,29 @@
+{
+  "name": "@medhub/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsup",
+    "tick": "tsx src/index.ts tick",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@medhub/db": "workspace:*",
+    "@medhub/shared": "workspace:*",
+    "dotenv": "18.0.9",
+    "drizzle-orm": "0.45.4",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@medhub/config": "workspace:*",
+    "@types/node": "22.20.5",
+    "@types/pg": "8.23.1",
+    "eslint": "9.39.5",
+    "tsup": "8.5.1",
+    "tsx": "4.23.15",
+    "vitest": "5.0.5"
+  }
+}

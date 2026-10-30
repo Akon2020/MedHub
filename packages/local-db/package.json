@@ -1,0 +1,27 @@
+{
+  "name": "@medhub/local-db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@medhub/domain": "workspace:*",
+    "@medhub/shared": "workspace:*",
+    "@medhub/sync": "workspace:*",
+    "dexie": "4.4.7"
+  },
+  "devDependencies": {
+    "@medhub/config": "workspace:*",
+    "eslint": "9.39.5",
+    "fake-indexeddb": "6.2.6",
+    "vitest": "5.0.5"
+  }
+}

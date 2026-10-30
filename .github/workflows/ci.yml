@@ -1,0 +1,149 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ['v*']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # The application role is not a superuser so that Row Level Security applies in tests.
+      DATABASE_URL: postgres://medhub_app:ci_password@localhost:5432/medhub_test
+      TEST_DATABASE_URL: postgres://medhub_app:ci_password@localhost:5432/medhub_test
+      MEDHUB_SESSION_SECRET: ci-only-session-secret-not-used-in-production-0000
+      MEDHUB_FIELD_MASTER_KEY: Y2ktb25seS1maWVsZC1rZXktMDAwMDAwMDAwMDAwMDA=
+      MEDHUB_BASE_URL: http://localhost:3000
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare database role
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -c "CREATE ROLE medhub_app LOGIN PASSWORD 'ci_password' NOSUPERUSER NOBYPASSRLS;"
+          psql -h localhost -U postgres -c "CREATE DATABASE medhub_test OWNER medhub_app;"
+          psql -h localhost -U postgres -d medhub_test -c "CREATE EXTENSION IF NOT EXISTS pg_trgm; CREATE EXTENSION IF NOT EXISTS unaccent;"
+
+      - name: Migrate
+        run: pnpm --filter @medhub/db exec tsx scripts/migrate.ts --test
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit and integration tests
+        run: pnpm test
+
+      - name: Tenant isolation
+        run: pnpm db:test-isolation
+
+      - name: Sync property tests
+        run: pnpm test:props
+
+      - name: Build
+        run: pnpm build
+
+      - name: Client budget (1.5 MB compressed)
+        run: |
+          node -e "
+          const fs=require('fs'),p=require('path'),z=require('zlib');let gz=0;
+          const walk=d=>fs.readdirSync(d).flatMap(f=>{const x=p.join(d,f);return fs.statSync(x).isDirectory()?walk(x):[x]});
+          for(const f of walk('apps/web/.next/static')){if(f.endsWith('.map'))continue;const b=fs.readFileSync(f);gz+=/\.(woff2|png|jpg|webp)$/.test(f)?b.length:z.gzipSync(b,{level:9}).length}
+          console.log('compressed KiB',Math.round(gz/1024));if(gz>1.5*1024*1024)process.exit(1)"
+
+      - name: Dependency audit
+        run: pnpm audit --prod --audit-level critical
+
+      - name: Release archive
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: pnpm release
+
+      - uses: actions/upload-artifact@v4
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          name: medhub-release
+          path: release/*.tar.gz
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: verify
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://medhub_app:ci_password@localhost:5432/medhub_e2e
+      MEDHUB_SESSION_SECRET: ci-only-session-secret-not-used-in-production-0000
+      MEDHUB_FIELD_MASTER_KEY: Y2ktb25seS1maWVsZC1rZXktMDAwMDAwMDAwMDAwMDA=
+      MEDHUB_BASE_URL: http://localhost:3100
+      MEDHUB_SEED_PASSWORD: ci-demo-password-0000
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Prepare database
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -c "CREATE ROLE medhub_app LOGIN PASSWORD 'ci_password' NOSUPERUSER NOBYPASSRLS;"
+          psql -h localhost -U postgres -c "CREATE DATABASE medhub_e2e OWNER medhub_app;"
+          psql -h localhost -U postgres -d medhub_e2e -c "CREATE EXTENSION IF NOT EXISTS pg_trgm; CREATE EXTENSION IF NOT EXISTS unaccent;"
+      - name: Migrate and seed the fictitious demo structure
+        run: pnpm db:migrate && pnpm db:seed
+      - name: Install Chromium
+        run: pnpm --filter @medhub/web exec playwright install --with-deps chromium
+      - name: Two-browser offline bench and screen scenarios
+        run: pnpm --filter @medhub/web exec playwright test --project=chromium
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: apps/web/test-results

@@ -1,0 +1,525 @@
+{
+  "meta": {
+    "title": "MedHub, le système d'information de santé qui ne s'arrête jamais",
+    "description": "Dossier patient, consultation, caisse, pharmacie et laboratoire pour les structures de santé, même sans connexion."
+  },
+  "common": {
+    "appName": "MedHub",
+    "loading": "Chargement…",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "back": "Retour",
+    "retry": "Réessayer",
+    "close": "Fermer",
+    "language": "Langue",
+    "fr": "Français",
+    "en": "English",
+    "optional": "facultatif",
+    "fictitiousData": "Données fictives",
+    "years": "{count, plural, one {# an} other {# ans}}",
+    "never": "jamais",
+    "theme": {
+      "label": "Thème",
+      "system": "Système",
+      "light": "Clair",
+      "dark": "Sombre"
+    }
+  },
+  "public": {
+    "nav": {
+      "features": "Fonctionnalités",
+      "modules": "Modules",
+      "why": "Avantages",
+      "pricing": "Tarifs",
+      "signIn": "Se connecter",
+      "openMenu": "Ouvrir le menu"
+    },
+    "hero": {
+      "badge": "Conçu pour la RDC, en français et en anglais",
+      "titleA": "Le système de santé",
+      "titleB": "qui ne s'arrête jamais",
+      "subtitle": "Accueil, consultation, caisse, pharmacie et laboratoire sur une seule plateforme. Chaque poste continue de travailler sans réseau et se synchronise dès que la connexion revient.",
+      "ctaPrimary": "Accéder à ma structure",
+      "ctaSecondary": "Découvrir les modules"
+    },
+    "preview": {
+      "title": "Tableau de bord de la structure",
+      "subtitle": "Vue d'ensemble de la journée",
+      "search": "Rechercher un patient, un dossier…",
+      "queue": "File d'attente",
+      "triage": "Triage",
+      "consultation": "Consultation",
+      "cashier": "Caisse",
+      "inQueue": "En attente",
+      "inProgress": "En cours",
+      "done": "Terminés",
+      "offline": "Hors connexion",
+      "pendingOps": "{count} opérations en attente",
+      "activity": "Activité de la semaine",
+      "temperature": "Température",
+      "lastVitals": "Dernières constantes"
+    },
+    "pillars": {
+      "eyebrow": "Comment MedHub aide",
+      "title": "Un outil pensé pour le terrain",
+      "subtitle": "Courant instable, réseau intermittent, parc informatique mixte : MedHub est construit pour ces conditions dès le premier jour.",
+      "offline": {
+        "title": "Toujours disponible",
+        "text": "Enregistrement, consultation, caisse et dispensation fonctionnent sans connexion. Rien n'est perdu, rien n'est saisi deux fois."
+      },
+      "record": {
+        "title": "Dossier longitudinal",
+        "text": "Allergies, antécédents, traitements et constantes réunis sur un seul écran à chaque consultation."
+      },
+      "finance": {
+        "title": "Recettes sécurisées",
+        "text": "Factures et mouvements de caisse immuables, montants en USD et en CDF, écarts détectés le jour même."
+      },
+      "config": {
+        "title": "Configurable sans code",
+        "text": "Rôles, tarifs, conventions, formulaires et documents imprimés se règlent dans l'interface."
+      }
+    },
+    "facts": {
+      "offline": "des fonctions critiques utilisables hors connexion",
+      "currencies": "devises gérées nativement : USD et CDF",
+      "languages": "langues d'interface : français et anglais",
+      "isolation": "structures isolées par la base de données elle-même"
+    },
+    "modules": {
+      "eyebrow": "Modules principaux",
+      "title": "Une plateforme pour toute la structure",
+      "subtitle": "Activez les modules dont vous avez besoin, de la pharmacie de quartier à l'hôpital multi-sites.",
+      "learnMore": "Se connecter pour essayer",
+      "patients": {
+        "tab": "Patients",
+        "title": "Accueil et dossier patient",
+        "text": "Recherche tolérante aux fautes, création rapide en moins d'une minute, détection des doublons et carte patient avec QR.",
+        "points": [
+          "Recherche hors connexion",
+          "Détection des doublons",
+          "Carte patient",
+          "Couverture et conventions"
+        ]
+      },
+      "clinical": {
+        "tab": "Consultation",
+        "title": "Consultation et prescription",
+        "text": "Triage, constantes avec contrôle de plausibilité, notes signées, diagnostics codés et prescription avec alertes.",
+        "points": [
+          "Constantes et courbes",
+          "Notes signées",
+          "Alertes de prescription",
+          "Formulaires configurables"
+        ]
+      },
+      "billing": {
+        "tab": "Caisse",
+        "title": "Facturation et caisse",
+        "text": "Panier alimenté par les actes, part patient et part tiers payant, encaissement multi-devises et clôture de caisse.",
+        "points": [
+          "USD et CDF",
+          "Conventions et forfaits",
+          "Avoirs et remises",
+          "Clôture avec écarts"
+        ]
+      },
+      "pharmacy": {
+        "tab": "Pharmacie",
+        "title": "Pharmacie et stock",
+        "text": "Dispensation reliée aux ordonnances, stock calculé à partir des mouvements, lots et péremptions suivis.",
+        "points": [
+          "Premier périmé, premier sorti",
+          "Alertes de rupture",
+          "Inventaires",
+          "Produits sous contrôle"
+        ]
+      },
+      "lab": {
+        "tab": "Laboratoire",
+        "title": "Laboratoire",
+        "text": "Demandes, prélèvements, saisie et validation des résultats, valeurs critiques signalées immédiatement.",
+        "points": [
+          "Étiquettes et prélèvements",
+          "Validation à deux niveaux",
+          "Valeurs de référence",
+          "Comptes rendus"
+        ]
+      }
+    },
+    "why": {
+      "eyebrow": "Avantages clés",
+      "title": "Pourquoi les structures choisissent MedHub",
+      "items": {
+        "integrated": {
+          "title": "Dossier patient intégré",
+          "text": "Une information saisie une fois alimente la facture, le stock et les rapports."
+        },
+        "workflows": {
+          "title": "Parcours configurables",
+          "text": "Chaque structure règle ses rôles, ses tarifs et ses formulaires sans développement."
+        },
+        "billing": {
+          "title": "Stock et facturation reliés",
+          "text": "La dispensation sort le stock et ajoute la ligne de facture automatiquement."
+        },
+        "security": {
+          "title": "Sécurité et traçabilité",
+          "text": "Journal d'audit chaîné, accès d'urgence tracé, données chiffrées sur chaque poste."
+        },
+        "hosting": {
+          "title": "Hébergement réaliste",
+          "text": "Fonctionne sur un hébergement cPanel classique et migre vers un serveur dédié sans réécriture."
+        }
+      }
+    },
+    "pricing": {
+      "eyebrow": "Tarifs",
+      "title": "Des tarifs simples et prévisibles",
+      "subtitle": "Aucun investissement initial, un abonnement mensuel adapté à la taille de votre structure.",
+      "monthly": "Mensuel",
+      "annual": "Annuel",
+      "annualNote": "2 mois offerts",
+      "perMonth": "/mois",
+      "perYear": "/an",
+      "from": "À partir de",
+      "quote": "Sur devis",
+      "choose": "Choisir ce plan",
+      "contact": "Nous contacter",
+      "popular": "Le plus choisi",
+      "disclaimer": "Valeurs indicatives en dollars américains, à confirmer lors de la souscription. Équivalent en francs congolais au taux du jour."
+    },
+    "cta": {
+      "title": "Prêt à mettre votre structure en route ?",
+      "subtitle": "Un dispensaire peut être opérationnel en moins de cinq jours ouvrés.",
+      "button": "Accéder à ma structure"
+    },
+    "footer": {
+      "tagline": "Système d'information de santé local-first pour les structures sanitaires.",
+      "rights": "© {year} MedHub. Tous droits réservés.",
+      "product": "Produit",
+      "access": "Accès",
+      "signIn": "Connexion",
+      "status": "État du service"
+    }
+  },
+  "auth": {
+    "title": "Connexion à votre structure",
+    "subtitle": "Saisissez le code de votre structure puis vos identifiants.",
+    "tenantCode": "Code de la structure",
+    "tenantCodeHint": "Exemple : HOP-KIN-0042. Il est mémorisé sur ce poste.",
+    "username": "Identifiant",
+    "password": "Mot de passe",
+    "submit": "Se connecter",
+    "submitting": "Connexion…",
+    "offline": "Pas de connexion : la première connexion d'un poste se fait en ligne. Si ce poste est déjà activé, déverrouillez-le avec votre code PIN.",
+    "unlockInstead": "Déverrouiller avec mon PIN",
+    "secureNote": "Connexion chiffrée. Aucun mot de passe n'est conservé sur ce poste.",
+    "sideTitle": "Votre structure, même sans réseau",
+    "sideText": "Une fois ce poste activé, l'accueil, la consultation et la caisse continuent de fonctionner pendant les coupures.",
+    "pinSetup": {
+      "title": "Activer ce poste",
+      "subtitle": "Choisissez un code PIN d'au moins 6 chiffres. Il déverrouille vos données sur ce poste, même sans connexion.",
+      "pin": "Code PIN",
+      "pinConfirm": "Confirmer le code PIN",
+      "deviceName": "Nom du poste",
+      "deviceNamePlaceholder": "Exemple : Accueil 1",
+      "deviceKind": "Type d'appareil",
+      "kinds": {
+        "desktop": "Ordinateur de bureau",
+        "laptop": "Ordinateur portable",
+        "tablet": "Tablette",
+        "phone": "Téléphone"
+      },
+      "submit": "Activer le poste",
+      "submitting": "Activation…",
+      "tooShort": "Le code PIN doit contenir au moins 6 chiffres.",
+      "mismatch": "Les deux codes PIN ne correspondent pas."
+    },
+    "recovery": {
+      "title": "Code de récupération",
+      "text": "Notez ce code et gardez-le en lieu sûr. Il permet de récupérer les opérations non envoyées si le code PIN est oublié. Il ne sera plus affiché.",
+      "print": "Imprimer",
+      "confirm": "J'ai noté ce code en lieu sûr",
+      "continue": "Ouvrir MedHub"
+    },
+    "unlock": {
+      "title": "Poste verrouillé",
+      "subtitle": "Saisissez votre code PIN pour continuer.",
+      "pin": "Code PIN",
+      "submit": "Déverrouiller",
+      "wrong": "Code PIN incorrect. {remaining, plural, one {# essai restant} other {# essais restants}}.",
+      "blocked": "Trop d'essais. Utilisez votre code de récupération ou reconnectez-vous en ligne.",
+      "wiped": "Trop d'essais : les données locales de ce poste ont été effacées. Reconnectez-vous en ligne.",
+      "useRecovery": "Utiliser le code de récupération",
+      "recoveryCode": "Code de récupération",
+      "newPin": "Nouveau code PIN",
+      "recover": "Récupérer",
+      "recoveryFailed": "Code de récupération incorrect.",
+      "switchUser": "Changer d'utilisateur",
+      "noLocal": "Ce poste n'est pas encore activé pour cet utilisateur. Connectez-vous en ligne."
+    },
+    "errors": {
+      "AUTH_INVALID_CREDENTIALS": "Identifiant ou mot de passe incorrect.",
+      "AUTH_ACCOUNT_LOCKED": "Compte temporairement verrouillé après plusieurs échecs. Réessayez plus tard.",
+      "AUTH_TENANT_UNKNOWN": "Code de structure inconnu.",
+      "AUTH_TENANT_SUSPENDED": "Cette structure est suspendue. Contactez votre administrateur.",
+      "VALIDATION_FAILED": "Vérifiez les champs saisis.",
+      "RATE_LIMITED": "Trop de tentatives. Patientez une minute.",
+      "NETWORK": "Le serveur est injoignable. Vérifiez la connexion.",
+      "UNKNOWN": "Une erreur inattendue est survenue.",
+      "AUTH_MFA_INVALID": "Code incorrect ou déjà utilisé.",
+      "AUTH_MFA_CHALLENGE_EXPIRED": "Délai dépassé. Reprenez la connexion depuis le début.",
+      "AUTH_MFA_REQUIRED_BY_ROLE": "Votre rôle exige la double authentification : elle ne peut pas être désactivée.",
+      "AUTH_MFA_ALREADY_ENABLED": "La double authentification est déjà active.",
+      "AUTH_MFA_NOT_ENROLLED": "La double authentification n'est pas configurée.",
+      "IP_BLOCKED": "Accès refusé depuis cette adresse réseau."
+    },
+    "mfa": {
+      "verifyTitle": "Double authentification",
+      "verifyText": "Saisissez le code à 6 chiffres affiché par votre application d'authentification.",
+      "recoveryText": "Saisissez un de vos codes de secours. Chaque code ne sert qu'une fois.",
+      "code": "Code à 6 chiffres",
+      "recoveryCode": "Code de secours",
+      "verify": "Vérifier",
+      "useRecovery": "Utiliser un code de secours",
+      "useApp": "Utiliser l'application d'authentification",
+      "enrollTitle": "Protégez votre compte",
+      "enrollText": "Votre rôle exige une double authentification. Installez une application d'authentification (Google Authenticator, Microsoft Authenticator, FreeOTP, Aegis...) sur votre téléphone.",
+      "enrollStart": "Configurer maintenant",
+      "enrollStep1": "Ouvrez l'application d'authentification sur votre téléphone.",
+      "enrollStep2": "Scannez le code QR ou saisissez la clé manuellement.",
+      "enrollStep3": "Saisissez le code à 6 chiffres affiché par l'application.",
+      "qrAlt": "Code QR à scanner avec votre application d'authentification",
+      "manualKey": "Clé de configuration manuelle",
+      "activate": "Activer la double authentification",
+      "recoveryCodesTitle": "Codes de secours",
+      "recoveryCodesText": "Si vous perdez votre téléphone, chacun de ces codes permet une seule connexion. Imprimez-les ou notez-les en lieu sûr : ils ne seront plus affichés.",
+      "print": "Imprimer",
+      "recoveryConfirm": "J'ai conservé ces codes en lieu sûr",
+      "continue": "Continuer"
+    }
+  },
+  "app": {
+    "nav": {
+      "dashboard": "Tableau de bord",
+      "clinical": "Clinique",
+      "patients": "Patients",
+      "consultations": "Consultations",
+      "appointments": "Rendez-vous et files",
+      "diagnostics": "Examens",
+      "laboratory": "Laboratoire",
+      "operations": "Opérations",
+      "pharmacy": "Pharmacie et stock",
+      "finance": "Finances",
+      "billing": "Facturation et caisse",
+      "contracts": "Conventions",
+      "system": "Système",
+      "settings": "Paramètres",
+      "diagnostic": "Diagnostic",
+      "collapse": "Réduire le menu",
+      "expand": "Déplier le menu",
+      "soon": "bientôt"
+    },
+    "header": {
+      "search": "Rechercher un patient (nom, téléphone, dossier)…",
+      "lock": "Verrouiller le poste",
+      "signOut": "Se déconnecter",
+      "diagnostic": "Diagnostic",
+      "menu": "Menu",
+      "account": "Mon compte et sécurité"
+    },
+    "training": "Base de formation"
+  },
+  "sync": {
+    "online": "Connecté",
+    "syncing": "Synchronisation",
+    "offline": "Hors connexion",
+    "attention": "Attention requise",
+    "lastSync": "Dernière synchronisation : {time}",
+    "pending": "{count, plural, =0 {Aucune opération en attente} one {# opération en attente} other {# opérations en attente}}",
+    "rejected": "{count, plural, one {# opération rejetée} other {# opérations rejetées}}",
+    "conflicts": "{count, plural, one {# conflit à revoir} other {# conflits à revoir}}",
+    "clock": "L'horloge de ce poste semble en retard.",
+    "syncNow": "Synchroniser maintenant",
+    "openDiagnostic": "Ouvrir le diagnostic",
+    "never": "jamais"
+  },
+  "dashboard": {
+    "greeting": "Bonjour {name}",
+    "subtitle": "Vue d'ensemble de l'activité enregistrée sur ce poste",
+    "cards": {
+      "patients": "Patients sur ce poste",
+      "registeredToday": "Enregistrés aujourd'hui",
+      "vitalsToday": "Constantes du jour",
+      "pending": "Opérations en attente"
+    },
+    "registrations": "Enregistrements des 7 derniers jours",
+    "registrationsHint": "Données présentes sur ce poste",
+    "recent": "Patients récents",
+    "viewAll": "Tout voir",
+    "empty": "Aucun patient sur ce poste pour le moment.",
+    "quick": "Actions rapides",
+    "newPatient": "Nouveau patient",
+    "searchPatient": "Rechercher un patient",
+    "openDiagnostic": "État de la synchronisation",
+    "milestone": "Prototype J0 : patients, constantes et stock fonctionnent hors connexion. Les autres modules arrivent selon la feuille de route."
+  },
+  "patients": {
+    "title": "Patients",
+    "subtitle": "Recherche et enregistrement, avec ou sans connexion",
+    "searchPlaceholder": "Nom, téléphone ou numéro de dossier",
+    "new": "Nouveau patient",
+    "empty": "Aucun patient trouvé.",
+    "emptyHint": "Enregistrez un premier patient : il sera disponible immédiatement, même hors connexion.",
+    "results": "{count, plural, =0 {Aucun résultat} one {# patient} other {# patients}}",
+    "columns": {
+      "name": "Patient",
+      "mrn": "Dossier",
+      "sex": "Sexe",
+      "age": "Âge",
+      "phone": "Téléphone",
+      "status": "Synchronisation"
+    },
+    "sex": {
+      "M": "Homme",
+      "F": "Femme",
+      "U": "Non précisé"
+    },
+    "state": {
+      "synced": "Synchronisé",
+      "pending": "En attente",
+      "rejected": "Rejeté"
+    },
+    "form": {
+      "title": "Enregistrement rapide",
+      "subtitle": "Le reste du dossier peut être complété plus tard.",
+      "familyName": "Nom",
+      "middleName": "Postnom",
+      "givenName": "Prénom",
+      "sex": "Sexe",
+      "birthDate": "Date de naissance",
+      "age": "ou âge estimé (ans)",
+      "phone": "Téléphone",
+      "submit": "Enregistrer le patient",
+      "success": "Patient enregistré. Dossier {mrn}.",
+      "required": "Ce champ est obligatoire.",
+      "phoneInvalid": "Numéro de téléphone invalide.",
+      "deviceMissing": "Ce poste n'est pas activé : impossible de numéroter le dossier."
+    }
+  },
+  "patient": {
+    "back": "Retour aux patients",
+    "notFound": "Ce patient n'est pas présent sur ce poste.",
+    "identity": "Identité",
+    "mrn": "Dossier",
+    "born": "Né(e) le {date}",
+    "estimated": "âge estimé",
+    "vitals": {
+      "title": "Constantes",
+      "record": "Enregistrer une constante",
+      "code": "Mesure",
+      "value": "Valeur",
+      "measuredAt": "Mesurée à",
+      "empty": "Aucune constante enregistrée.",
+      "superseded": "corrigée",
+      "correct": "Corriger",
+      "correcting": "Correction de la mesure du {date}",
+      "override": "Valeur inhabituelle : précisez le motif pour confirmer",
+      "overridePlaceholder": "Exemple : mesure vérifiée deux fois",
+      "saved": "Constante enregistrée.",
+      "codes": {
+        "temp": "Température",
+        "pulse": "Pouls",
+        "sbp": "Tension systolique",
+        "dbp": "Tension diastolique",
+        "rr": "Fréquence respiratoire",
+        "spo2": "Saturation en oxygène",
+        "weight": "Poids",
+        "height": "Taille",
+        "head_circ": "Périmètre crânien",
+        "muac": "Périmètre brachial",
+        "glucose": "Glycémie",
+        "pain": "Douleur",
+        "diuresis": "Diurèse"
+      }
+    },
+    "history": "Historique",
+    "trend": "Évolution de la température"
+  },
+  "diagnostic": {
+    "title": "Diagnostic du poste",
+    "subtitle": "État de la synchronisation et de la base locale",
+    "device": "Poste",
+    "deviceCode": "Code du poste",
+    "pending": "En attente d'envoi",
+    "rejected": "Rejetées",
+    "conflicts": "Conflits",
+    "lastSync": "Dernière synchronisation",
+    "lastServer": "Dernière heure serveur connue",
+    "storage": "Stockage utilisé",
+    "storageUnknown": "Inconnu sur ce navigateur",
+    "network": "Réseau",
+    "online": "En ligne",
+    "offline": "Hors ligne",
+    "forceSync": "Forcer une synchronisation",
+    "rejectedTitle": "Opérations rejetées",
+    "rejectedEmpty": "Aucune opération rejetée.",
+    "reason": "Motif",
+    "command": "Commande",
+    "version": "Version de l'application"
+  },
+  "comingSoon": {
+    "title": "{module} arrive bientôt",
+    "text": "Ce module est prévu dans la feuille de route ({week}). Les fondations hors connexion sur lesquelles il reposera sont déjà en place.",
+    "back": "Retour au tableau de bord"
+  },
+  "offlineOnly": {
+    "title": "Fonction disponible en ligne uniquement",
+    "text": "Reconnectez ce poste au réseau pour accéder à cet écran."
+  },
+  "errors": {
+    "PERMISSION_DENIED": "Vous n'avez pas la permission d'effectuer cette action.",
+    "VALIDATION_FAILED": "Certaines informations sont invalides.",
+    "DPI_VITAL_IMPLAUSIBLE": "Valeur hors des limites plausibles : un motif est requis.",
+    "NOT_FOUND": "Élément introuvable.",
+    "UNKNOWN": "Une erreur inattendue est survenue."
+  },
+  "account": {
+    "title": "Mon compte",
+    "subtitle": "Sécurité de la connexion, sessions ouvertes et apparence.",
+    "offline": "Écran disponible en ligne seulement. Reconnectez ce poste pour gérer la sécurité du compte.",
+    "done": "Terminé",
+    "cancel": "Annuler",
+    "mfa": {
+      "title": "Double authentification",
+      "text": "Un code à 6 chiffres de votre téléphone est demandé à chaque connexion, en plus du mot de passe.",
+      "on": "Activée",
+      "off": "Désactivée",
+      "since": "Activée le {date}",
+      "codesLeft": "{count, plural, =0 {aucun code de secours restant} one {# code de secours restant} other {# codes de secours restants}}",
+      "requiredByRole": "Votre rôle exige la double authentification : elle vous sera demandée à la prochaine connexion.",
+      "enable": "Activer",
+      "regenerate": "Nouveaux codes de secours",
+      "disable": "Désactiver",
+      "confirmRegenerate": "Les anciens codes de secours cesseront de fonctionner. Confirmez avec un code de l'application ou un code de secours.",
+      "confirmDisable": "Confirmez avec un code de l'application ou un code de secours.",
+      "codeLabel": "Code de vérification"
+    },
+    "sessions": {
+      "title": "Sessions ouvertes",
+      "text": "Appareils connectés à votre compte. Déconnectez ceux que vous ne reconnaissez pas.",
+      "current": "Cet appareil",
+      "lastSeen": "Dernière activité : {date}",
+      "revoke": "Déconnecter",
+      "revokeOthers": "Déconnecter les autres",
+      "unknownBrowser": "Navigateur inconnu"
+    },
+    "appearance": {
+      "title": "Apparence",
+      "text": "Préférences de ce poste.",
+      "theme": "Thème",
+      "language": "Langue"
+    }
+  }
+}

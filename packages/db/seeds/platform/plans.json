@@ -1,0 +1,78 @@
+{
+  "_comment": "Initial values from docs/13-tarification.md. Field hypotheses, all editable in the super-admin portal. TODO(medhub-decision): confirm the public price list before commercial launch.",
+  "currency": "USD",
+  "annualMonthsCharged": 10,
+  "plans": [
+    {
+      "code": "essential",
+      "name": { "fr": "Essentiel", "en": "Essential" },
+      "profile": {
+        "fr": "Pharmacie, dispensaire, cabinet",
+        "en": "Pharmacy, health post, practice"
+      },
+      "monthlyPriceMinor": 2000,
+      "quoteOnly": false,
+      "features": {
+        "fr": [
+          "1 à 3 utilisateurs",
+          "1 site",
+          "Noyau et module principal du type de structure",
+          "Fonctionnement hors connexion"
+        ],
+        "en": [
+          "1 to 3 users",
+          "1 site",
+          "Core and the main module for the facility type",
+          "Works offline"
+        ]
+      }
+    },
+    {
+      "code": "clinic",
+      "name": { "fr": "Clinique", "en": "Clinic" },
+      "profile": { "fr": "Petite clinique", "en": "Small clinic" },
+      "monthlyPriceMinor": 8000,
+      "quoteOnly": false,
+      "features": {
+        "fr": [
+          "Jusqu'à 10 utilisateurs",
+          "Environ 10 lits",
+          "1 site",
+          "Fonctionnement hors connexion"
+        ],
+        "en": ["Up to 10 users", "About 10 beds", "1 site", "Works offline"]
+      }
+    },
+    {
+      "code": "clinic_plus",
+      "name": { "fr": "Clinique+", "en": "Clinic+" },
+      "profile": {
+        "fr": "Clinique moyenne, petit hôpital",
+        "en": "Mid-size clinic, small hospital"
+      },
+      "monthlyPriceMinor": 18000,
+      "quoteOnly": false,
+      "highlighted": true,
+      "features": {
+        "fr": [
+          "Jusqu'à 30 utilisateurs",
+          "Environ 30 lits",
+          "2 sites",
+          "Fonctionnement hors connexion"
+        ],
+        "en": ["Up to 30 users", "About 30 beds", "2 sites", "Works offline"]
+      }
+    },
+    {
+      "code": "hospital",
+      "name": { "fr": "Hôpital", "en": "Hospital" },
+      "profile": { "fr": "Hôpital ou réseau multi-sites", "en": "Hospital or multi-site network" },
+      "monthlyPriceMinor": 40000,
+      "quoteOnly": true,
+      "features": {
+        "fr": ["Selon contrat", "Multi-sites", "Support renforcé", "Fonctionnement hors connexion"],
+        "en": ["Per contract", "Multi-site", "Priority support", "Works offline"]
+      }
+    }
+  ]
+}
