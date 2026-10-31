@@ -78,7 +78,8 @@ Consignes reçues et appliquées pendant les sessions :
 | `11c8420` | 30/10/2026 | `feat(core)` : configuration versionnée (`config_entry`, brouillon, publication, archivage, restauration), réglages de sécurité des postes appliqués hors connexion (S5) |
 | `57b129c` | 30/10/2026 | `feat(core)` : gestion des utilisateurs (création avec mot de passe temporaire, profil et rôles, désactivation, réinitialisation du mot de passe et de la 2FA, déverrouillage, dernier administrateur protégé), politique de mot de passe, changement à la première connexion et depuis « Mon compte » |
 | `e49e687` | 30/10/2026 | `feat(core)` : éditeur de rôles (grille ressource et action avec périmètre, duplication, retour au modèle, rôle privilégié et 2FA automatiques, dernier administrateur protégé), libellés des nouveaux événements de sécurité |
-| (S5, référentiels) | 30/10/2026 | `feat(core)` : référentiels (listes de choix avec import CSV vérifié, devises, unités UCUM, 26 provinces, import plateforme des zones administratives, copie locale sur les postes, province des adresses en liste) |
+| `e43ca85` | 30/10/2026 | `feat(core)` : référentiels (listes de choix avec import CSV vérifié, devises, unités UCUM, 26 provinces, import plateforme des zones administratives, copie locale sur les postes, province des adresses en liste) |
+| (S5, langues) | 30/10/2026 | `feat(web)` : traduction anglaise complète vérifiée par test (parité, ICU, couverture des clés), langue du compte appliquée à la connexion et enregistrée depuis l'application |
 
 ---
 
@@ -184,6 +185,7 @@ Code pur, sans Node.js, DOM ni Dexie, utilisé à l'identique par le client et l
 
 | Domaine | Tables |
 | --- | --- |
+| Référentiels (S5) | `currency`, `unit`, `admin_area` (plateforme, sans `tenant_id`), `choice_list`, `choice_item` (par structure) |
 | Plateforme et organisation | `tenant`, `site`, `department` (S4), `config_entry` (S5, configuration versionnée), `person_global` (point d'accroche du dossier partagé phase 2), `permission` (catalogue), `platform_audit_log` |
 | Identité | `user_account` (dont, depuis S4, `mfa_secret_enc`, `mfa_enabled_at`, `mfa_last_step`), `role`, `role_permission`, `user_role`, `session` (dont, depuis S4, `mfa_verified_at` et `rotated_from`), `mfa_recovery_code` (S4) |
 | Traçabilité | `audit_log` (chaîné par hachage), `data_access_log` |
@@ -308,6 +310,7 @@ Toutes les routes passent par `defineRoute` (`server/platform/http.ts`) : identi
 | `GET /api/health` | Sonde de santé |
 | `POST /api/v1/auth/login` | Mot de passe ; renvoie `signed_in`, `password_change_required` (S5), `mfa_required` ou `mfa_enrollment_required` ; refuse `AUTH_NO_ACTIVE_ROLE` un compte sans rôle actif (S5) |
 | `POST /api/v1/auth/password` | Mot de passe personnel après un mot de passe temporaire, avec le défi signé de l'étape précédente ; poursuit vers la 2FA ou la session (S5) |
+| `POST /api/v1/account/locale` | Langue de l'interface enregistrée sur le compte et cookie de langue mis à jour (S5) |
 | `POST /api/v1/account/password` | Changement de son mot de passe avec l'actuel ; autres sessions fermées (S5) |
 | `GET /api/v1/reference` | Listes de choix et catalogues de la plateforme (`configuration:read`) (S5) |
 | `GET /api/v1/reference/catalogs?etag=` | Copie des référentiels pour les postes (tout utilisateur connecté) ; `unchanged` si l'empreinte n'a pas changé (S5) |
@@ -456,6 +459,12 @@ Chaque document reçoit une CSP avec **nonce neuf** (`src/proxy.ts`) : `script-s
 - Lecteur CSV partagé (`packages/shared/src/csv.ts`) : séparateur « ; », « , » ou tabulation détecté, guillemets, retours à la ligne dans un champ, marque d'ordre d'octets d'Excel, numéros de ligne du fichier.
 - Les imports de listes suivent les étapes de `docs/06` section 7 (modèle, vérification, rapport, confirmation) sans passer par un job : une liste de choix reste petite (2 000 lignes au plus).
 
+### 13.13 Langues (S5)
+
+- 860 messages en français et en anglais (`apps/web/messages`), aucune chaîne d'interface dans le code (les derniers restes, suffixe « (copie) » des rôles dupliqués et noms des langues, sont passés dans les messages).
+- Langue résolue par le cookie `NEXT_LOCALE`, français à défaut ; à chaque connexion réussie, le serveur pose ce cookie avec la langue du compte (`user_account.locale`, désormais dans le profil). Le sélecteur de la coquille et de « Mon compte » enregistre aussi le choix sur le compte.
+- Test `test/unit/messages.test.ts` (analyseur ICU `@formatjs/icu-messageformat-parser`, dépendance de développement) : mêmes clés, messages valides, mêmes variables dans les deux langues, pas d'accent français dans l'anglais (sauf noms de langues), et chaque clé littérale appelée par `useTranslations` ou `getTranslations` existe (plus de 500 appels vérifiés, avec le composant le plus proche quand un fichier en déclare plusieurs).
+
 ### 13.9 Mesure de la durée des requêtes
 
 Réponse au point ouvert de J0 (une connexion restée 20 s sans réponse) : chaque route renvoie `Server-Timing: app;dur=N`, la métrique `http.duration_ms` est émise, et toute requête plus lente que `MEDHUB_SLOW_REQUEST_MS` (2 s par défaut) est journalisée avec l'état du pool (`total`, `idle`, `waiting`) pour distinguer pool saturé, requête lente ou verrou.
@@ -501,8 +510,9 @@ Réponse au point ouvert de J0 (une connexion restée 20 s sans réponse) : chaq
 | Playwright `sync-bench.spec.ts` | Deux navigateurs réels, 500 opérations, coupures, réponses perdues | 500 opérations (226 enregistrements, 96 modifications, 178 constantes), 109 cycles coupés, 41 réponses perdues ; zéro rejet, zéro doublon, convergence, aucun nom en clair |
 | Playwright `sync-bench.spec.ts` (second scénario) | Enregistrement hors connexion par le formulaire, rechargement, synchronisation | Vert |
 | Playwright `public.spec.ts` | Page publique vers connexion ; bouton désactivé hors connexion ; projet tablette | Vert |
-| Playwright `mfa.spec.ts` (S4) | Configuration imposée de la 2FA à l'écran, codes de secours, seconde connexion avec code faux puis bon code, activation du poste, « Mon compte » en thème sombre, création d'un site, modification après expiration de la preuve avec boîte de step-up, **effacement à distance** d'une tablette déclarée perdue (second navigateur : identité et IndexedDB vides, message sur la page de connexion) ; création d'un utilisateur à l'écran, mot de passe temporaire, première connexion dans un autre navigateur avec mot de passe refusé puis accepté, désactivation, duplication d'un rôle puis modification de sa grille, liste de choix importée d'un CSV avec ligne fautive puis enregistrée, provinces proposées dans les adresses (S5) ; CSP à nonce neuf | 2 tests verts |
+| Playwright `mfa.spec.ts` (S4) | Configuration imposée de la 2FA à l'écran, codes de secours, seconde connexion avec code faux puis bon code, activation du poste, « Mon compte » en thème sombre, création d'un site, modification après expiration de la preuve avec boîte de step-up, **effacement à distance** d'une tablette déclarée perdue (second navigateur : identité et IndexedDB vides, message sur la page de connexion) ; création d'un utilisateur à l'écran, mot de passe temporaire, première connexion dans un autre navigateur avec mot de passe refusé puis accepté, désactivation, duplication d'un rôle puis modification de sa grille, liste de choix importée d'un CSV avec ligne fautive puis enregistrée, provinces proposées dans les adresses, passage en anglais enregistré sur le compte puis retour au français (S5) ; CSP à nonce neuf | 2 tests verts |
 | `apps/web` intégration configuration (S5) | Valeurs par défaut, validation, brouillon par un rédacteur et publication refusée sans `configuration:publish`, archivage, trigger d'immuabilité (modification et suppression refusées), restauration, jeton de 21 jours après publication, fenêtre de step-up configurée, audit chaîné | 5 tests verts (32 au total pour `apps/web`) |
+| `apps/web` messages (S5) | Parité des clés, messages ICU valides et mêmes variables, aucun reste de français en anglais, clés appelées par le code présentes | 4 tests verts (55 au total pour `apps/web`) |
 | `apps/web` intégration référentiels (S5) | Catalogues de la plateforme, permission refusée, step-up, code de liste pris, vérification d'import sans écriture, enregistrement, désactivation au lieu de suppression, copie des postes avec empreinte, sans éléments inactifs ni autre structure, audit chaîné | 5 tests verts (51 au total pour `apps/web`) |
 | `packages/domain` et `packages/shared` référentiels (S5) | Lecture CSV (Excel français, guillemets, BOM, lignes), 26 provinces uniques, import de listes et de zones administratives avec rapport d'erreurs | 6 tests verts |
 | `apps/web` intégration rôles (S5) | Lecture sans droit de gestion, step-up exigé, grille avec périmètres appliquée dès la requête suivante, rôle devenu privilégié avec 2FA et événement de sécurité, duplication et code pris, dernier administrateur protégé, catalogue et périmètres refusés hors liste, audit détaillé et chaîné | 6 tests verts (46 au total pour `apps/web`) |
@@ -555,6 +565,7 @@ Commandes de contrôle avant chaque commit : `pnpm typecheck`, `pnpm lint`, `pnp
 | 30/10/2026 | Clés publiques des jetons | Remises au poste à son activation (en ligne, TLS) puis conservées localement, au lieu d'être compilées dans l'application : un même build sert tous les environnements (à valider) |
 | 30/10/2026 | Licence avant SADM | Jeton calqué sur l'état de la structure, tous les modules MVP, aucun plan ni limite inventés (à valider) |
 | 30/10/2026 | Postes activés avant S5 | Sans jeton, ils restent utilisables jusqu'à leur prochaine synchronisation, qui leur en remet un (à valider) |
+| 30/10/2026 | Langue | La langue du compte s'impose à la connexion ; avant la connexion, le choix du poste (cookie) ou le français (à valider) |
 | 30/10/2026 | Données de référence | Tables plateforme sans `tenant_id` (`currency`, `unit`, `admin_area`) ; provinces livrées avec leur source, niveaux inférieurs importés d'un fichier officiel par la plateforme ; listes de choix par structure (à valider) |
 | 30/10/2026 | Copie locale des référentiels | Récupérée par empreinte après la synchronisation plutôt que par le journal des changements ; non chiffrée car sans donnée de patient (à valider) |
 | 30/10/2026 | Périmètres des permissions | « Toute la structure » proposé pour chaque ressource en plus des périmètres de `docs/05` (défaut des rôles modèles tant que magasins, caisses et affectations n'existent pas) ; un seul périmètre par ligne de ressource à l'écran (à valider) |
@@ -586,6 +597,6 @@ Commandes de contrôle avant chaque commit : `pnpm typecheck`, `pnpm lint`, `pnp
 
 S4 est terminée (`docs/11-feuille-de-route.md`) : authentification complète avec 2FA, structures, sites et services, RLS sur toutes les tables, rôles et permissions vérifiés côté serveur, audit chaîné, coquille PWA, mise en page, indicateur de synchronisation, protections de la plateforme. Les salles, horaires d'ouverture et jours fériés de `docs/modules/core.md` arrivent avec les rendez-vous et files (S7).
 
-S5 (en cours ; appareils, effacement à distance, jetons signés, configuration versionnée et gestion des utilisateurs livrés) : reste l'i18n complète, les compléments du diagnostic et la base de formation.
+S5 (en cours ; appareils, effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs, éditeur de rôles, référentiels et traduction anglaise livrés) : restent les compléments du diagnostic et la base de formation.
 
 S6 : patients (recherche floue complète, dédoublonnage, fusion supervisée et réversible, carte et QR), périmètre de synchronisation. Puis S7 à S9 jusqu'au critère de sortie de J1 : un patient parcourt accueil, triage et consultation hors connexion et se synchronise sans erreur.
