@@ -34,6 +34,7 @@ export const userAccount = pgTable(
     lockedUntil: timestamp('locked_until', { withTimezone: true }),
     locale: text('locale').notNull().default('fr'),
     defaultSiteId: uuid('default_site_id'),
+    defaultDepartmentId: uuid('default_department_id'),
     isPlatformStaff: boolean('is_platform_staff').notNull().default(false),
     lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
     /** TOTP secret sealed with a key derived from MEDHUB_FIELD_MASTER_KEY; pending until mfa_enabled_at. */

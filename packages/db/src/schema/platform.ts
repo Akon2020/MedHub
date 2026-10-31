@@ -32,12 +32,19 @@ export const tenant = pgTable(
     legalMentions: text('legal_mentions'),
     officialNumberingRequired: boolean('official_numbering_required').notNull().default(false),
     isTraining: boolean('is_training').notNull().default(false),
+    /** For a training structure: the real structure it was copied from. */
+    trainingSourceId: uuid('training_source_id'),
     parentTenantId: uuid('parent_tenant_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    uniqueIndex('tenant_code_uq').on(t.code),
+    // An archived training structure keeps its code (nothing is deleted) and frees
+    // it for the training structure that replaces it.
+    uniqueIndex('tenant_code_uq')
+      .on(t.code)
+      .where(sql`not (${t.isTraining} and ${t.status} = 'archived')`),
+    index('tenant_training_source_idx').on(t.trainingSourceId),
     check('tenant_code_format', sql`${t.code} ~ '^[A-Z]{3}-[A-Z]{3}-[0-9]{4}$'`),
     check(
       'tenant_type_check',

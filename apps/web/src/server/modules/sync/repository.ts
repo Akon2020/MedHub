@@ -1,9 +1,9 @@
 import 'server-only';
 import { appendAudit, schema, withTenant, type Db, type Tx } from '@medhub/db';
-import { getCommand, type EntityName } from '@medhub/domain';
+import { ENTITIES, getCommand, type EntityName, type PatientRegisterPayload } from '@medhub/domain';
 import type { StockMovementKind } from '@medhub/shared';
-import { uuidv7 } from '@medhub/shared';
-import type { EntityState, OpResult, Operation } from '@medhub/sync';
+import { formatHlc, uuidv7 } from '@medhub/shared';
+import { createState, type EntityState, type OpResult, type Operation } from '@medhub/sync';
 import {
   DuplicateOperationError,
   type ChangeEntry,
@@ -437,4 +437,42 @@ export async function endDeviceSessions(db: Db, ctx: Ctx, deviceId: string) {
       .set({ revokedAt: new Date() })
       .where(and(eq(schema.session.deviceId, deviceId), isNull(schema.session.revokedAt))),
   );
+}
+
+/**
+ * Patients created by the server itself (fictitious patients of a training
+ * base): same row and change log entry as a synchronised registration, so that
+ * devices download them with their next pull.
+ */
+export async function insertServerPatients(
+  tx: Tx,
+  ctx: { tenantId: string; userId: string },
+  payloads: readonly PatientRegisterPayload[],
+): Promise<number> {
+  const node = 'server';
+  let physical = Date.now();
+  for (const payload of payloads) {
+    const id = uuidv7();
+    const opId = uuidv7();
+    const hlc = formatHlc({ physical: physical++, counter: 0, node });
+    const state = createState(
+      'patient',
+      id,
+      { hlc, opId, deviceId: '', userId: ctx.userId, baseVersion: null },
+      payload as unknown as Record<string, unknown>,
+      1,
+    );
+    await tx
+      .insert(schema.patient)
+      .values(mappers.patient.toRow(state, { ...ctx, deviceId: null }));
+    await tx.insert(schema.changeLog).values({
+      tenantId: ctx.tenantId,
+      entity: 'patient',
+      entityId: id,
+      version: 1,
+      opId,
+      scopeKeys: ENTITIES.patient.scopeKeys(state.data, id),
+    });
+  }
+  return payloads.length;
 }

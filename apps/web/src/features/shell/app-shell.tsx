@@ -318,7 +318,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 >
                   <div className="flex flex-wrap items-center gap-2 px-2 py-2">
                     <ThemeSwitcher />
-                    <LocaleSwitcher />
+                    <LocaleSwitcher account />
                   </div>
                   <Link
                     role="menuitem"

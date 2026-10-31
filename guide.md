@@ -13,7 +13,8 @@ Le jalon **J0 Fondations** est construit :
 - application web au design MedHub (teal) : page publique, connexion, activation du poste, tableau de bord, patients, fiche patient avec constantes, diagnostic ;
 - worker cron pour les tâches de fond, scripts de déploiement cPanel, CI GitHub Actions ;
 - thème clair, sombre ou automatique (selon le système) sur toute l'application ;
-- début de J1 (S4) : double authentification TOTP avec codes de secours, limitation de débit en base, règles d'IP, politique CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes.
+- début de J1 (S4) : double authentification TOTP avec codes de secours, limitation de débit en base, règles d'IP, politique CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes, organisation de la structure ;
+- S5 (en cours) : appareils et effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs, éditeur de rôles, référentiels, traduction anglaise complète, diagnostic et base de formation (S5 terminée).
 
 Le journal complet de tout ce qui a été fait se trouve dans `walkthrough.md`.
 
@@ -330,7 +331,55 @@ Menu **Paramètres** (permission `configuration:read`, administrateur de structu
 
 ### Configuration versionnée (postes et sécurité)
 
-**Paramètres, Postes et sécurité** (`/app/parametres/synchronisation`) : durée de l'accès hors connexion (14 jours par défaut, 1 à 30), verrouillage automatique (5 minutes), essais de code PIN (10), validité de la confirmation des changements sensibles (15 minutes). Chaque changement est d'abord un **brouillon** (permission `configuration:edit`), puis une **publication** (`configuration:publish`) ; la version précédente est archivée et peut être restaurée en brouillon. Une version publiée n'est jamais modifiée (trigger PostgreSQL). Les postes reçoivent les valeurs publiées avec leurs jetons, à la synchronisation suivante.
+**Paramètres, Postes et sécurité** (`/app/parametres/synchronisation`) : durée de l'accès hors connexion (14 jours par défaut, 1 à 30), verrouillage automatique (5 minutes), essais de code PIN (10), validité de la confirmation des changements sensibles (15 minutes), longueur minimale des mots de passe (10). Chaque changement est d'abord un **brouillon** (permission `configuration:edit`), puis une **publication** (`configuration:publish`) ; la version précédente est archivée et peut être restaurée en brouillon. Une version publiée n'est jamais modifiée (trigger PostgreSQL). Les postes reçoivent les valeurs publiées avec leurs jetons, à la synchronisation suivante.
+
+### Utilisateurs
+
+**Paramètres, Utilisateurs** (`/app/parametres/utilisateurs`, permission `user:read`), en ligne seulement. Toute modification demande la confirmation récente du second facteur.
+- **Créer** un compte (`user:create`) : identifiant définitif (lettres minuscules, chiffres, point, tiret), nom, titre, numéro d'ordre, téléphone, courriel, site et service principaux, langue, au moins un rôle. Un **mot de passe temporaire** est affiché une seule fois : remettez-le en personne. À sa première connexion, l'utilisateur choisit son propre mot de passe.
+- **Modifier** le profil et les rôles (`user:update`) : un rôle retiré garde son historique (date de fin), rien n'est supprimé.
+- **Réinitialiser le mot de passe** (`user:reset_password`) : nouveau mot de passe temporaire, verrouillage levé, sessions fermées. **Déverrouiller** un compte bloqué après des échecs. **Réinitialiser la 2FA** (téléphone perdu, avec motif) : si le rôle l'impose, l'utilisateur configure un nouveau téléphone à sa prochaine connexion.
+- **Désactiver** ou **réactiver** (`user:disable`, avec motif) : sessions fermées immédiatement ; chaque poste de l'utilisateur retire son accès hors connexion à sa synchronisation suivante, sans perdre les opérations en attente.
+- Garde-fous : on n'agit jamais sur son propre compte depuis cet écran (« Mon compte » sert à cela) ; la structure garde toujours au moins un administrateur actif capable de gérer les rôles (`role:manage`) ; un compte sans rôle actif ne peut pas se connecter.
+- **Politique de mot de passe** : 10 caractères au moins (réglable de 10 à 64 dans Postes et sécurité), refus des mots de passe courants (liste embarquée) et de ceux qui contiennent le nom ou l'identifiant, aucune règle de composition. Chacun peut changer son mot de passe dans « Mon compte » (ses autres sessions sont fermées).
+
+### Rôles et permissions
+
+**Paramètres, Rôles et permissions** (`/app/parametres/roles`, lecture `role:read`, modification `role:manage` avec confirmation du second facteur).
+- Chaque rôle a une **grille** : une ligne par ressource (patients, constantes, factures, stock...), les actions permises en cases à cocher et un **périmètre** (toute la structure, son site, son service, ses propres éléments, magasins ou caisses assignés selon la ressource). Le bouclier marque les droits d'administration.
+- Un rôle qui accorde un droit d'administration est **privilégié** : la double authentification y est toujours exigée. Pour les autres, la case « Double authentification obligatoire » reste au choix.
+- **Dupliquer** un rôle (ou partir d'un rôle vide) pour créer une variante ; le code du rôle ne change plus ensuite. Un rôle copié d'un modèle MedHub indique ses différences avec le modèle et peut **revenir au modèle**.
+- Les changements s'appliquent dès la requête suivante et, sur chaque poste, à la synchronisation suivante. Un changement qui laisserait la structure sans administrateur capable de gérer les rôles est refusé.
+
+### Référentiels
+
+**Paramètres, Référentiels** (`/app/parametres/referentiels`, lecture `configuration:read`, modification `configuration:edit` avec confirmation du second facteur).
+- **Listes de choix** de la structure (mode d'arrivée, profession...) : code de liste définitif, nom en français et en anglais, éléments avec code, libellés et ordre. Un élément n'est jamais supprimé : il est désactivé, et son code ne change plus une fois enregistré.
+- **Import CSV** : téléchargez le modèle (`code;libelle;libelle_en;ordre`), choisissez le fichier ou collez son contenu, puis **Vérifier le fichier** : chaque ligne fautive est signalée et rien n'est enregistré. Les lignes valides sont reprises dans la liste ; « Enregistrer la liste » les écrit.
+- **Catalogues de la plateforme**, en lecture seule : devises (USD, CDF, ISO 4217), unités de mesure (codes UCUM), les 26 provinces (Constitution de 2006, codes ISO 3166-2:CD).
+- Les territoires, villes et communes se chargent depuis un **fichier officiel**, par la plateforme : `pnpm db:import-areas fichier.csv --source="Document, date"` (colonnes `code;niveau;type;nom;code_parent`). Sans `--apply`, c'est une simulation qui ne fait que lister les erreurs.
+- Chaque poste garde une **copie locale** des référentiels (sites, services, listes actives, provinces, devises, unités), vérifiée au plus toutes les dix minutes après une synchronisation, pour les formulaires hors connexion. Le champ « Province » des adresses propose désormais la liste des provinces.
+
+### Langue de l'interface
+
+- Français par défaut, anglais complet. Le sélecteur FR ou EN est en haut des pages publiques et de la connexion, dans le menu utilisateur et dans « Mon compte ».
+- La langue d'un utilisateur est enregistrée sur son compte (champ « Langue » de l'écran Utilisateurs, ou sélecteur une fois connecté) : elle s'applique dès sa connexion, sur n'importe quel poste. Hors connexion, le poste garde le dernier choix.
+- Aucun texte d'interface n'est écrit dans le code : tout est dans `apps/web/messages/fr.json` et `en.json`. Le test `apps/web/test/unit/messages.test.ts` refuse une clé absente d'une des deux langues, un message ICU invalide, des variables différentes entre les deux langues, un reste de français dans l'anglais et toute clé appelée par le code mais absente des fichiers.
+
+### Diagnostic du poste
+
+**Diagnostic** (menu utilisateur, `/app/diagnostic`), disponible hors connexion : opérations en attente, rejetées et en conflit, dernière synchronisation et dernière heure serveur, accès hors connexion (date d'expiration), licence, date de la copie des référentiels, état de l'horloge, version, stockage, réseau.
+- **Forcer une synchronisation**, **Recharger les catalogues** (copie des référentiels téléchargée tout de suite).
+- **Exporter le journal** : un fichier `.medhub-diag` chiffré pour le support MedHub, qui seul peut le lire. Il ne contient ni nom ni donnée médicale (compteurs, identifiants techniques, codes d'erreur). Il fonctionne hors connexion : le fichier peut être transmis par n'importe quel moyen.
+- Côté plateforme : `pnpm keys:support` produit la paire de clés du support. La clé publique va dans l'environnement du serveur (`MEDHUB_SUPPORT_PUBLIC_KEY`) et parvient aux postes avec leurs jetons ; la clé privée reste sur le poste du support, qui ouvre un journal avec `MEDHUB_SUPPORT_PRIVATE_KEY=... pnpm support:decrypt fichier.medhub-diag`. Sans clé configurée, l'export l'explique et ne produit rien.
+
+### Base de formation
+
+**Paramètres, Base de formation** (`/app/parametres/formation`, lecture `configuration:read`, création et réinitialisation `configuration:publish` avec confirmation du second facteur).
+- **Créer** : une structure d'entraînement est créée à côté de la vôtre, avec le code `FOR-` suivi de la fin de votre code (HOP-KIN-0042 donne FOR-KIN-0042). Elle reprend la configuration publiée, les sites et services, les rôles, les listes de choix et les comptes actifs (mêmes mots de passe et même double authentification), et contient 40 patients fictifs.
+- Pour s'exercer, chacun se connecte avec ce code au lieu du code habituel. Le bandeau « Base de formation » reste affiché.
+- **Réinitialiser** : la base actuelle est archivée (rien n'est supprimé), ses postes effacent leurs données de formation à leur prochain contact, et une nouvelle base est créée sous le même code avec la configuration du jour.
+- Aucun SMS ni courriel réel ne doit partir d'une base de formation : règle à appliquer par le module de notifications quand il arrivera (aucun envoi n'existe aujourd'hui).
 
 ### Thème sombre
 

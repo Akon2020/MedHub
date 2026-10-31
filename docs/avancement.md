@@ -6,10 +6,10 @@ Tenu à jour par Claude Code à la fin de chaque session de travail. Le porteur 
 
 - Jalon en cours : **J0 Fondations** terminé côté code (critère de sortie atteint en tests automatisés) ; **J1, semaine S4, commencée** sur instruction du porteur du projet du 30/10/2026 (« poursuis avec l'étape suivante »). Reste à faire pour clore formellement J0 : liste de contrôle cPanel sur l'hébergement réel et premier déploiement, validation de la décision d'architecture et des écarts par le porteur du projet.
 - S4 livré : double authentification TOTP (imposée aux rôles privilégiés, codes de secours, sans rejeu), limitation de débit en base, règles d'IP et blocage automatique, journal `security_event`, CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes. Seconde partie de S4 livrée le même jour : écrans Paramètres (organisation : structure, sites, services ; journal de sécurité), confirmation par second facteur (step-up, 15 minutes) avec rotation de l'identifiant de session, détection des connexions inhabituelles (nouvel appareil, horaire inhabituel). **S4 terminée.**
-- S5 en cours : appareils (liste, retrait, perte, effacement à distance) et jetons signés Ed25519 (hors connexion 14 jours, licence) livrés. Configuration versionnée (`config_entry`, brouillon, publication, archivage, restauration) livrée avec les réglages de sécurité des postes. Reste : utilisateurs (dont réinitialisation de la 2FA), catalogues de référence, i18n complète, diagnostic, base de formation.
+- S5 : appareils (liste, retrait, perte, effacement à distance) et jetons signés Ed25519 (hors connexion 14 jours, licence) livrés. Configuration versionnée (`config_entry`, brouillon, publication, archivage, restauration) livrée avec les réglages de sécurité des postes. Gestion des utilisateurs livrée (création avec mot de passe temporaire, rôles, désactivation, réinitialisation du mot de passe et de la 2FA, dernier administrateur protégé, politique de mot de passe). Éditeur de rôles livré (grille avec périmètres, duplication, retour au modèle, 2FA des rôles privilégiés). Référentiels livrés (listes de choix avec import CSV, devises, unités, provinces, copie locale sur les postes). Traduction anglaise complète livrée (langue du compte appliquée à la connexion, test de parité et de couverture des messages). Diagnostic complété et base de formation livrée. **S5 terminée.**
 - Thème sombre livré sur toute l'application (demande du porteur du 30/10/2026).
 - Récapitulatif complet de tout ce qui a été fait : `walkthrough.md`.
-- Dernière mise à jour : 30/10/2026
+- Dernière mise à jour : 31/10/2026
 - Version déployée : aucune
 - Branche de travail : `develop`
 
@@ -69,6 +69,13 @@ Environnement de développement constaté sur le poste du porteur du projet : Wi
 | 30/10/2026 | `docs/03-multitenant-securite.md` section 2 | Connexions inhabituelles : nouvel appareil et horaire inhabituel seulement (aucune géolocalisation), signalées dans le journal de sécurité de la structure ; notification courriel ou SMS avec le module NOTIF | À valider |
 | 30/10/2026 | `docs/02-offline-sync.md` section 9 | Clés publiques des jetons remises au poste à l'activation et conservées localement, au lieu d'être compilées dans l'application | À valider |
 | 30/10/2026 | `docs/02-offline-sync.md` section 9 | Licence calquée sur l'état de la structure, tous les modules MVP, sans plan ni limite, jusqu'à SADM (S14) ; postes activés avant S5 tolérés sans jeton jusqu'à leur prochaine synchronisation | À valider |
+| 31/10/2026 | `docs/06-configuration.md` section 5 | Réinitialisation de la base de formation par archivage de l'ancienne structure et création d'une nouvelle sous le même code (aucune suppression, tables cliniques en ajout seul) ; « copie à la demande » de la configuration réalisée par cette même réinitialisation | À valider |
+| 31/10/2026 | `docs/04-modele-donnees.md` | Colonne `tenant.training_source_id` ajoutée ; unicité de `tenant.code` hors bases de formation archivées | À valider |
+| 30/10/2026 | `docs/04-modele-donnees.md` | Tables `unit` et `admin_area` ajoutées (plateforme, sans `tenant_id`), `choice_list` et `choice_item` par structure ; `currency` sans `rounding_step` (l'arrondi de caisse sera une configuration de FACT) | À valider |
+| 30/10/2026 | `docs/06-configuration.md` section 7 | Import des listes de choix sans job (petits fichiers, vérification puis confirmation à l'écran) ; le cadre complet en jobs par lots de 500 arrivera avec les gros imports (patients, tarifs, produits) | À valider |
+| 30/10/2026 | `docs/05-roles-permissions.md` section 3 | Périmètre « toute la structure » proposé pour toutes les ressources, en plus de ceux du catalogue ; rôle privilégié calculé (modèle ou droit d'administration accordé) | À valider |
+| 30/10/2026 | `docs/modules/core.md` règles de gestion | « Administrateur » de la règle du dernier administrateur : utilisateur actif titulaire d'un rôle en vigueur qui accorde `role:manage` | À valider |
+| 30/10/2026 | `docs/03-multitenant-securite.md` section 2 | Utilisateur désactivé : ses postes retirent le jeton hors connexion à la synchronisation suivante mais conservent l'outbox chiffrée (aucune perte si le compte est réactivé) | À valider |
 | 30/10/2026 | `docs/06-configuration.md` section 2 | Réglages simples publiés immédiatement (`effective_from` = date de publication) ; pas encore de publication datée dans le futur ni d'aperçu | À valider |
 | 30/10/2026 | `docs/03-multitenant-securite.md` section 7 | CSP : `style-src 'unsafe-inline'` conservé pour les attributs `style` de React et des graphiques ; scripts uniquement par nonce et `strict-dynamic` | À valider |
 
@@ -122,6 +129,37 @@ Constats :
 - Le compte `admin` de la structure de démonstration `HOP-DEM-0001` (rôle privilégié) devra configurer la 2FA à sa prochaine connexion.
 - Le test du worker échouait sous forte charge (build Playwright en parallèle) : le budget de 5 s du tick était dépassé avant le traitement du job de test. Budget du test porté à 20 s ; deux passes complètes de `pnpm test` vertes ensuite.
 - L'annonceur de route de Next.js porte `role="alert"` : les tests doivent cibler le texte du message d'erreur.
+
+S5, diagnostic et base de formation (31/10/2026) :
+- Diagnostic : accès hors connexion, licence, copie des référentiels, horloge ; « Recharger les catalogues » ; « Exporter le journal » (fichier scellé pour le support avec X25519, HKDF et AES-GCM, sans nom ni donnée médicale, utilisable hors connexion). Clé publique du support remise aux postes avec les jetons (`MEDHUB_SUPPORT_PUBLIC_KEY`, facultative), scripts `pnpm keys:support` et `pnpm support:decrypt`.
+- Base de formation : migration `0007_s5_training` (`tenant.training_source_id`, unicité du code hors bases de formation archivées), service `modules/core/training.ts`, routes `/api/v1/training`, écran `/app/parametres/formation`. Copie de la configuration publiée, des sites et services, des rôles, des listes et des comptes actifs (secrets 2FA rescellés), 40 patients fictifs créés par le serveur et distribués aux postes par la synchronisation. Réinitialisation par archivage et recréation sous le même code.
+- Point d'accroche : quand le module NOTIF arrivera, il devra forcer l'adaptateur `console` pour toute structure `is_training` (`docs/06` section 5). Aucun envoi n'existe aujourd'hui.
+- Tests : 5 tests d'intégration (formation), 2 tests de journal (enveloppe et script du support), 2 tests de domaine, scénario Playwright complété.
+
+S5, traduction anglaise (même jour) :
+- Les 860 messages existaient déjà dans les deux langues ; vérification systématique par un test (parité des clés, messages ICU, variables identiques, aucun reste de français en anglais, clés appelées par le code présentes). Derniers textes du code passés dans les messages (suffixe des rôles dupliqués, noms des langues).
+- Langue du compte (`user_account.locale`) dans le profil, cookie de langue posé à la connexion, route `/api/v1/account/locale` et sélecteur relié au compte dans l'application.
+- Scénario Playwright : passage en anglais depuis « Mon compte », vérifié en base, puis retour au français.
+- Constat : deux passes complètes ont échoué alors que le poste manquait de mémoire (moins de 800 Mo libres sur 8 Go) : délai de 5 s dépassé par un test de `packages/local-db`, puis connexions refusées par le serveur de test (« serveur injoignable », `ECONNRESET`). Les mêmes tests ont réussi seuls, puis la suite complète (8 scénarios) et `pnpm test` (126 tests) ont réussi sur le poste libéré. Lancer Playwright sur une machine qui a au moins 2 Go libres.
+
+S5, référentiels (même jour) :
+- Migration `0006_s5_reference` : tables plateforme `currency`, `unit`, `admin_area`, tables de structure `choice_list` et `choice_item` (RLS forcée, fixtures d'isolation). Données de la plateforme dans `packages/shared/src/reference.ts` avec leur source, chargées à chaque migration ; lecteur CSV partagé.
+- Service `modules/core/reference.ts`, routes `/api/v1/reference*` et `/api/v1/choice-lists*`, écran `/app/parametres/referentiels`, copie locale des référentiels sur les postes (`client/catalogs.ts`), province des adresses choisie dans la liste.
+- Constat : le scénario Playwright « enregistrement hors connexion depuis l'écran » a échoué une fois sur trois passes (patient absent de la base locale après le clic, rien de rejeté), puis réussi seul et dans la passe complète suivante. Le test attend maintenant la navigation vers la fiche, que le formulaire ne lance qu'une fois l'écriture enregistrée dans l'outbox, au lieu d'attendre 2 s (une première version lisait le compteur de l'outbox après le clic : elle échouait quand la navigation hors connexion avait déjà quitté la page).
+- `pnpm db:import-areas` pour les territoires, villes et communes à partir d'un fichier officiel (simulation par défaut).
+- Tests : 5 tests d'intégration, 6 tests de domaine et de lecture CSV, isolation (91 tests), scénario Playwright complété.
+
+S5, éditeur de rôles (même jour) :
+- `packages/shared` : périmètres par ressource (`RESOURCE_SCOPES`) et droits d'administration (`PRIVILEGED_PERMISSIONS`) ; `permission.scopes_allowed` rempli par les données de référence. Règles `packages/domain/src/core/roles.ts`, service `modules/core/roles.ts`, routes `/api/v1/roles/*`, écran `/app/parametres/roles`.
+- Correction : les événements de sécurité ajoutés avec les utilisateurs (mot de passe changé ou réinitialisé, 2FA réinitialisée, compte désactivé ou réactivé) s'affichaient comme « Autre événement » dans le journal de sécurité ; ils ont maintenant leur libellé.
+- Tests : 6 tests d'intégration, 4 tests de domaine, scénario Playwright complété (duplication et modification d'un rôle).
+- Reste de la capacité « Rôles » de `docs/modules/core.md` : conditions ABAC (`access.ts`), aperçu « voir comme », proposition des mises à jour des rôles modèles.
+
+S5, utilisateurs (même jour) :
+- Migration `0005_s5_users` (`user_account.default_department_id`), règles `packages/domain/src/core/password-policy.ts` et `users.ts`, réglage `security.password_min_length` (10), service `modules/core/users.ts` et routes `/api/v1/users/*`, étape « Choisissez votre mot de passe » à la connexion (`/api/v1/auth/password`), changement depuis « Mon compte » (`/api/v1/account/password`), écran `/app/parametres/utilisateurs`.
+- Règles de `docs/modules/core.md` appliquées : désactivation sans suppression, sessions fermées et postes informés (`AUTH_USER_DISABLED`, jeton hors connexion retiré, outbox conservée), au moins un rôle actif pour se connecter, dernier administrateur protégé, step-up pour toute modification.
+- Tests : 8 tests d'intégration, 5 tests de domaine, scénario Playwright `mfa.spec.ts` complété (création à l'écran, première connexion, désactivation).
+- Reste de la capacité « Utilisateurs » de `docs/modules/core.md` : signature scannée (stockage de fichiers), affectation des rôles par site ou service (colonnes prêtes dans `user_role`), réinitialisation par lien courriel ou SMS (NOTIF).
 
 S5, configuration versionnée (même jour) :
 - Migration `0004_s5_configuration` (`config_entry`, index partiels, trigger d'immuabilité des versions publiées), registre `packages/domain/src/core/config-schemas.ts`, service et routes `/api/v1/config/*`, écran `/app/parametres/synchronisation`. Valeurs publiées appliquées : durée du jeton hors connexion, verrouillage automatique et essais de PIN sur les postes (remis avec les jetons), fenêtre de step-up.

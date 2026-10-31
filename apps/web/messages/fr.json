@@ -276,7 +276,11 @@
       "AUTH_MFA_ALREADY_ENABLED": "La double authentification est déjà active.",
       "AUTH_MFA_NOT_ENROLLED": "La double authentification n'est pas configurée.",
       "IP_BLOCKED": "Accès refusé depuis cette adresse réseau.",
-      "AUTH_STEP_UP_REQUIRED": "Confirmation de votre identité requise."
+      "AUTH_STEP_UP_REQUIRED": "Confirmation de votre identité requise.",
+      "AUTH_NO_ACTIVE_ROLE": "Votre compte n'a aucun rôle actif. Demandez à l'administrateur de la structure de vous en attribuer un.",
+      "AUTH_PASSWORD_WEAK": "Mot de passe refusé.",
+      "AUTH_PASSWORD_REUSED": "Choisissez un mot de passe différent de l'actuel.",
+      "AUTH_USER_DISABLED": "Ce compte a été désactivé par l'administrateur de la structure."
     },
     "mfa": {
       "verifyTitle": "Double authentification",
@@ -302,7 +306,23 @@
       "recoveryConfirm": "J'ai conservé ces codes en lieu sûr",
       "continue": "Continuer"
     },
-    "deviceRetired": "Ce poste a été retiré ou déclaré perdu par l'administrateur de votre structure : ses données locales ont été effacées. Connectez-vous pour l'activer à nouveau si besoin."
+    "deviceRetired": "Ce poste a été retiré ou déclaré perdu par l'administrateur de votre structure : ses données locales ont été effacées. Connectez-vous pour l'activer à nouveau si besoin.",
+    "passwordProblems": {
+      "too_short": "Il faut au moins {min} caractères.",
+      "too_long": "Il est trop long (128 caractères au plus).",
+      "common": "Il est trop courant et facile à deviner.",
+      "contains_identity": "Il ne doit pas contenir votre nom ou votre identifiant."
+    },
+    "passwordChange": {
+      "title": "Choisissez votre mot de passe",
+      "subtitle": "Vous vous connectez avec un mot de passe temporaire. Remplacez-le par un mot de passe personnel, connu de vous uniquement.",
+      "newPassword": "Nouveau mot de passe",
+      "confirm": "Confirmez le mot de passe",
+      "hint": "Au moins {min} caractères. Une phrase de plusieurs mots est plus sûre et plus facile à retenir qu'un mot compliqué.",
+      "mismatch": "Les deux saisies ne correspondent pas.",
+      "submit": "Enregistrer et continuer",
+      "submitting": "Enregistrement..."
+    }
   },
   "app": {
     "nav": {
@@ -477,7 +497,33 @@
     "rejectedEmpty": "Aucune opération rejetée.",
     "reason": "Motif",
     "command": "Commande",
-    "version": "Version de l'application"
+    "version": "Version de l'application",
+    "offlineAccess": "Accès hors connexion",
+    "offlineStates": {
+      "valid": "valable jusqu'au {date}",
+      "expiring": "expire bientôt ({date})",
+      "expired": "expiré depuis le {date}",
+      "missing": "aucun jeton sur ce poste"
+    },
+    "license": "Licence",
+    "licenseStates": {
+      "ok": "en règle",
+      "grace": "retard de paiement",
+      "read_only": "lecture seule",
+      "suspended": "suspendue",
+      "unknown": "inconnue (aucun jeton)"
+    },
+    "catalogs": "Copie des référentiels",
+    "catalogsMissing": "pas encore téléchargée",
+    "clock": "Horloge du poste",
+    "clockOk": "cohérente avec le serveur",
+    "clockSuspect": "en retard sur le serveur : vérifiez la date et l'heure",
+    "reloadCatalogs": "Recharger les catalogues",
+    "catalogsReloaded": "Référentiels rechargés depuis le serveur.",
+    "exportJournal": "Exporter le journal",
+    "journalExported": "Journal enregistré : {file}. Transmettez ce fichier au support MedHub.",
+    "journalUnavailable": "Export impossible : la clé du support n'a pas encore été reçue par ce poste. Synchronisez-le une fois en ligne, ou contactez l'administrateur de la plateforme.",
+    "journalHint": "Le journal ne contient ni nom ni donnée médicale : seulement des compteurs, des identifiants techniques et des codes d'erreur. Il est chiffré pour le support MedHub, qui seul peut le lire."
   },
   "comingSoon": {
     "title": "{module} arrive bientôt",
@@ -530,6 +576,13 @@
       "text": "Préférences de ce poste.",
       "theme": "Thème",
       "language": "Langue"
+    },
+    "password": {
+      "title": "Mot de passe",
+      "text": "Changer votre mot de passe ferme vos autres sessions ouvertes.",
+      "current": "Mot de passe actuel",
+      "submit": "Changer le mot de passe",
+      "changed": "Mot de passe changé. Vos autres sessions ont été fermées."
     }
   },
   "stepUp": {
@@ -566,7 +619,7 @@
       },
       "users": {
         "title": "Utilisateurs",
-        "text": "Comptes, rattachements, réinitialisations"
+        "text": "Comptes, rôles, rattachements, réinitialisations"
       },
       "roles": {
         "title": "Rôles et permissions",
@@ -578,11 +631,15 @@
       },
       "reference": {
         "title": "Référentiels",
-        "text": "Listes de choix, catalogues, numérotation"
+        "text": "Listes de choix, zones administratives, devises, unités"
       },
       "workstations": {
         "title": "Postes et sécurité",
         "text": "Verrouillage, code PIN, accès hors connexion, confirmation"
+      },
+      "training": {
+        "title": "Base de formation",
+        "text": "Copie de la structure avec des patients fictifs, pour apprendre sans risque"
       }
     },
     "organization": {
@@ -618,7 +675,8 @@
       "city": "Ville ou territoire",
       "commune": "Commune",
       "quarter": "Quartier",
-      "street": "Avenue et numéro"
+      "street": "Avenue et numéro",
+      "noProvince": "Choisir une province"
     },
     "sites": {
       "title": "Sites",
@@ -675,7 +733,13 @@
         "mfa_disabled": "Double authentification désactivée",
         "other": "Autre événement",
         "device_revoked": "Poste retiré",
-        "device_lost": "Poste déclaré perdu ou volé"
+        "device_lost": "Poste déclaré perdu ou volé",
+        "password_changed": "Mot de passe changé",
+        "password_reset": "Mot de passe réinitialisé par un administrateur",
+        "mfa_reset": "Double authentification réinitialisée",
+        "user_disabled": "Compte désactivé",
+        "user_enabled": "Compte réactivé",
+        "role_privileges_changed": "Droits d'administration d'un rôle modifiés"
       },
       "anomalies": {
         "new_device": "nouvel appareil",
@@ -692,7 +756,17 @@
       "NOT_FOUND": "Élément introuvable.",
       "AUTH_STEP_UP_REQUIRED": "Confirmation de votre identité annulée : rien n'a été modifié.",
       "NETWORK": "Le serveur est injoignable. Vérifiez la connexion.",
-      "UNKNOWN": "Une erreur inattendue est survenue."
+      "UNKNOWN": "Une erreur inattendue est survenue.",
+      "USER_USERNAME_TAKEN": "Cet identifiant est déjà utilisé dans la structure.",
+      "USER_LAST_ADMIN": "Impossible : la structure doit garder au moins un administrateur actif capable de gérer les rôles.",
+      "USER_IS_SELF": "Cette action ne peut pas viser votre propre compte. Utilisez « Mon compte ».",
+      "USER_ROLE_UNKNOWN": "Un des rôles choisis n'existe pas ou plus.",
+      "AUTH_MFA_NOT_ENROLLED": "Cet utilisateur n'a pas de double authentification à réinitialiser.",
+      "ROLE_CODE_TAKEN": "Ce code de rôle existe déjà dans la structure.",
+      "REF_LIST_CODE_TAKEN": "Ce code de liste existe déjà dans la structure.",
+      "TRAINING_NOT_ALLOWED": "Une base de formation ne peut pas avoir sa propre base de formation.",
+      "TRAINING_ALREADY_EXISTS": "La base de formation existe déjà : utilisez « Réinitialiser ».",
+      "TRAINING_CODE_TAKEN": "Le code de la base de formation est déjà pris par une autre structure : contactez le support MedHub."
     },
     "devices": {
       "title": "Appareils",
@@ -747,7 +821,8 @@
       "units": {
         "days": "jours",
         "minutes": "minutes",
-        "attempts": "essais"
+        "attempts": "essais",
+        "characters": "caractères"
       },
       "keys": {
         "offline_token_days": {
@@ -765,7 +840,329 @@
         "step_up_minutes": {
           "title": "Confirmation des changements sensibles",
           "text": "Durée de validité de la dernière preuve du second facteur avant une modification de configuration (5 à 60 minutes)."
+        },
+        "password_min_length": {
+          "title": "Longueur minimale des mots de passe",
+          "text": "Nombre minimal de caractères (10 à 64). Aucune règle de composition n'est imposée : une phrase de plusieurs mots est recommandée."
         }
+      }
+    },
+    "users": {
+      "title": "Utilisateurs",
+      "subtitle": "Comptes de la structure, rôles, rattachements et réinitialisations.",
+      "listTitle": "{count, plural, one {# compte} other {# comptes}}",
+      "listText": "Un compte n'est jamais supprimé : il est désactivé et reste visible dans le journal.",
+      "new": "Nouvel utilisateur",
+      "newTitle": "Nouvel utilisateur",
+      "newText": "Un mot de passe temporaire est créé et affiché une seule fois. L'utilisateur le remplace à sa première connexion.",
+      "search": "Rechercher par nom ou identifiant",
+      "showDisabled": "{count, plural, one {Afficher le compte désactivé} other {Afficher les # comptes désactivés}}",
+      "you": "vous",
+      "noRole": "aucun rôle",
+      "lastLogin": "Dernière connexion : {date}",
+      "neverSignedIn": "Aucune connexion",
+      "empty": "Aucun utilisateur ne correspond.",
+      "close": "Fermer",
+      "none": "Aucun",
+      "save": "Enregistrer",
+      "create": "Créer l'utilisateur",
+      "usernameHint": "Lettres minuscules, chiffres, point, tiret ; commence par une lettre. Ne pourra plus changer.",
+      "usernameFixed": "L'identifiant ne change jamais : il figure dans le journal et sur les documents signés.",
+      "titlePlaceholder": "Dr, Inf., Ph.",
+      "rolesHint": "Au moins un rôle. Un rôle marqué « 2FA » impose la double authentification.",
+      "roleNeedsMfa": "2FA",
+      "reason": "Motif (consigné dans le journal)",
+      "cancel": "Annuler",
+      "mfaOn": "2FA",
+      "mustChange": "Mot de passe à changer",
+      "status": {
+        "active": "Actif",
+        "disabled": "Désactivé",
+        "locked": "Verrouillé"
+      },
+      "fields": {
+        "username": "Identifiant",
+        "displayName": "Nom complet",
+        "title": "Titre",
+        "professionalNumber": "Numéro d'ordre professionnel",
+        "phone": "Téléphone",
+        "email": "Courriel",
+        "defaultSite": "Site principal",
+        "defaultDepartment": "Service principal",
+        "locale": "Langue",
+        "roles": "Rôles"
+      },
+      "temporary": {
+        "title": "Mot de passe temporaire de {name}",
+        "text": "Communiquez-le en personne. Il ne sera plus affiché ; l'utilisateur devra le remplacer à sa première connexion.",
+        "copy": "Copier",
+        "copied": "Copié",
+        "done": "C'est noté"
+      },
+      "actions": {
+        "title": "Actions sur le compte",
+        "self": "Pour votre propre compte, utilisez « Mon compte ».",
+        "resetPassword": "Réinitialiser le mot de passe",
+        "unlock": "Déverrouiller",
+        "resetMfa": "Réinitialiser la 2FA",
+        "resetMfaConfirm": "Réinitialiser la double authentification",
+        "resetMfaHint": "À utiliser en cas de téléphone perdu ou changé. Ses sessions sont fermées ; si son rôle l'exige, un nouveau téléphone sera configuré à sa prochaine connexion.",
+        "disable": "Désactiver",
+        "disableConfirm": "Désactiver le compte",
+        "disableHint": "Ses sessions sont fermées immédiatement ; chacun de ses postes perd l'accès hors connexion à sa prochaine synchronisation. Rien n'est supprimé.",
+        "enable": "Réactiver",
+        "enableConfirm": "Réactiver le compte",
+        "enableHint": "L'utilisateur pourra de nouveau se connecter avec son mot de passe."
+      }
+    },
+    "roles": {
+      "title": "Rôles et permissions",
+      "subtitle": "Ce que chaque rôle permet de faire, et sur quel périmètre. Les rôles modèles sont des copies modifiables.",
+      "listTitle": "{count, plural, one {# rôle} other {# rôles}}",
+      "listText": "Un utilisateur peut cumuler plusieurs rôles : ses permissions s’additionnent.",
+      "new": "Nouveau rôle",
+      "newTitle": "Nouveau rôle",
+      "newText": "Partez d’un rôle vide ou dupliquez un rôle existant, puis ajustez ses permissions.",
+      "close": "Fermer",
+      "counts": "{members, plural, =0 {aucun utilisateur} one {# utilisateur} other {# utilisateurs}} · {permissions, plural, =0 {aucune permission} one {# permission} other {# permissions}}",
+      "version": "Version {version} · {members, plural, =0 {aucun utilisateur actif} one {# utilisateur actif} other {# utilisateurs actifs}}",
+      "fields": {
+        "name": "Nom du rôle",
+        "code": "Code",
+        "description": "Description",
+        "requiresMfa": "Double authentification obligatoire",
+        "copyFrom": "Partir de"
+      },
+      "codeHint": "Lettres minuscules, chiffres et _ ; ne pourra plus changer.",
+      "emptyRole": "Un rôle vide",
+      "requiresMfaHint": "Les titulaires de ce rôle devront configurer la 2FA à leur prochaine connexion.",
+      "privilegedHint": "Ce rôle donne des droits d’administration (icône bouclier) : la double authentification est toujours exigée.",
+      "template": {
+        "badge": "Modèle",
+        "same": "Identique au rôle modèle de MedHub.",
+        "differs": "{count, plural, one {# différence} other {# différences}} avec le rôle modèle de MedHub.",
+        "restore": "Revenir au modèle"
+      },
+      "permissionsTitle": "Permissions",
+      "permissionsHint": "Cochez les actions permises. Le périmètre s’applique à toutes les actions cochées de la ligne. Les changements s’appliquent dès la requête suivante et sur chaque poste à sa prochaine synchronisation.",
+      "scopeOf": "Périmètre : {resource}",
+      "pending": "{added, plural, =0 {} one {# ajoutée} other {# ajoutées}} {removed, plural, =0 {} one {# retirée} other {# retirées}} {rescoped, plural, =0 {} one {# périmètre modifié} other {# périmètres modifiés}}",
+      "save": "Enregistrer le rôle",
+      "reset": "Annuler les modifications",
+      "duplicate": "Dupliquer",
+      "create": "Créer le rôle",
+      "saved": "Rôle enregistré.",
+      "groups": {
+        "care": "Patients et soins",
+        "lab": "Laboratoire",
+        "pharmacy": "Pharmacie et stock",
+        "finance": "Facturation, caisse et conventions",
+        "administration": "Administration"
+      },
+      "scopes": {
+        "self": "Ses propres éléments",
+        "department": "Son service",
+        "site": "Son site",
+        "tenant": "Toute la structure",
+        "warehouse": "Magasins assignés",
+        "cash_register": "Caisses assignées",
+        "patient": "Selon le consentement"
+      },
+      "resources": {
+        "patient": "Patients",
+        "encounter": "Visites",
+        "appointment": "Rendez-vous",
+        "queue": "Files d'attente",
+        "triage": "Triage",
+        "clinical_record": "Dossier médical",
+        "vital_sign": "Constantes",
+        "diagnosis": "Diagnostics",
+        "prescription": "Prescriptions",
+        "medication_administration": "Administration des médicaments",
+        "lab_order": "Demandes d’examens",
+        "lab_result": "Résultats de laboratoire",
+        "dispensation": "Dispensation",
+        "stock": "Stock",
+        "controlled_substance": "Produits sous contrôle",
+        "invoice": "Factures",
+        "payment": "Encaissements",
+        "cash_session": "Sessions de caisse",
+        "price": "Tarifs",
+        "contract": "Conventions",
+        "beneficiary": "Bénéficiaires",
+        "prior_authorization": "Accords préalables",
+        "payer_invoice": "Factures aux tiers",
+        "form": "Formulaires",
+        "configuration": "Configuration",
+        "user": "Utilisateurs",
+        "role": "Rôles",
+        "device": "Appareils",
+        "report": "Rapports",
+        "audit": "Audit",
+        "account": "Abonnement MedHub",
+        "support": "Assistance",
+        "approval": "Approbations"
+      },
+      "actions": {
+        "read": "Lire",
+        "create": "Créer",
+        "update": "Modifier",
+        "merge": "Fusionner",
+        "export": "Exporter",
+        "mark_sensitive": "Marquer sensible",
+        "update_status": "Changer le statut",
+        "close": "Clôturer",
+        "cancel": "Annuler",
+        "call": "Appeler",
+        "manage": "Gérer",
+        "correct": "Corriger",
+        "sign": "Signer",
+        "break_glass": "Bris de glace",
+        "read_sensitive": "Lire le sensible",
+        "override_plausibility": "Forcer la plausibilité",
+        "override_alert": "Passer outre une alerte",
+        "enter": "Saisir",
+        "tech_validate": "Validation technique",
+        "bio_validate": "Validation biologique",
+        "void": "Annuler (avoir)",
+        "move": "Mouvement",
+        "transfer": "Transférer",
+        "count": "Inventorier",
+        "adjust": "Ajuster",
+        "receive": "Réceptionner",
+        "order": "Commander",
+        "cosign": "Contresigner",
+        "add_line": "Ajouter une ligne",
+        "finalize": "Finaliser",
+        "discount": "Remise",
+        "print": "Imprimer",
+        "refund": "Rembourser",
+        "open": "Ouvrir",
+        "withdraw": "Retrait",
+        "review": "Revoir",
+        "reconcile": "Rapprocher",
+        "publish": "Publier",
+        "import": "Importer",
+        "request": "Demander",
+        "decide": "Décider",
+        "generate": "Générer",
+        "send": "Envoyer",
+        "record_payment": "Enregistrer un paiement",
+        "handle_rejection": "Traiter un rejet",
+        "design": "Concevoir",
+        "edit": "Modifier",
+        "disable": "Désactiver",
+        "delegate": "Déléguer",
+        "reset_password": "Réinitialiser",
+        "revoke": "Retirer",
+        "register": "Enregistrer un poste",
+        "schedule": "Planifier",
+        "pay": "Payer",
+        "change_plan": "Changer de plan",
+        "create_ticket": "Ouvrir un ticket",
+        "grant_remote_access": "Accès à distance",
+        "activate": "Activer",
+        "simulate": "Simuler"
+      },
+      "copyCodeSuffix": "copie",
+      "copyName": "{name} (copie)"
+    },
+    "reference": {
+      "title": "Référentiels",
+      "subtitle": "Listes de choix propres à la structure et catalogues communs de la plateforme. Ils sont copiés sur chaque poste pour le travail hors connexion.",
+      "listsTitle": "Listes de choix",
+      "listsText": "Valeurs proposées dans les formulaires (mode d’arrivée, profession...). Un élément n’est jamais supprimé : il est désactivé.",
+      "newList": "Nouvelle liste",
+      "noLists": "Aucune liste pour le moment.",
+      "itemCount": "{count, plural, =0 {aucun élément actif} one {# élément actif} other {# éléments actifs}}",
+      "version": "version {version}",
+      "close": "Fermer",
+      "createList": "Créer la liste",
+      "addItem": "Ajouter un élément",
+      "noItems": "Aucun élément : ajoutez-en ou importez un fichier.",
+      "itemsHint": "Le code d’un élément enregistré ne change plus (les données saisies y font référence). Pour retirer un élément, décochez « Actif ».",
+      "save": "Enregistrer la liste",
+      "saved": "{added} ajouté(s), {updated} modifié(s), {deactivated} désactivé(s).",
+      "fields": {
+        "nameFr": "Nom (français)",
+        "nameEn": "Nom (anglais)",
+        "listCode": "Code de la liste",
+        "listActive": "Liste active (proposée dans les formulaires)",
+        "code": "Code",
+        "labelFr": "Libellé (français)",
+        "labelEn": "Libellé (anglais)",
+        "order": "Ordre",
+        "active": "Actif"
+      },
+      "import": {
+        "title": "Importer depuis un fichier CSV",
+        "template": "Télécharger le modèle",
+        "hint": "Colonnes : code, libelle, libelle_en (facultatif), ordre (facultatif). Séparateur « ; » ou « , ». Le fichier est d’abord vérifié ligne par ligne ; rien n’est enregistré avant « Enregistrer la liste ».",
+        "chooseFile": "Choisir un fichier",
+        "paste": "Ou collez le contenu du fichier ici",
+        "simulate": "Vérifier le fichier",
+        "summary": "{valid, plural, =0 {Aucune ligne valide} one {# ligne valide} other {# lignes valides}}, {errors, plural, =0 {aucune erreur} one {# erreur} other {# erreurs}}.",
+        "error": "Ligne {line}, colonne {field} : {problem}",
+        "apply": "{count, plural, one {Reprendre la ligne dans la liste} other {Reprendre les # lignes dans la liste}}",
+        "problems": {
+          "invalid": "valeur invalide",
+          "duplicate": "code en double",
+          "missing_column": "colonne absente",
+          "too_many_rows": "fichier trop long (2 000 lignes au plus)",
+          "unknown": "parent inconnu",
+          "wrong_level": "niveau du parent incorrect"
+        }
+      },
+      "platform": {
+        "title": "Catalogues de la plateforme",
+        "text": "Communs à toutes les structures, tenus à jour par MedHub, en lecture seule.",
+        "areas": "Zones administratives",
+        "areasHint": "Les 26 provinces sont fournies (Constitution de 2006, codes ISO 3166-2:CD). Les territoires, villes et communes seront chargés depuis un fichier officiel.",
+        "provinces": "Voir les {count} provinces",
+        "currencies": "Devises",
+        "minorUnit": "{digits} décimales",
+        "units": "Unités de mesure",
+        "unitsHint": "Codes UCUM, utilisés par les constantes et les résultats.",
+        "kinds": {
+          "province": "Provinces",
+          "territory": "Territoires",
+          "city": "Villes",
+          "sector": "Secteurs",
+          "chiefdom": "Chefferies",
+          "commune": "Communes",
+          "groupement": "Groupements",
+          "quarter": "Quartiers"
+        }
+      }
+    },
+    "training": {
+      "title": "Base de formation",
+      "subtitle": "Une structure d'entraînement à côté de la vôtre : même configuration, mêmes comptes, patients fictifs.",
+      "cardTitle": "Structure de formation",
+      "cardText": "Le personnel s'y exerce sans toucher aux vrais dossiers.",
+      "active": "Active",
+      "none": "Aucune base de formation pour le moment.",
+      "create": "Créer la base de formation",
+      "codeLabel": "Code de structure à saisir à la connexion",
+      "codeHint": "Mêmes identifiants et mots de passe que dans la vraie structure.",
+      "createdAt": "Créée le",
+      "content": "Contenu",
+      "counts": "{users, plural, one {# compte} other {# comptes}}, {patients, plural, one {# patient fictif} other {# patients fictifs}}",
+      "resetButton": "Réinitialiser",
+      "resetConfirm": "La base actuelle est archivée (rien n'est supprimé) et ses postes effacent leurs données de formation à leur prochain contact. Une nouvelle base est créée sous le même code, avec la configuration d'aujourd'hui et de nouveaux patients fictifs.",
+      "resetAction": "Réinitialiser la base de formation",
+      "cancel": "Annuler",
+      "createdNotice": "Base de formation créée : code {code}.",
+      "resetNotice": "Base de formation réinitialisée : code {code}.",
+      "archived": "{count, plural, one {# base précédente archivée} other {# bases précédentes archivées}}, conservées sans être accessibles.",
+      "insideTraining": "Vous êtes connecté à une base de formation : elle ne peut pas avoir sa propre base de formation.",
+      "howTitle": "Comment ça marche",
+      "how": {
+        "copy": "Copie de la configuration publiée, des sites et services, des rôles, des listes de choix et des comptes actifs (mêmes mots de passe et double authentification).",
+        "signIn": "Pour s'exercer, chacun se connecte avec le code de la base de formation au lieu du code habituel.",
+        "banner": "Un bandeau « Base de formation » reste affiché en permanence pour éviter toute confusion.",
+        "messages": "Aucun SMS ni courriel réel n'en part : les envois sont simulés.",
+        "reset": "Réinitialiser repart de la configuration du jour ; l'ancienne base est archivée, jamais supprimée."
       }
     }
   }

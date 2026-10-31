@@ -19,10 +19,13 @@
     "db:generate": "pnpm --filter @medhub/db db:generate",
     "db:migrate": "pnpm --filter @medhub/db db:migrate",
     "db:seed": "pnpm --filter @medhub/db db:seed",
+    "db:import-areas": "pnpm --filter @medhub/db db:import-areas",
     "db:test-isolation": "pnpm --filter @medhub/db test:isolation",
     "worker:tick": "pnpm --filter @medhub/worker tick",
     "release": "node infra/scripts/release.mjs",
-    "keys:generate": "node infra/scripts/generate-keys.mjs"
+    "keys:generate": "node infra/scripts/generate-keys.mjs",
+    "keys:support": "node infra/scripts/generate-support-key.mjs",
+    "support:decrypt": "node infra/scripts/decrypt-diagnostic.mjs"
   },
   "devDependencies": {
     "@types/node": "22.20.5",

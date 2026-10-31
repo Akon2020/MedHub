@@ -19,6 +19,7 @@ import {
   useMfaErrorMessage,
   type EnrollmentMaterial,
 } from '@/features/auth/mfa-step';
+import { PasswordCard } from './password-card';
 
 type Overview = {
   mfa: {
@@ -263,6 +264,8 @@ export function AccountSecurity() {
           </CardContent>
         </Card>
 
+        <PasswordCard />
+
         <Card>
           <CardHeader>
             <div>
@@ -336,7 +339,7 @@ export function AccountSecurity() {
           </div>
           <div className="flex items-center justify-between gap-3">
             <span className="text-muted-foreground">{t('appearance.language')}</span>
-            <LocaleSwitcher />
+            <LocaleSwitcher account />
           </div>
         </CardContent>
       </Card>

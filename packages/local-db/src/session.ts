@@ -12,7 +12,13 @@ import {
   wrapSecret,
   type LocalKeys,
 } from './crypto';
-import { MedHubLocalDb, localDbName, type MetaRecord, type StoredTokens } from './database';
+import {
+  MedHubLocalDb,
+  localDbName,
+  type MetaRecord,
+  type StoredCatalogs,
+  type StoredTokens,
+} from './database';
 import { EncryptedClientStore } from './store';
 
 export const DEFAULT_MAX_PIN_ATTEMPTS = 10;
@@ -152,6 +158,35 @@ export async function saveTokens(
 export async function loadTokens(db: MedHubLocalDb): Promise<StoredTokens | null> {
   const row = await db.meta.get('tokens');
   return row?.key === 'tokens' ? row.value : null;
+}
+
+export async function saveCatalogs(db: MedHubLocalDb, catalogs: StoredCatalogs): Promise<void> {
+  await db.meta.put({ key: 'catalogs', value: catalogs });
+}
+
+export async function loadCatalogs(db: MedHubLocalDb): Promise<StoredCatalogs | null> {
+  const row = await db.meta.get('catalogs');
+  return row?.key === 'catalogs' ? row.value : null;
+}
+
+/**
+ * The user was disabled: the offline token is dropped so that the PIN no
+ * longer opens this database, but pending operations stay in case the account
+ * is restored and the user signs in online again.
+ */
+export async function revokeOfflineToken(db: MedHubLocalDb): Promise<void> {
+  const tokens = await loadTokens(db);
+  await db.meta.put({
+    key: 'tokens',
+    value: {
+      offlineToken: '',
+      licenseToken: tokens?.licenseToken ?? '',
+      signingKeys: tokens?.signingKeys ?? {},
+      ...(tokens?.config ? { config: tokens.config } : {}),
+      ...(tokens?.supportKey ? { supportKey: tokens.supportKey } : {}),
+      refreshedAt: tokens?.refreshedAt ?? 0,
+    },
+  });
 }
 
 /**

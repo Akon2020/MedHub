@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { OFFLINE_TOKEN_DEFAULT_DAYS, OFFLINE_TOKEN_MAX_DAYS } from './license';
+import { PASSWORD_MIN_LENGTH } from './password-policy';
 
 /**
  * Simple settings stored in `config_entry` (docs/06-configuration.md section 2).
@@ -30,6 +31,12 @@ export const CONFIG_DEFINITIONS = {
     schema: z.number().int().min(5).max(60),
     default: 15,
     unit: 'minutes',
+  },
+  'security.password_min_length': {
+    domain: 'security',
+    schema: z.number().int().min(PASSWORD_MIN_LENGTH).max(64),
+    default: PASSWORD_MIN_LENGTH,
+    unit: 'characters',
   },
 } as const;
 

@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import type { CatalogSnapshot } from '@medhub/domain';
 import type { Ciphertext, WrappedSecret } from './crypto';
 
 /**
@@ -59,8 +60,16 @@ export type StoredTokens = {
   signingKeys: Record<string, string>;
   /** Published structure settings applied offline. */
   config?: { autoLockMinutes: number; pinMaxAttempts: number };
+  /** Seals the diagnostic journal for support; absent until the platform configures it. */
+  supportKey?: string | null;
   refreshedAt: number;
 };
+
+/**
+ * Read-only catalogs (sites, departments, pick lists, units, currencies,
+ * provinces): structure settings, not patient data, kept readable offline.
+ */
+export type StoredCatalogs = { snapshot: CatalogSnapshot; fetchedAt: number };
 
 export type MetaRecord =
   | { key: 'pin'; value: WrappedSecret }
@@ -68,6 +77,7 @@ export type MetaRecord =
   | { key: 'device'; value: { deviceId: string; deviceCode: string; enc: Ciphertext } }
   | { key: 'failedPins'; value: number }
   | { key: 'tokens'; value: StoredTokens }
+  | { key: 'catalogs'; value: StoredCatalogs }
   | { key: `counter:${string}`; value: number };
 
 export class MedHubLocalDb extends Dexie {

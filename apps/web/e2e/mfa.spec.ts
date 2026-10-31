@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { openForSupport, type SupportEnvelope } from '@medhub/sync';
 import { expect, test, type Page } from '@playwright/test';
 import { generate } from 'otplib';
 import { activateDevice, TEST_PIN, tenantCode, unlock, withServer } from './support';
@@ -141,6 +143,180 @@ test('a privileged role enrolls its second factor at first sign-in, then must us
   const databases = await tablet.evaluate(async () => (await indexedDB.databases()).length);
   expect(databases).toBe(0);
   await other.close();
+
+  // A new account: temporary password shown once, replaced by the user at first sign-in.
+  await page.goto('/app/parametres/utilisateurs');
+  await unlock(page);
+  await page.getByRole('button', { name: 'Nouvel utilisateur' }).click();
+  await page.getByLabel('Identifiant', { exact: true }).fill('e2e.mbuyi');
+  await page.getByLabel('Nom complet').fill('Grâce Mbuyi');
+  await page.getByRole('checkbox', { name: 'Accueil', exact: true }).check();
+  await page.getByRole('button', { name: "Créer l'utilisateur" }).click();
+  const temporary = (
+    await page.getByTestId('temporary-password').innerText({ timeout: 20_000 })
+  ).trim();
+  await page.screenshot({ path: 'test-results/users-dark.png', fullPage: true });
+
+  const fresh = await browser.newContext({ locale: 'fr-FR', serviceWorkers: 'block' });
+  const newcomer = await fresh.newPage();
+  await newcomer.goto('/connexion');
+  await newcomer.waitForLoadState('networkidle');
+  await newcomer.getByLabel('Code de la structure').fill(tenantCode());
+  await newcomer.getByLabel('Identifiant').fill('e2e.mbuyi');
+  await newcomer.getByLabel('Mot de passe').fill(temporary);
+  await newcomer.getByRole('button', { name: 'Se connecter' }).click();
+  await expect(
+    newcomer.getByRole('heading', { name: 'Choisissez votre mot de passe' }),
+  ).toBeVisible({ timeout: 20_000 });
+  await newcomer.getByLabel('Nouveau mot de passe').fill('azerty2024');
+  await newcomer.getByLabel('Confirmez le mot de passe').fill('azerty2024');
+  await newcomer.getByRole('button', { name: 'Enregistrer et continuer' }).click();
+  await expect(newcomer.getByText(/Mot de passe refusé/)).toBeVisible({ timeout: 20_000 });
+  await newcomer.getByLabel('Nouveau mot de passe').fill('la pirogue glisse sur le fleuve');
+  await newcomer.getByLabel('Confirmez le mot de passe').fill('la pirogue glisse sur le fleuve');
+  await newcomer.getByRole('button', { name: 'Enregistrer et continuer' }).click();
+  await newcomer.waitForURL(/\/connexion\/activation$/, { timeout: 30_000 });
+  await fresh.close();
+
+  // Disabling keeps the account, visible and audited, but ends its access.
+  await page.getByRole('button', { name: "C'est noté" }).click();
+  await page.getByRole('button', { name: 'Désactiver', exact: true }).click();
+  await page.getByLabel('Motif').fill('Fin de contrat (fictif)');
+  await page.getByRole('button', { name: 'Désactiver le compte' }).click();
+  await expect(page.getByText('Désactivé', { exact: true }).first()).toBeVisible({
+    timeout: 20_000,
+  });
+
+  // Role editor: duplicate the front desk role, then narrow the copy.
+  await page.goto('/app/parametres/roles');
+  await unlock(page);
+  await page.getByRole('button', { name: /^Accueil/ }).click();
+  await page.getByRole('button', { name: 'Dupliquer' }).click();
+  await page.getByLabel('Nom du rôle').fill('Accueil du soir');
+  await page.getByLabel('Code', { exact: true }).fill('accueil_soir');
+  await page.getByRole('button', { name: 'Créer le rôle' }).click();
+  await expect(page.getByRole('heading', { name: 'Accueil du soir' })).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.getByRole('checkbox', { name: 'Rendez-vous : Annuler' }).uncheck();
+  await page.getByRole('combobox', { name: 'Périmètre : Patients' }).selectOption('site');
+  await expect(page.getByText(/1 retirée/)).toBeVisible();
+  await page.getByRole('button', { name: 'Enregistrer le rôle' }).click();
+  await expect(page.getByText('Rôle enregistré.')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('checkbox', { name: 'Rendez-vous : Annuler' })).not.toBeChecked();
+  await page.screenshot({ path: 'test-results/roles-dark.png', fullPage: true });
+
+  // Reference data: a pick list filled from a CSV file, checked before saving.
+  await page.goto('/app/parametres/referentiels');
+  await unlock(page);
+  await expect(page.getByText('Voir les 26 provinces')).toBeVisible({ timeout: 20_000 });
+  await page.getByRole('button', { name: 'Nouvelle liste' }).click();
+  await page.getByLabel('Nom (français)').fill("Mode d'arrivée");
+  await page.getByLabel('Code de la liste').fill('ARRIVEE');
+  await page.getByRole('button', { name: 'Créer la liste' }).click();
+  await expect(page.getByRole('heading', { name: "Mode d'arrivée" })).toBeVisible({
+    timeout: 20_000,
+  });
+  await page
+    .getByLabel('Ou collez le contenu du fichier ici')
+    .fill(
+      'code;libelle;libelle_en\nPIED;À pied;On foot\nMOTO;Moto-taxi;Motorbike taxi\n;Sans code;\n',
+    );
+  await page.getByRole('button', { name: 'Vérifier le fichier' }).click();
+  await expect(page.getByText('Ligne 4, colonne code : valeur invalide')).toBeVisible({
+    timeout: 20_000,
+  });
+  await page
+    .getByLabel('Ou collez le contenu du fichier ici')
+    .fill('code;libelle;libelle_en\nPIED;À pied;On foot\nMOTO;Moto-taxi;Motorbike taxi\n');
+  await page.getByRole('button', { name: 'Vérifier le fichier' }).click();
+  await page.getByRole('button', { name: 'Reprendre les 2 lignes dans la liste' }).click();
+  await page.getByRole('button', { name: 'Enregistrer la liste' }).click();
+  await expect(page.getByText('2 ajouté(s), 0 modifié(s), 0 désactivé(s).')).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.screenshot({ path: 'test-results/reference-dark.png', fullPage: true });
+
+  // The device copy of the catalogs now feeds the province of the addresses.
+  await page.goto('/app/parametres/organisation');
+  await unlock(page);
+  await expect(
+    page.getByLabel('Province').first().locator('option', { hasText: 'Kasaï-Oriental' }),
+  ).toHaveCount(1, { timeout: 20_000 });
+
+  // English: the whole interface switches, and the choice is kept on the account.
+  await page.goto('/app/compte');
+  await unlock(page);
+  await page.getByRole('button', { name: 'en', exact: true }).last().click();
+  await expect(page.getByRole('heading', { name: 'My account' })).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.getByRole('link', { name: 'Settings' }).first()).toBeVisible();
+  await expect
+    .poll(() =>
+      withServer(async (client) => {
+        const { rows } = await client.query<{ locale: string }>(
+          "select locale from user_account where username = 'admin' and tenant_id = (select id from tenant where code = $1)",
+          [tenantCode()],
+        );
+        return rows[0]?.locale;
+      }),
+    )
+    .toBe('en');
+  await page.screenshot({ path: 'test-results/account-english.png', fullPage: true });
+  await page.getByRole('button', { name: 'fr', exact: true }).last().click();
+  await expect(page.getByRole('heading', { name: 'Mon compte' })).toBeVisible({
+    timeout: 20_000,
+  });
+
+  // Diagnostic: catalogs reloaded on demand, journal sealed for support only.
+  await page.goto('/app/diagnostic');
+  await unlock(page);
+  await page.getByRole('button', { name: 'Recharger les catalogues' }).click();
+  await expect(page.getByText('Référentiels rechargés depuis le serveur.')).toBeVisible({
+    timeout: 20_000,
+  });
+  const downloading = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Exporter le journal' }).click();
+  const download = await downloading;
+  expect(download.suggestedFilename()).toMatch(/\.medhub-diag$/);
+  const sealed = readFileSync(await download.path(), 'utf8');
+  expect(sealed).not.toContain('medhub-diagnostic');
+  const journal = JSON.parse(
+    await openForSupport(
+      JSON.parse(sealed) as SupportEnvelope,
+      process.env.E2E_SUPPORT_PRIVATE_KEY ?? '',
+    ),
+  ) as { kind: string; tenantCode: string; outbox: unknown[] };
+  expect(journal.kind).toBe('medhub-diagnostic');
+  expect(journal.tenantCode).toBe(tenantCode());
+  expect(Array.isArray(journal.outbox)).toBe(true);
+  await page.screenshot({ path: 'test-results/diagnostic-dark.png', fullPage: true });
+
+  // Training base: same accounts and passwords, a distinct code, fictitious patients.
+  await page.goto('/app/parametres/formation');
+  await unlock(page);
+  await page.getByRole('button', { name: 'Créer la base de formation' }).click();
+  const code = (await page.getByTestId('training-code').innerText({ timeout: 60_000 })).trim();
+  expect(code).toBe(`FOR${tenantCode().slice(3)}`);
+  await expect(page.getByText(/40 patients fictifs/)).toBeVisible();
+  await page.screenshot({ path: 'test-results/training-dark.png', fullPage: true });
+
+  const trainee = await browser.newContext({ locale: 'fr-FR', serviceWorkers: 'block' });
+  const learner = await trainee.newPage();
+  await learner.goto('/connexion');
+  await learner.waitForLoadState('networkidle');
+  await learner.getByLabel('Code de la structure').fill(code);
+  await learner.getByLabel('Identifiant').fill('accueil');
+  await learner.getByLabel('Mot de passe').fill(seedPassword());
+  await learner.getByRole('button', { name: 'Se connecter' }).click();
+  await learner.waitForURL(/\/connexion\/activation$/, { timeout: 30_000 });
+  const me = await learner.request.get('/api/v1/auth/me');
+  const profile = (await me.json()) as {
+    profile: { tenant: { code: string; isTraining: boolean } };
+  };
+  expect(profile.profile.tenant).toMatchObject({ code, isTraining: true });
+  await trainee.close();
 });
 
 test('content security policy carries a fresh nonce on every document', async ({ request }) => {

@@ -188,7 +188,7 @@ describe.skipIf(!url)('device lifecycle against PostgreSQL', () => {
       'DEVICE_REVOKED',
     );
     expect(await session.lookupSession(cookie)).toBeNull();
-    expect(await session.sessionDeviceRevoked(cookie)).toBe(true);
+    expect(await session.sessionEndReason(cookie)).toBe('device_revoked');
     await expectCode(core.refreshDeviceTokens(ctx, device.deviceId), 'DEVICE_REVOKED');
   });
 

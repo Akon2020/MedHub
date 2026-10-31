@@ -4,6 +4,7 @@ import {
   Building2,
   ChevronRight,
   Database,
+  GraduationCap,
   KeyRound,
   MonitorCog,
   ShieldAlert,
@@ -46,15 +47,26 @@ const ENTRIES: Entry[] = [
     href: '/app/parametres/synchronisation',
     permission: 'configuration:read',
   },
-  { key: 'users', icon: Users, permission: 'user:read', soon: 'S5' },
-  { key: 'roles', icon: KeyRound, permission: 'role:read', soon: 'S5' },
+  { key: 'users', icon: Users, href: '/app/parametres/utilisateurs', permission: 'user:read' },
+  { key: 'roles', icon: KeyRound, href: '/app/parametres/roles', permission: 'role:read' },
   {
     key: 'devices',
     icon: Smartphone,
     href: '/app/parametres/appareils',
     permission: 'device:read',
   },
-  { key: 'reference', icon: Database, permission: 'configuration:read', soon: 'S5' },
+  {
+    key: 'reference',
+    icon: Database,
+    href: '/app/parametres/referentiels',
+    permission: 'configuration:read',
+  },
+  {
+    key: 'training',
+    icon: GraduationCap,
+    href: '/app/parametres/formation',
+    permission: 'configuration:read',
+  },
 ];
 
 /** Settings hub: online-only configuration screens, filtered by permission. */

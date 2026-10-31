@@ -16,7 +16,8 @@
     "test:isolation": "vitest run test/isolation",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "tsx scripts/seed.ts",
+    "db:import-areas": "tsx scripts/import-areas.ts"
   },
   "dependencies": {
     "@medhub/shared": "workspace:*",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@medhub/config": "workspace:*",
+    "@medhub/domain": "workspace:*",
     "@types/node": "22.20.5",
     "@types/pg": "8.23.1",
     "dotenv": "18.0.9",

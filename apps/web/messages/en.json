@@ -271,7 +271,11 @@
       "AUTH_MFA_ALREADY_ENABLED": "Two-factor authentication is already on.",
       "AUTH_MFA_NOT_ENROLLED": "Two-factor authentication is not set up.",
       "IP_BLOCKED": "Access refused from this network address.",
-      "AUTH_STEP_UP_REQUIRED": "Identity confirmation required."
+      "AUTH_STEP_UP_REQUIRED": "Identity confirmation required.",
+      "AUTH_NO_ACTIVE_ROLE": "Your account has no active role. Ask the facility administrator to assign one.",
+      "AUTH_PASSWORD_WEAK": "Password refused.",
+      "AUTH_PASSWORD_REUSED": "Choose a password different from the current one.",
+      "AUTH_USER_DISABLED": "This account was disabled by the facility administrator."
     },
     "mfa": {
       "verifyTitle": "Two-factor authentication",
@@ -297,7 +301,23 @@
       "recoveryConfirm": "I have stored these codes somewhere safe",
       "continue": "Continue"
     },
-    "deviceRetired": "This device was retired or declared lost by your structure administrator: its local data has been erased. Sign in to activate it again if needed."
+    "deviceRetired": "This device was retired or declared lost by your structure administrator: its local data has been erased. Sign in to activate it again if needed.",
+    "passwordProblems": {
+      "too_short": "It needs at least {min} characters.",
+      "too_long": "It is too long (128 characters at most).",
+      "common": "It is too common and easy to guess.",
+      "contains_identity": "It must not contain your name or username."
+    },
+    "passwordChange": {
+      "title": "Choose your password",
+      "subtitle": "You signed in with a temporary password. Replace it with one only you know.",
+      "newPassword": "New password",
+      "confirm": "Confirm the password",
+      "hint": "At least {min} characters. A phrase of several words is safer and easier to remember than a complicated word.",
+      "mismatch": "The two entries do not match.",
+      "submit": "Save and continue",
+      "submitting": "Saving..."
+    }
   },
   "app": {
     "nav": {
@@ -472,7 +492,33 @@
     "rejectedEmpty": "No rejected operation.",
     "reason": "Reason",
     "command": "Command",
-    "version": "Application version"
+    "version": "Application version",
+    "offlineAccess": "Offline access",
+    "offlineStates": {
+      "valid": "valid until {date}",
+      "expiring": "expires soon ({date})",
+      "expired": "expired since {date}",
+      "missing": "no token on this device"
+    },
+    "license": "License",
+    "licenseStates": {
+      "ok": "in good standing",
+      "grace": "payment overdue",
+      "read_only": "read-only",
+      "suspended": "suspended",
+      "unknown": "unknown (no token)"
+    },
+    "catalogs": "Reference data copy",
+    "catalogsMissing": "not downloaded yet",
+    "clock": "Device clock",
+    "clockOk": "consistent with the server",
+    "clockSuspect": "behind the server: check the date and time",
+    "reloadCatalogs": "Reload catalogs",
+    "catalogsReloaded": "Reference data reloaded from the server.",
+    "exportJournal": "Export the journal",
+    "journalExported": "Journal saved: {file}. Send this file to MedHub support.",
+    "journalUnavailable": "Export not possible: this device has not received the support key yet. Sync it once online, or contact the platform administrator.",
+    "journalHint": "The journal holds no name and no medical data: only counters, technical identifiers and error codes. It is encrypted for MedHub support, who alone can read it."
   },
   "comingSoon": {
     "title": "{module} is coming soon",
@@ -525,6 +571,13 @@
       "text": "Preferences of this device.",
       "theme": "Theme",
       "language": "Language"
+    },
+    "password": {
+      "title": "Password",
+      "text": "Changing your password signs out your other sessions.",
+      "current": "Current password",
+      "submit": "Change password",
+      "changed": "Password changed. Your other sessions were signed out."
     }
   },
   "stepUp": {
@@ -561,7 +614,7 @@
       },
       "users": {
         "title": "Users",
-        "text": "Accounts, assignments, resets"
+        "text": "Accounts, roles, assignments, resets"
       },
       "roles": {
         "title": "Roles and permissions",
@@ -573,11 +626,15 @@
       },
       "reference": {
         "title": "Reference data",
-        "text": "Choice lists, catalogues, numbering"
+        "text": "Pick lists, administrative areas, currencies, units"
       },
       "workstations": {
         "title": "Devices and security",
         "text": "Auto-lock, PIN, offline access, confirmation"
+      },
+      "training": {
+        "title": "Training base",
+        "text": "Copy of the facility with fictitious patients, to learn without risk"
       }
     },
     "organization": {
@@ -613,7 +670,8 @@
       "city": "City or territory",
       "commune": "Commune",
       "quarter": "Quarter",
-      "street": "Street and number"
+      "street": "Street and number",
+      "noProvince": "Choose a province"
     },
     "sites": {
       "title": "Sites",
@@ -670,7 +728,13 @@
         "mfa_disabled": "Two-factor authentication turned off",
         "other": "Other event",
         "device_revoked": "Device retired",
-        "device_lost": "Device declared lost or stolen"
+        "device_lost": "Device declared lost or stolen",
+        "password_changed": "Password changed",
+        "password_reset": "Password reset by an administrator",
+        "mfa_reset": "Two-factor authentication reset",
+        "user_disabled": "Account disabled",
+        "user_enabled": "Account enabled",
+        "role_privileges_changed": "Administration rights of a role changed"
       },
       "anomalies": {
         "new_device": "new device",
@@ -687,7 +751,17 @@
       "NOT_FOUND": "Item not found.",
       "AUTH_STEP_UP_REQUIRED": "Identity confirmation cancelled: nothing was changed.",
       "NETWORK": "The server cannot be reached. Check the connection.",
-      "UNKNOWN": "An unexpected error occurred."
+      "UNKNOWN": "An unexpected error occurred.",
+      "USER_USERNAME_TAKEN": "This username is already used in the facility.",
+      "USER_LAST_ADMIN": "Not possible: the facility must keep at least one active administrator able to manage roles.",
+      "USER_IS_SELF": "This action cannot target your own account. Use \"My account\".",
+      "USER_ROLE_UNKNOWN": "One of the selected roles does not exist anymore.",
+      "AUTH_MFA_NOT_ENROLLED": "This user has no two-factor authentication to reset.",
+      "ROLE_CODE_TAKEN": "This role code already exists in the facility.",
+      "REF_LIST_CODE_TAKEN": "This list code already exists in the facility.",
+      "TRAINING_NOT_ALLOWED": "A training base cannot have a training base of its own.",
+      "TRAINING_ALREADY_EXISTS": "The training base already exists: use \"Reset\".",
+      "TRAINING_CODE_TAKEN": "The training base code is already used by another facility: contact MedHub support."
     },
     "devices": {
       "title": "Devices",
@@ -742,7 +816,8 @@
       "units": {
         "days": "days",
         "minutes": "minutes",
-        "attempts": "attempts"
+        "attempts": "attempts",
+        "characters": "characters"
       },
       "keys": {
         "offline_token_days": {
@@ -760,7 +835,329 @@
         "step_up_minutes": {
           "title": "Confirmation of sensitive changes",
           "text": "How long the last proof of the second factor stays valid before a configuration change (5 to 60 minutes)."
+        },
+        "password_min_length": {
+          "title": "Minimum password length",
+          "text": "Minimum number of characters (10 to 64). No composition rule is imposed: a phrase of several words is recommended."
         }
+      }
+    },
+    "users": {
+      "title": "Users",
+      "subtitle": "Facility accounts, roles, assignments and resets.",
+      "listTitle": "{count, plural, one {# account} other {# accounts}}",
+      "listText": "An account is never deleted: it is disabled and stays visible in the audit log.",
+      "new": "New user",
+      "newTitle": "New user",
+      "newText": "A temporary password is created and shown once. The user replaces it at first sign-in.",
+      "search": "Search by name or username",
+      "showDisabled": "{count, plural, one {Show the disabled account} other {Show the # disabled accounts}}",
+      "you": "you",
+      "noRole": "no role",
+      "lastLogin": "Last sign-in: {date}",
+      "neverSignedIn": "Never signed in",
+      "empty": "No user matches.",
+      "close": "Close",
+      "none": "None",
+      "save": "Save",
+      "create": "Create user",
+      "usernameHint": "Lower-case letters, digits, dot, dash; starts with a letter. Cannot change later.",
+      "usernameFixed": "The username never changes: it appears in the audit log and on signed documents.",
+      "titlePlaceholder": "Dr, RN, Pharm.",
+      "rolesHint": "At least one role. A role marked \"2FA\" requires two-factor authentication.",
+      "roleNeedsMfa": "2FA",
+      "reason": "Reason (written to the audit log)",
+      "cancel": "Cancel",
+      "mfaOn": "2FA",
+      "mustChange": "Password to change",
+      "status": {
+        "active": "Active",
+        "disabled": "Disabled",
+        "locked": "Locked"
+      },
+      "fields": {
+        "username": "Username",
+        "displayName": "Full name",
+        "title": "Title",
+        "professionalNumber": "Professional registration number",
+        "phone": "Phone",
+        "email": "Email",
+        "defaultSite": "Main site",
+        "defaultDepartment": "Main department",
+        "locale": "Language",
+        "roles": "Roles"
+      },
+      "temporary": {
+        "title": "Temporary password for {name}",
+        "text": "Hand it over in person. It will not be shown again; the user must replace it at first sign-in.",
+        "copy": "Copy",
+        "copied": "Copied",
+        "done": "Noted"
+      },
+      "actions": {
+        "title": "Account actions",
+        "self": "For your own account, use \"My account\".",
+        "resetPassword": "Reset password",
+        "unlock": "Unlock",
+        "resetMfa": "Reset 2FA",
+        "resetMfaConfirm": "Reset two-factor authentication",
+        "resetMfaHint": "Use it when the phone was lost or replaced. Their sessions end; if their role requires it, they set up a new phone at next sign-in.",
+        "disable": "Disable",
+        "disableConfirm": "Disable the account",
+        "disableHint": "Their sessions end at once; each of their devices loses offline access at its next sync. Nothing is deleted.",
+        "enable": "Enable",
+        "enableConfirm": "Enable the account",
+        "enableHint": "The user will be able to sign in again with their password."
+      }
+    },
+    "roles": {
+      "title": "Roles and permissions",
+      "subtitle": "What each role allows, and over which scope. Template roles are editable copies.",
+      "listTitle": "{count, plural, one {# role} other {# roles}}",
+      "listText": "A user may hold several roles: their permissions add up.",
+      "new": "New role",
+      "newTitle": "New role",
+      "newText": "Start from an empty role or duplicate an existing one, then adjust its permissions.",
+      "close": "Close",
+      "counts": "{members, plural, =0 {no user} one {# user} other {# users}} · {permissions, plural, =0 {no permission} one {# permission} other {# permissions}}",
+      "version": "Version {version} · {members, plural, =0 {no active user} one {# active user} other {# active users}}",
+      "fields": {
+        "name": "Role name",
+        "code": "Code",
+        "description": "Description",
+        "requiresMfa": "Two-factor authentication required",
+        "copyFrom": "Start from"
+      },
+      "codeHint": "Lower-case letters, digits and _; cannot change later.",
+      "emptyRole": "An empty role",
+      "requiresMfaHint": "Holders of this role will set up 2FA at their next sign-in.",
+      "privilegedHint": "This role grants administration rights (shield icon): two-factor authentication is always required.",
+      "template": {
+        "badge": "Template",
+        "same": "Same as the MedHub template role.",
+        "differs": "{count, plural, one {# difference} other {# differences}} with the MedHub template role.",
+        "restore": "Back to template"
+      },
+      "permissionsTitle": "Permissions",
+      "permissionsHint": "Tick the allowed actions. The scope applies to every ticked action of the row. Changes apply from the next request, and on each device at its next sync.",
+      "scopeOf": "Scope: {resource}",
+      "pending": "{added, plural, =0 {} one {# added} other {# added}} {removed, plural, =0 {} one {# removed} other {# removed}} {rescoped, plural, =0 {} one {# scope changed} other {# scopes changed}}",
+      "save": "Save role",
+      "reset": "Discard changes",
+      "duplicate": "Duplicate",
+      "create": "Create role",
+      "saved": "Role saved.",
+      "groups": {
+        "care": "Patients and care",
+        "lab": "Laboratory",
+        "pharmacy": "Pharmacy and stock",
+        "finance": "Billing, cash desk and payers",
+        "administration": "Administration"
+      },
+      "scopes": {
+        "self": "Own items",
+        "department": "Own department",
+        "site": "Own site",
+        "tenant": "Whole facility",
+        "warehouse": "Assigned stores",
+        "cash_register": "Assigned cash desks",
+        "patient": "Per consent"
+      },
+      "resources": {
+        "patient": "Patients",
+        "encounter": "Visits",
+        "appointment": "Appointments",
+        "queue": "Queues",
+        "triage": "Triage",
+        "clinical_record": "Medical record",
+        "vital_sign": "Vital signs",
+        "diagnosis": "Diagnoses",
+        "prescription": "Prescriptions",
+        "medication_administration": "Medication administration",
+        "lab_order": "Lab orders",
+        "lab_result": "Lab results",
+        "dispensation": "Dispensing",
+        "stock": "Stock",
+        "controlled_substance": "Controlled substances",
+        "invoice": "Invoices",
+        "payment": "Payments",
+        "cash_session": "Cash sessions",
+        "price": "Prices",
+        "contract": "Payer contracts",
+        "beneficiary": "Beneficiaries",
+        "prior_authorization": "Prior authorizations",
+        "payer_invoice": "Payer invoices",
+        "form": "Forms",
+        "configuration": "Configuration",
+        "user": "Users",
+        "role": "Roles",
+        "device": "Devices",
+        "report": "Reports",
+        "audit": "Audit",
+        "account": "MedHub subscription",
+        "support": "Support",
+        "approval": "Approvals"
+      },
+      "actions": {
+        "read": "Read",
+        "create": "Create",
+        "update": "Update",
+        "merge": "Merge",
+        "export": "Export",
+        "mark_sensitive": "Mark sensitive",
+        "update_status": "Change status",
+        "close": "Close",
+        "cancel": "Cancel",
+        "call": "Call",
+        "manage": "Manage",
+        "correct": "Correct",
+        "sign": "Sign",
+        "break_glass": "Break glass",
+        "read_sensitive": "Read sensitive",
+        "override_plausibility": "Override plausibility",
+        "override_alert": "Override alert",
+        "enter": "Enter",
+        "tech_validate": "Technical validation",
+        "bio_validate": "Biological validation",
+        "void": "Void (credit note)",
+        "move": "Movement",
+        "transfer": "Transfer",
+        "count": "Count",
+        "adjust": "Adjust",
+        "receive": "Receive",
+        "order": "Order",
+        "cosign": "Co-sign",
+        "add_line": "Add line",
+        "finalize": "Finalize",
+        "discount": "Discount",
+        "print": "Print",
+        "refund": "Refund",
+        "open": "Open",
+        "withdraw": "Withdraw",
+        "review": "Review",
+        "reconcile": "Reconcile",
+        "publish": "Publish",
+        "import": "Import",
+        "request": "Request",
+        "decide": "Decide",
+        "generate": "Generate",
+        "send": "Send",
+        "record_payment": "Record payment",
+        "handle_rejection": "Handle rejection",
+        "design": "Design",
+        "edit": "Edit",
+        "disable": "Disable",
+        "delegate": "Delegate",
+        "reset_password": "Reset",
+        "revoke": "Revoke",
+        "register": "Register device",
+        "schedule": "Schedule",
+        "pay": "Pay",
+        "change_plan": "Change plan",
+        "create_ticket": "Open ticket",
+        "grant_remote_access": "Remote access",
+        "activate": "Activate",
+        "simulate": "Simulate"
+      },
+      "copyCodeSuffix": "copy",
+      "copyName": "{name} (copy)"
+    },
+    "reference": {
+      "title": "Reference data",
+      "subtitle": "Pick lists of the facility and catalogs shared by the platform. They are copied to every device for offline work.",
+      "listsTitle": "Pick lists",
+      "listsText": "Values offered in forms (arrival mode, occupation...). An item is never deleted: it is deactivated.",
+      "newList": "New list",
+      "noLists": "No list yet.",
+      "itemCount": "{count, plural, =0 {no active item} one {# active item} other {# active items}}",
+      "version": "version {version}",
+      "close": "Close",
+      "createList": "Create list",
+      "addItem": "Add item",
+      "noItems": "No item: add some or import a file.",
+      "itemsHint": "The code of a saved item never changes (recorded data refers to it). To remove an item, untick \"Active\".",
+      "save": "Save list",
+      "saved": "{added} added, {updated} updated, {deactivated} deactivated.",
+      "fields": {
+        "nameFr": "Name (French)",
+        "nameEn": "Name (English)",
+        "listCode": "List code",
+        "listActive": "Active list (offered in forms)",
+        "code": "Code",
+        "labelFr": "Label (French)",
+        "labelEn": "Label (English)",
+        "order": "Order",
+        "active": "Active"
+      },
+      "import": {
+        "title": "Import from a CSV file",
+        "template": "Download the template",
+        "hint": "Columns: code, libelle, libelle_en (optional), ordre (optional). Separator \";\" or \",\". The file is first checked line by line; nothing is saved before \"Save list\".",
+        "chooseFile": "Choose a file",
+        "paste": "Or paste the file content here",
+        "simulate": "Check the file",
+        "summary": "{valid, plural, =0 {No valid line} one {# valid line} other {# valid lines}}, {errors, plural, =0 {no error} one {# error} other {# errors}}.",
+        "error": "Line {line}, column {field}: {problem}",
+        "apply": "{count, plural, one {Take the line into the list} other {Take the # lines into the list}}",
+        "problems": {
+          "invalid": "invalid value",
+          "duplicate": "duplicate code",
+          "missing_column": "missing column",
+          "too_many_rows": "file too long (2,000 lines at most)",
+          "unknown": "unknown parent",
+          "wrong_level": "wrong parent level"
+        }
+      },
+      "platform": {
+        "title": "Platform catalogs",
+        "text": "Shared by every facility, maintained by MedHub, read-only.",
+        "areas": "Administrative areas",
+        "areasHint": "The 26 provinces are provided (2006 Constitution, ISO 3166-2:CD codes). Territories, cities and communes will be loaded from an official file.",
+        "provinces": "Show the {count} provinces",
+        "currencies": "Currencies",
+        "minorUnit": "{digits} decimals",
+        "units": "Units of measure",
+        "unitsHint": "UCUM codes, used by vital signs and results.",
+        "kinds": {
+          "province": "Provinces",
+          "territory": "Territories",
+          "city": "Cities",
+          "sector": "Sectors",
+          "chiefdom": "Chiefdoms",
+          "commune": "Communes",
+          "groupement": "Groupements",
+          "quarter": "Quarters"
+        }
+      }
+    },
+    "training": {
+      "title": "Training base",
+      "subtitle": "A practice facility next to yours: same configuration, same accounts, fictitious patients.",
+      "cardTitle": "Training facility",
+      "cardText": "Staff practise there without touching real records.",
+      "active": "Active",
+      "none": "No training base yet.",
+      "create": "Create the training base",
+      "codeLabel": "Facility code to enter at sign-in",
+      "codeHint": "Same usernames and passwords as in the real facility.",
+      "createdAt": "Created on",
+      "content": "Content",
+      "counts": "{users, plural, one {# account} other {# accounts}}, {patients, plural, one {# fictitious patient} other {# fictitious patients}}",
+      "resetButton": "Reset",
+      "resetConfirm": "The current base is archived (nothing is deleted) and its devices erase their training data at their next contact. A new base is created under the same code, with today's configuration and new fictitious patients.",
+      "resetAction": "Reset the training base",
+      "cancel": "Cancel",
+      "createdNotice": "Training base created: code {code}.",
+      "resetNotice": "Training base reset: code {code}.",
+      "archived": "{count, plural, one {# previous base archived} other {# previous bases archived}}, kept but no longer accessible.",
+      "insideTraining": "You are signed in to a training base: it cannot have a training base of its own.",
+      "howTitle": "How it works",
+      "how": {
+        "copy": "Copy of the published configuration, sites and departments, roles, pick lists and active accounts (same passwords and two-factor authentication).",
+        "signIn": "To practise, everyone signs in with the training base code instead of the usual one.",
+        "banner": "A \"Training base\" banner stays on screen at all times to avoid any confusion.",
+        "messages": "No real SMS or email leaves it: sending is simulated.",
+        "reset": "Resetting starts again from today's configuration; the previous base is archived, never deleted."
       }
     }
   }

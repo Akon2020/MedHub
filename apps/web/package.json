@@ -41,6 +41,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@formatjs/icu-messageformat-parser": "3.5.22",
     "@medhub/config": "workspace:*",
     "@playwright/test": "1.64.1",
     "@tailwindcss/postcss": "4.3.3",

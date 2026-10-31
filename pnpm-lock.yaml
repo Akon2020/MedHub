@@ -269,6 +269,9 @@ importers:
         specifier: 4.6.7
         version: 4.6.7
     devDependencies:
+      '@formatjs/icu-messageformat-parser':
+        specifier: 3.5.22
+        version: 3.5.22
       '@medhub/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -413,6 +416,9 @@ importers:
       '@medhub/config':
         specifier: workspace:*
         version: link:../config
+      '@medhub/domain':
+        specifier: workspace:*
+        version: link:../domain
       '@types/node':
         specifier: 22.20.5
         version: 22.20.5

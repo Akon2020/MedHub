@@ -4,6 +4,7 @@ import { Languages } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
+import { apiFetch } from '@/client/api';
 import { LOCALE_COOKIE, LOCALES, type Locale } from '@/i18n/config';
 import { cn } from '@/lib/utils';
 
@@ -11,7 +12,11 @@ function persistLocale(next: Locale): void {
   document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
 }
 
-export function LocaleSwitcher({ className }: { className?: string }) {
+/**
+ * With `account`, the choice is also saved on the signed-in account so that it
+ * follows the user to other devices; offline, the device keeps it until then.
+ */
+export function LocaleSwitcher({ className, account }: { className?: string; account?: boolean }) {
   const locale = useLocale();
   const t = useTranslations('common');
   const router = useRouter();
@@ -19,6 +24,12 @@ export function LocaleSwitcher({ className }: { className?: string }) {
 
   function choose(next: Locale) {
     persistLocale(next);
+    if (account && navigator.onLine) {
+      void apiFetch('/api/v1/account/locale', {
+        method: 'POST',
+        body: JSON.stringify({ locale: next }),
+      }).catch(() => undefined);
+    }
     startTransition(() => router.refresh());
   }
 
