@@ -329,6 +329,9 @@ importers:
       '@medhub/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@medhub/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@medhub/shared':
         specifier: workspace:*
         version: link:../../packages/shared

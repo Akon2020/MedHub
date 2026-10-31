@@ -14,3 +14,4 @@ export * from './core/users';
 export * from './core/roles';
 export * from './core/reference';
 export * from './core/training';
+export * from './pat/duplicate-score';

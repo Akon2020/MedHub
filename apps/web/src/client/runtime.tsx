@@ -1,6 +1,6 @@
 'use client';
 
-import type { CommandName, CommandPayload } from '@medhub/domain';
+import { DUPLICATE_ALERT_SCORE, type CommandName, type CommandPayload } from '@medhub/domain';
 import {
   DEFAULT_MAX_PIN_ATTEMPTS,
   isInitialized,
@@ -64,6 +64,8 @@ type RuntimeValue = {
   tokens: TokenStatus | null;
   /** Local copy of the read-only catalogs (sites, departments, pick lists...). */
   catalogs: StoredCatalogs | null;
+  /** Similarity score from which registration shows the patients that look alike. */
+  duplicateAlertScore: number;
   /** Downloads the catalogs now, without waiting for the next check. */
   reloadCatalogs: () => Promise<void>;
   /** Diagnostic journal sealed for support (no patient data, readable by support only). */
@@ -135,6 +137,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
   const [tokens, setTokens] = useState<TokenStatus | null>(null);
   const [catalogs, setCatalogs] = useState<StoredCatalogs | null>(null);
   const [autoLockMs, setAutoLockMs] = useState(DEFAULT_AUTO_LOCK_MINUTES * 60_000);
+  const [duplicateAlertScore, setDuplicateAlertScore] = useState(DUPLICATE_ALERT_SCORE);
   const dbRef = useRef<MedHubLocalDb | null>(null);
 
   useEffect(() => {
@@ -239,6 +242,9 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
       setCatalogs(await loadCatalogs(unlocked.db));
       const stored = await loadTokens(unlocked.db);
       if (stored?.config) setAutoLockMs(stored.config.autoLockMinutes * 60_000);
+      if (stored?.config?.duplicateAlertScore) {
+        setDuplicateAlertScore(stored.config.duplicateAlertScore);
+      }
       const next = await startSession(identity, unlocked, {
         afterSync: async (deviceId) => {
           if (await refreshCatalogs(unlocked.db)) setCatalogs(await loadCatalogs(unlocked.db));
@@ -323,6 +329,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
       status,
       tokens,
       catalogs,
+      duplicateAlertScore,
       reloadCatalogs: async () => {
         if (!session) return;
         await refreshCatalogs(session.unlocked.db, Date.now(), true);
@@ -364,6 +371,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
       status,
       tokens,
       catalogs,
+      duplicateAlertScore,
       revision,
       unlock,
       recover,

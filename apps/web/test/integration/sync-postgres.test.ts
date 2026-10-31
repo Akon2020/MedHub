@@ -12,6 +12,7 @@ import { NetworkError, SyncClient, type SyncTransport } from '@medhub/sync/clien
 import { processPull, processPush } from '@medhub/sync/server';
 import { MemoryClientStore } from '@medhub/sync/testing';
 import { config } from 'dotenv';
+import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { pgSyncStore } from '@/server/modules/sync';
 
@@ -191,6 +192,17 @@ describe.skipIf(!url)('sync against PostgreSQL', () => {
 
     expect(counts).toMatchObject({ patients: registers, vitals, movements, rejected: 0 });
     expect(counts.chain.ok).toBe(true);
+
+    // One duplicate detection per registration, even when acknowledgements were lost.
+    const detections = await withSystem(handle.db, (tx) =>
+      tx
+        .select({ id: schema.job.id })
+        .from(schema.job)
+        .where(
+          and(eq(schema.job.tenantId, tenantId), eq(schema.job.type, 'pat.detect_duplicates')),
+        ),
+    );
+    expect(detections).toHaveLength(registers);
 
     const [a, b] = devices;
     if (!a || !b) throw new Error('devices');

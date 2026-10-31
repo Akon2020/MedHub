@@ -59,7 +59,7 @@ export type StoredTokens = {
   licenseToken: string;
   signingKeys: Record<string, string>;
   /** Published structure settings applied offline. */
-  config?: { autoLockMinutes: number; pinMaxAttempts: number };
+  config?: { autoLockMinutes: number; pinMaxAttempts: number; duplicateAlertScore?: number };
   /** Seals the diagnostic journal for support; absent until the platform configures it. */
   supportKey?: string | null;
   refreshedAt: number;

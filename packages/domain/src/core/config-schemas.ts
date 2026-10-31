@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { OFFLINE_TOKEN_DEFAULT_DAYS, OFFLINE_TOKEN_MAX_DAYS } from './license';
 import { PASSWORD_MIN_LENGTH } from './password-policy';
+import { DUPLICATE_ALERT_SCORE, DUPLICATE_CANDIDATE_SCORE } from '../pat/duplicate-score';
 
 /**
  * Simple settings stored in `config_entry` (docs/06-configuration.md section 2).
@@ -38,6 +39,18 @@ export const CONFIG_DEFINITIONS = {
     default: PASSWORD_MIN_LENGTH,
     unit: 'characters',
   },
+  'patient.duplicate_alert_score': {
+    domain: 'patient',
+    schema: z.number().int().min(30).max(100),
+    default: DUPLICATE_ALERT_SCORE,
+    unit: 'points',
+  },
+  'patient.duplicate_candidate_score': {
+    domain: 'patient',
+    schema: z.number().int().min(30).max(120),
+    default: DUPLICATE_CANDIDATE_SCORE,
+    unit: 'points',
+  },
 } as const;
 
 export type ConfigKey = keyof typeof CONFIG_DEFINITIONS;
@@ -63,11 +76,16 @@ export function resolveConfig(published: Partial<Record<string, unknown>>): Conf
 }
 
 /** The part of the configuration a device needs offline. */
-export type DeviceConfig = { autoLockMinutes: number; pinMaxAttempts: number };
+export type DeviceConfig = {
+  autoLockMinutes: number;
+  pinMaxAttempts: number;
+  duplicateAlertScore: number;
+};
 
 export function deviceConfig(values: ConfigValues): DeviceConfig {
   return {
     autoLockMinutes: values['security.auto_lock_minutes'],
     pinMaxAttempts: values['security.pin_max_attempts'],
+    duplicateAlertScore: values['patient.duplicate_alert_score'],
   };
 }

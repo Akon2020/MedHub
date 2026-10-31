@@ -6,6 +6,7 @@ import {
   withTenant,
   type Db,
 } from '@medhub/db';
+import { detectDuplicates } from './duplicates';
 
 export type JobContext = {
   db: Db;
@@ -41,6 +42,14 @@ export const HANDLERS: Record<string, JobHandler> = {
       throw new Error(`AUDIT_CHAIN_BROKEN:${broken.length}`);
     }
     log(`audit chains verified for ${tenants.length} structures`);
+  },
+
+  /** Enqueued by each synchronised patient registration (docs/modules/pat.md). */
+  'pat.detect_duplicates': async ({ db, tenantId, payload, log }) => {
+    const patientId = typeof payload.patientId === 'string' ? payload.patientId : null;
+    if (!tenantId || !patientId) throw new Error('PAYLOAD_INVALID');
+    const found = await detectDuplicates(db, tenantId, patientId);
+    log(`${found} duplicate candidates recorded`);
   },
 
   'security.purge_rate_limits': async ({ db, log }) => {

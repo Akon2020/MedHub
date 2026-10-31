@@ -174,7 +174,11 @@ describe('configuration values', () => {
     });
     expect(values['security.offline_token_days']).toBe(21);
     expect(values['security.auto_lock_minutes']).toBe(5);
-    expect(deviceConfig(values)).toEqual({ autoLockMinutes: 5, pinMaxAttempts: 10 });
+    expect(deviceConfig(values)).toEqual({
+      autoLockMinutes: 5,
+      pinMaxAttempts: 10,
+      duplicateAlertScore: 50,
+    });
     expect(isConfigKey('security.pin_max_attempts')).toBe(true);
     expect(isConfigKey('security.unknown')).toBe(false);
   });

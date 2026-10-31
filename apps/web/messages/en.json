@@ -431,6 +431,53 @@
       "required": "This field is required.",
       "phoneInvalid": "Invalid phone number.",
       "deviceMissing": "This workstation is not activated: the record cannot be numbered."
+    },
+    "duplicates": {
+      "title": "{count, plural, one {A similar patient is already registered} other {# similar patients are already registered}}",
+      "text": "Check that this is not the same person before opening a new record.",
+      "age": "{age} years",
+      "open": "Open this record",
+      "confirmHint": "If this is someone else, register anyway: a possible duplicate will be reported by the server in any case.",
+      "createAnyway": "None of them: register",
+      "reasons": {
+        "phonetic": "name sounds the same",
+        "name_similar": "very close name",
+        "birth_date": "same birth date",
+        "birth_year": "same birth year",
+        "phone": "same phone",
+        "parent": "same father or mother",
+        "sex_differs": "different sex"
+      }
+    },
+    "queue": {
+      "link": "Duplicates",
+      "title": "Possible duplicates",
+      "subtitle": "Records the server finds similar after synchronisation.",
+      "intro": "Compare both records. If they are two different people, dismiss the pair with a reason; merging comes in the next version.",
+      "empty": "No possible duplicate to review.",
+      "offline": "Screen available online only: duplicates are computed by the server.",
+      "denied": "You are not allowed to handle duplicates.",
+      "network": "The server cannot be reached. Check the connection.",
+      "error": "The operation failed: the pair may already have been handled.",
+      "score": "Similarity {score}",
+      "recordA": "Record 1",
+      "recordB": "Record 2",
+      "estimatedYear": "{year} (estimated)",
+      "fields": {
+        "name": "Name",
+        "sex": "Sex",
+        "birthDate": "Birth",
+        "phone": "Phone",
+        "mrn": "Record number",
+        "createdAt": "Registered on"
+      },
+      "dismiss": "Not the same person",
+      "reason": "Reason (written to the audit log)",
+      "reasonPlaceholder": "Example: namesakes, different parents",
+      "dismissConfirm": "Dismiss this pair",
+      "cancel": "Cancel",
+      "merge": "Merge",
+      "mergeSoon": "Merging comes in the next version."
     }
   },
   "patient": {
@@ -817,7 +864,8 @@
         "days": "days",
         "minutes": "minutes",
         "attempts": "attempts",
-        "characters": "characters"
+        "characters": "characters",
+        "points": "points"
       },
       "keys": {
         "offline_token_days": {
@@ -839,6 +887,16 @@
         "password_min_length": {
           "title": "Minimum password length",
           "text": "Minimum number of characters (10 to 64). No composition rule is imposed: a phrase of several words is recommended."
+        },
+        "patient": {
+          "duplicate_alert_score": {
+            "title": "Duplicate alert at registration",
+            "text": "Similarity score from which the device shows similar patients before creating a new one (30 to 100)."
+          },
+          "duplicate_candidate_score": {
+            "title": "Merge candidate",
+            "text": "Score from which the server lists two records in the duplicates queue (30 to 120)."
+          }
         }
       }
     },

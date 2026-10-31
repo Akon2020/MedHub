@@ -1,5 +1,5 @@
 import 'server-only';
-import { appendAudit, schema, withTenant, type Db, type Tx } from '@medhub/db';
+import { appendAudit, enqueue, schema, withTenant, type Db, type Tx } from '@medhub/db';
 import { ENTITIES, getCommand, type EntityName, type PatientRegisterPayload } from '@medhub/domain';
 import type { StockMovementKind } from '@medhub/shared';
 import { formatHlc, uuidv7 } from '@medhub/shared';
@@ -288,6 +288,15 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
       switch (entity) {
         case 'patient':
           await tx.insert(schema.patient).values(mappers.patient.toRow(state, ctx));
+          // Duplicates are looked for in the background, so that a push stays short.
+          await enqueue(
+            tx,
+            'pat.detect_duplicates',
+            { patientId: state.id },
+            {
+              tenantId: ctx.tenantId,
+            },
+          );
           return;
         case 'vital_sign':
           await tx.insert(schema.vitalSign).values(mappers.vital_sign.toRow(state, ctx));

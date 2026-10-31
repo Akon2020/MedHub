@@ -57,6 +57,13 @@
       "when": 1793441979029,
       "tag": "0007_s5_training",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793444610835,
+      "tag": "0008_s6_duplicates",
+      "breakpoints": true
     }
   ]
 }

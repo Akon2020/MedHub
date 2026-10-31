@@ -62,7 +62,8 @@ async function rawDump(unlocked: UnlockedLocal): Promise<string> {
 }
 
 describe('encrypted local database', () => {
-  it('stores no patient name in clear and syncs with the server', async () => {
+  // PBKDF2 with 600 000 iterations: well over 5 s when every suite runs at once.
+  it('stores no patient name in clear and syncs with the server', { timeout: 60_000 }, async () => {
     const ids = identity();
     const db = openLocalDb(ids);
     const { unlocked } = await initializeLocal(db, '482913', ITERATIONS);

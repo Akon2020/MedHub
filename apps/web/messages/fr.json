@@ -436,6 +436,53 @@
       "required": "Ce champ est obligatoire.",
       "phoneInvalid": "Numéro de téléphone invalide.",
       "deviceMissing": "Ce poste n'est pas activé : impossible de numéroter le dossier."
+    },
+    "duplicates": {
+      "title": "{count, plural, one {Un patient semblable est déjà enregistré} other {# patients semblables sont déjà enregistrés}}",
+      "text": "Vérifiez qu'il ne s'agit pas de la même personne avant d'ouvrir un nouveau dossier.",
+      "age": "{age} ans",
+      "open": "Ouvrir ce dossier",
+      "confirmHint": "S'il s'agit d'une autre personne, enregistrez quand même : un doublon éventuel sera de toute façon signalé au serveur.",
+      "createAnyway": "Ce n'est aucun d'eux : enregistrer",
+      "reasons": {
+        "phonetic": "nom à la prononciation identique",
+        "name_similar": "nom très proche",
+        "birth_date": "même date de naissance",
+        "birth_year": "même année de naissance",
+        "phone": "même téléphone",
+        "parent": "même père ou même mère",
+        "sex_differs": "sexe différent"
+      }
+    },
+    "queue": {
+      "link": "Doublons",
+      "title": "Doublons possibles",
+      "subtitle": "Dossiers que le serveur juge semblables après la synchronisation.",
+      "intro": "Comparez les deux dossiers. S'il s'agit de deux personnes différentes, écartez la paire avec un motif ; la fusion arrive dans la prochaine version.",
+      "empty": "Aucun doublon possible à examiner.",
+      "offline": "Écran disponible en ligne seulement : les doublons sont calculés par le serveur.",
+      "denied": "Vous n'avez pas la permission de traiter les doublons.",
+      "network": "Le serveur est injoignable. Vérifiez la connexion.",
+      "error": "L'opération n'a pas abouti : la paire a peut-être déjà été traitée.",
+      "score": "Ressemblance {score}",
+      "recordA": "Dossier 1",
+      "recordB": "Dossier 2",
+      "estimatedYear": "{year} (estimée)",
+      "fields": {
+        "name": "Nom",
+        "sex": "Sexe",
+        "birthDate": "Naissance",
+        "phone": "Téléphone",
+        "mrn": "Numéro de dossier",
+        "createdAt": "Enregistré le"
+      },
+      "dismiss": "Pas la même personne",
+      "reason": "Motif (consigné dans le journal)",
+      "reasonPlaceholder": "Exemple : homonymes, parents différents",
+      "dismissConfirm": "Écarter cette paire",
+      "cancel": "Annuler",
+      "merge": "Fusionner",
+      "mergeSoon": "La fusion arrive dans la prochaine version."
     }
   },
   "patient": {
@@ -822,7 +869,8 @@
         "days": "jours",
         "minutes": "minutes",
         "attempts": "essais",
-        "characters": "caractères"
+        "characters": "caractères",
+        "points": "points"
       },
       "keys": {
         "offline_token_days": {
@@ -844,6 +892,16 @@
         "password_min_length": {
           "title": "Longueur minimale des mots de passe",
           "text": "Nombre minimal de caractères (10 à 64). Aucune règle de composition n'est imposée : une phrase de plusieurs mots est recommandée."
+        },
+        "patient": {
+          "duplicate_alert_score": {
+            "title": "Alerte de doublon à la saisie",
+            "text": "Score de ressemblance à partir duquel le poste montre les patients semblables avant d'en créer un nouveau (30 à 100)."
+          },
+          "duplicate_candidate_score": {
+            "title": "Candidat de fusion",
+            "text": "Score à partir duquel le serveur propose deux dossiers dans la file des doublons (30 à 120)."
+          }
         }
       }
     },

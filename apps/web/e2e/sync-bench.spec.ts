@@ -294,5 +294,23 @@ test('front desk registers a patient offline from the screen, then it syncs', as
     return Number(rows[0]?.n ?? 0);
   });
   expect(stored).toBe(1);
+
+  // Registering the same person again shows the existing record before creating anything.
+  await page.goto('/app/patients?new=1');
+  await unlock(page);
+  await page.getByLabel('Nom', { exact: true }).fill('Kabwela');
+  await page.getByLabel('Prénom').fill('Espoir');
+  await page.getByLabel('ou âge estimé (ans)').fill('41');
+  await page.getByRole('button', { name: 'Enregistrer le patient' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Un patient semblable est déjà enregistré' }),
+  ).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.getByRole('link', { name: 'Ouvrir ce dossier' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: "Ce n'est aucun d'eux : enregistrer" }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => window.__medhubTest!.pending())).toBe(0);
   await context.close();
 });

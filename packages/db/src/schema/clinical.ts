@@ -13,7 +13,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { appendOnlyColumns, clinicalStatusCheck, syncColumns } from '../columns';
+import { appendOnlyColumns, clinicalStatusCheck, syncColumns, tenantColumns } from '../columns';
 
 export const patient = pgTable(
   'patient',
@@ -72,5 +72,34 @@ export const vitalSign = pgTable(
   (t) => [
     index('vital_sign_patient_idx').on(t.tenantId, t.patientId, t.measuredAt),
     check('vital_sign_status_check', clinicalStatusCheck),
+  ],
+);
+
+/**
+ * Pair of records that may describe the same person, found on the server after
+ * a synchronised registration. Patient A has the smaller identifier, so a pair
+ * is stored once. A decision closes the pair; nothing is deleted.
+ */
+export const duplicateCandidate = pgTable(
+  'duplicate_candidate',
+  {
+    ...tenantColumns(),
+    patientAId: uuid('patient_a_id').notNull(),
+    patientBId: uuid('patient_b_id').notNull(),
+    score: integer('score').notNull(),
+    reasons: text('reasons')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    status: text('status').notNull().default('open'),
+    decidedBy: uuid('decided_by'),
+    decidedAt: timestamp('decided_at', { withTimezone: true }),
+    decisionReason: text('decision_reason'),
+  },
+  (t) => [
+    uniqueIndex('duplicate_candidate_pair_uq').on(t.tenantId, t.patientAId, t.patientBId),
+    index('duplicate_candidate_status_idx').on(t.tenantId, t.status, t.score),
+    check('duplicate_candidate_status_check', sql`${t.status} in ('open','dismissed','merged')`),
+    check('duplicate_candidate_order_check', sql`${t.patientAId} < ${t.patientBId}`),
   ],
 );

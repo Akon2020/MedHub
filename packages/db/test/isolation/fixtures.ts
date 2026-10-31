@@ -9,6 +9,7 @@ import {
   dataAccessLog,
   department,
   device,
+  duplicateCandidate,
   mfaRecoveryCode,
   numberSeries,
   opLog,
@@ -64,6 +65,15 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       code: 'CONS',
       name: 'Consultations',
       kind: 'clinical',
+    });
+  },
+  duplicate_candidate: async (tx, tenantId) => {
+    await tx.insert(duplicateCandidate).values({
+      id: uuidv7(),
+      tenantId,
+      patientAId: '00000000-0000-7000-8000-000000000001',
+      patientBId: '00000000-0000-7000-8000-000000000002',
+      score: 95,
     });
   },
   device: async (tx, tenantId) => {

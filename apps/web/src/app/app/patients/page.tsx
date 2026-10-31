@@ -1,11 +1,11 @@
 'use client';
 
-import { ChevronRight, Search, UserPlus, Users } from 'lucide-react';
+import { ChevronRight, GitMerge, Search, UserPlus, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Suspense, useDeferredValue, useState } from 'react';
-import { useLocalQuery } from '@/client/runtime';
+import { useLocalQuery, useRuntime } from '@/client/runtime';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { initialsOf, toPatientView } from '@/features/patients/patient-helpers';
@@ -20,6 +20,7 @@ function PatientsScreen() {
   const router = useRouter();
   const [query, setQuery] = useState(params.get('q') ?? '');
   const [showForm, setShowForm] = useState(params.get('new') === '1');
+  const canMerge = useRuntime().identity?.permissions.includes('patient:merge') ?? false;
   const deferred = useDeferredValue(query.trim());
 
   const paramQuery = params.get('q') ?? '';
@@ -47,12 +48,22 @@ function PatientsScreen() {
         title={t('title')}
         subtitle={t('subtitle')}
         actions={
-          !showForm && (
-            <Button onClick={() => setShowForm(true)}>
-              <UserPlus />
-              {t('new')}
-            </Button>
-          )
+          <div className="flex flex-wrap gap-2">
+            {canMerge && (
+              <Button variant="secondary" asChild>
+                <Link href="/app/patients/doublons">
+                  <GitMerge />
+                  {t('queue.link')}
+                </Link>
+              </Button>
+            )}
+            {!showForm && (
+              <Button onClick={() => setShowForm(true)}>
+                <UserPlus />
+                {t('new')}
+              </Button>
+            )}
+          </div>
         }
       />
 
