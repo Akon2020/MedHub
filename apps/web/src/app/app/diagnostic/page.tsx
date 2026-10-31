@@ -1,6 +1,6 @@
 'use client';
 
-import { HardDrive, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { Database, FileDown, HardDrive, Loader2, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { APP_VERSION } from '@/client/activation';
@@ -14,9 +14,44 @@ export default function DiagnosticPage() {
   const t = useTranslations('diagnostic');
   const ts = useTranslations('sync');
   const format = useFormatter();
-  const { status, device, identity, syncNow } = useRuntime();
+  const { status, device, identity, syncNow, tokens, catalogs, reloadCatalogs, exportJournal } =
+    useRuntime();
   const online = useOnline();
   const [storage, setStorage] = useState<{ usage: number; quota: number } | null>(null);
+  const [busy, setBusy] = useState<'catalogs' | 'journal' | null>(null);
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function reload() {
+    setBusy('catalogs');
+    setNotice(null);
+    try {
+      await reloadCatalogs();
+      setNotice({ ok: true, text: t('catalogsReloaded') });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function exportFile() {
+    setBusy('journal');
+    setNotice(null);
+    try {
+      const file = await exportJournal();
+      if (file === 'NO_SUPPORT_KEY' || file === null) {
+        setNotice({ ok: false, text: t('journalUnavailable') });
+        return;
+      }
+      const url = URL.createObjectURL(new Blob([file.content], { type: 'application/json' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.fileName;
+      link.click();
+      URL.revokeObjectURL(url);
+      setNotice({ ok: true, text: t('journalExported', { file: file.fileName }) });
+    } finally {
+      setBusy(null);
+    }
+  }
 
   useEffect(() => {
     navigator.storage
@@ -43,6 +78,19 @@ export default function DiagnosticPage() {
     { label: t('conflicts'), value: String(status?.conflicts ?? 0) },
     { label: t('lastSync'), value: when(data?.state.lastSyncAt) },
     { label: t('lastServer'), value: when(data?.state.lastServerTime) },
+    {
+      label: t('offlineAccess'),
+      value:
+        tokens?.offlineExpiresAt && tokens.offline !== 'invalid'
+          ? t(`offlineStates.${tokens.offline}`, { date: when(tokens.offlineExpiresAt) })
+          : t('offlineStates.missing'),
+    },
+    { label: t('license'), value: t(`licenseStates.${tokens?.license ?? 'unknown'}`) },
+    {
+      label: t('catalogs'),
+      value: catalogs ? when(catalogs.fetchedAt) : t('catalogsMissing'),
+    },
+    { label: t('clock'), value: status?.clockSuspect ? t('clockSuspect') : t('clockOk') },
     { label: t('version'), value: APP_VERSION },
   ];
 
@@ -52,12 +100,35 @@ export default function DiagnosticPage() {
         title={t('title')}
         subtitle={t('subtitle')}
         actions={
-          <Button onClick={() => syncNow()}>
-            <RefreshCw />
-            {t('forceSync')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => syncNow()}>
+              <RefreshCw />
+              {t('forceSync')}
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={busy !== null || !online}
+              onClick={() => void reload()}
+            >
+              {busy === 'catalogs' ? <Loader2 className="animate-spin" /> : <Database />}
+              {t('reloadCatalogs')}
+            </Button>
+            <Button variant="secondary" disabled={busy !== null} onClick={() => void exportFile()}>
+              {busy === 'journal' ? <Loader2 className="animate-spin" /> : <FileDown />}
+              {t('exportJournal')}
+            </Button>
+          </div>
         }
       />
+      {notice && (
+        <p
+          role={notice.ok ? 'status' : 'alert'}
+          className={`mb-4 rounded-lg px-3.5 py-2.5 text-sm ${notice.ok ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning'}`}
+        >
+          {notice.text}
+        </p>
+      )}
+      <p className="mb-4 text-xs text-muted-foreground">{t('journalHint')}</p>
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <Card>
           <CardContent className="pt-5">

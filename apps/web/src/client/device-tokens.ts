@@ -15,6 +15,7 @@ export type DeviceTokensResponse = {
   signingKeys: Record<string, string>;
   serverTime: number;
   config: { autoLockMinutes: number; pinMaxAttempts: number };
+  supportKey?: string | null;
 };
 
 export type TokenStatus = {
@@ -33,6 +34,7 @@ export async function storeTokens(db: MedHubLocalDb, tokens: DeviceTokensRespons
     licenseToken: tokens.licenseToken,
     signingKeys: tokens.signingKeys,
     config: tokens.config,
+    supportKey: tokens.supportKey ?? null,
   });
 }
 

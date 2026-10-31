@@ -60,6 +60,8 @@ export type StoredTokens = {
   signingKeys: Record<string, string>;
   /** Published structure settings applied offline. */
   config?: { autoLockMinutes: number; pinMaxAttempts: number };
+  /** Seals the diagnostic journal for support; absent until the platform configures it. */
+  supportKey?: string | null;
   refreshedAt: number;
 };
 

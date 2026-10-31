@@ -492,7 +492,33 @@
     "rejectedEmpty": "No rejected operation.",
     "reason": "Reason",
     "command": "Command",
-    "version": "Application version"
+    "version": "Application version",
+    "offlineAccess": "Offline access",
+    "offlineStates": {
+      "valid": "valid until {date}",
+      "expiring": "expires soon ({date})",
+      "expired": "expired since {date}",
+      "missing": "no token on this device"
+    },
+    "license": "License",
+    "licenseStates": {
+      "ok": "in good standing",
+      "grace": "payment overdue",
+      "read_only": "read-only",
+      "suspended": "suspended",
+      "unknown": "unknown (no token)"
+    },
+    "catalogs": "Reference data copy",
+    "catalogsMissing": "not downloaded yet",
+    "clock": "Device clock",
+    "clockOk": "consistent with the server",
+    "clockSuspect": "behind the server: check the date and time",
+    "reloadCatalogs": "Reload catalogs",
+    "catalogsReloaded": "Reference data reloaded from the server.",
+    "exportJournal": "Export the journal",
+    "journalExported": "Journal saved: {file}. Send this file to MedHub support.",
+    "journalUnavailable": "Export not possible: this device has not received the support key yet. Sync it once online, or contact the platform administrator.",
+    "journalHint": "The journal holds no name and no medical data: only counters, technical identifiers and error codes. It is encrypted for MedHub support, who alone can read it."
   },
   "comingSoon": {
     "title": "{module} is coming soon",
@@ -605,6 +631,10 @@
       "workstations": {
         "title": "Devices and security",
         "text": "Auto-lock, PIN, offline access, confirmation"
+      },
+      "training": {
+        "title": "Training base",
+        "text": "Copy of the facility with fictitious patients, to learn without risk"
       }
     },
     "organization": {
@@ -728,7 +758,10 @@
       "USER_ROLE_UNKNOWN": "One of the selected roles does not exist anymore.",
       "AUTH_MFA_NOT_ENROLLED": "This user has no two-factor authentication to reset.",
       "ROLE_CODE_TAKEN": "This role code already exists in the facility.",
-      "REF_LIST_CODE_TAKEN": "This list code already exists in the facility."
+      "REF_LIST_CODE_TAKEN": "This list code already exists in the facility.",
+      "TRAINING_NOT_ALLOWED": "A training base cannot have a training base of its own.",
+      "TRAINING_ALREADY_EXISTS": "The training base already exists: use \"Reset\".",
+      "TRAINING_CODE_TAKEN": "The training base code is already used by another facility: contact MedHub support."
     },
     "devices": {
       "title": "Devices",
@@ -1095,6 +1128,36 @@
           "groupement": "Groupements",
           "quarter": "Quarters"
         }
+      }
+    },
+    "training": {
+      "title": "Training base",
+      "subtitle": "A practice facility next to yours: same configuration, same accounts, fictitious patients.",
+      "cardTitle": "Training facility",
+      "cardText": "Staff practise there without touching real records.",
+      "active": "Active",
+      "none": "No training base yet.",
+      "create": "Create the training base",
+      "codeLabel": "Facility code to enter at sign-in",
+      "codeHint": "Same usernames and passwords as in the real facility.",
+      "createdAt": "Created on",
+      "content": "Content",
+      "counts": "{users, plural, one {# account} other {# accounts}}, {patients, plural, one {# fictitious patient} other {# fictitious patients}}",
+      "resetButton": "Reset",
+      "resetConfirm": "The current base is archived (nothing is deleted) and its devices erase their training data at their next contact. A new base is created under the same code, with today's configuration and new fictitious patients.",
+      "resetAction": "Reset the training base",
+      "cancel": "Cancel",
+      "createdNotice": "Training base created: code {code}.",
+      "resetNotice": "Training base reset: code {code}.",
+      "archived": "{count, plural, one {# previous base archived} other {# previous bases archived}}, kept but no longer accessible.",
+      "insideTraining": "You are signed in to a training base: it cannot have a training base of its own.",
+      "howTitle": "How it works",
+      "how": {
+        "copy": "Copy of the published configuration, sites and departments, roles, pick lists and active accounts (same passwords and two-factor authentication).",
+        "signIn": "To practise, everyone signs in with the training base code instead of the usual one.",
+        "banner": "A \"Training base\" banner stays on screen at all times to avoid any confusion.",
+        "messages": "No real SMS or email leaves it: sending is simulated.",
+        "reset": "Resetting starts again from today's configuration; the previous base is archived, never deleted."
       }
     }
   }

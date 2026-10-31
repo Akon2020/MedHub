@@ -11,7 +11,7 @@ import {
 import { assessSignIn, deviceLabel, passwordProblems } from '@medhub/domain';
 import { hashPassword, verifyPassword } from '@medhub/db/password';
 import { AppError, normalizeTenantCode, uuidv7, type DeviceKind } from '@medhub/shared';
-import { and, desc, eq, gt, isNull, ne, or } from 'drizzle-orm';
+import { and, desc, eq, gt, isNull, ne, or, sql } from 'drizzle-orm';
 import { database } from '../../platform/db';
 import {
   checkTotp,
@@ -31,7 +31,12 @@ import { enforceRateLimit, RATE_LIMITS, securityEvent } from '../../platform/sec
 import { createSession, rotateSession } from '../../platform/session';
 import { loadConfig } from './configuration';
 import { deviceConfig, type DeviceConfig } from '@medhub/domain';
-import { issueLicenseToken, issueOfflineToken, platformSigningKeys } from '../../platform/tokens';
+import {
+  issueLicenseToken,
+  issueOfflineToken,
+  platformSigningKeys,
+  supportPublicKey,
+} from '../../platform/tokens';
 import type { RequestContext } from '../../platform/tenant';
 
 const LOCKOUT_STEPS: { failures: number; minutes: number }[] = [
@@ -82,7 +87,13 @@ async function findTenantByCode(code: string): Promise<TenantRow | null> {
     tx
       .select()
       .from(schema.tenant)
-      .where(eq(schema.tenant.code, normalizeTenantCode(code)))
+      .where(
+        and(
+          eq(schema.tenant.code, normalizeTenantCode(code)),
+          // A replaced training structure keeps its code but no longer signs anyone in.
+          sql`not (${schema.tenant.isTraining} and ${schema.tenant.status} = 'archived')`,
+        ),
+      )
       .limit(1),
   );
   return row ?? null;
@@ -1005,6 +1016,7 @@ export type DeviceTokens = {
   serverTime: number;
   /** Published settings the device applies offline (auto-lock, PIN attempts). */
   config: DeviceConfig;
+  supportKey: string | null;
 };
 
 export function deviceTokensFor(
@@ -1021,6 +1033,7 @@ export function deviceTokensFor(
     }),
     licenseToken: issueLicenseToken(tenant),
     signingKeys: platformSigningKeys(),
+    supportKey: supportPublicKey(),
     serverTime: Date.now(),
   };
 }

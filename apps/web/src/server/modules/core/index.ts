@@ -52,4 +52,5 @@ export {
   choiceListUpdateRoute,
   referenceRoute,
 } from './reference-routes';
+export { trainingBuildRoute, trainingRoute } from './training-routes';
 export type { Profile } from './service';

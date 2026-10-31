@@ -4,6 +4,7 @@ import {
   Building2,
   ChevronRight,
   Database,
+  GraduationCap,
   KeyRound,
   MonitorCog,
   ShieldAlert,
@@ -58,6 +59,12 @@ const ENTRIES: Entry[] = [
     key: 'reference',
     icon: Database,
     href: '/app/parametres/referentiels',
+    permission: 'configuration:read',
+  },
+  {
+    key: 'training',
+    icon: GraduationCap,
+    href: '/app/parametres/formation',
     permission: 'configuration:read',
   },
 ];

@@ -267,14 +267,17 @@ test('front desk registers a patient offline from the screen, then it syncs', as
   await page.getByLabel('Nom', { exact: true }).fill('Kabwela');
   await page.getByLabel('Prénom').fill('Espoir');
   await page.getByLabel('ou âge estimé (ans)').fill('41');
+  // The form only navigates to the record once the write is committed to the
+  // encrypted outbox: that request (failing offline) proves the save happened.
+  const committed = page.waitForRequest((r) => r.url().includes('/app/patients/fiche'), {
+    timeout: 15_000,
+  });
   await page.getByRole('button', { name: 'Enregistrer le patient' }).click();
+  await committed;
 
-  // The write is committed to the encrypted outbox before any navigation. In development
-  // there is no service worker, so the record page cannot load offline: the patient must
-  // survive that failed navigation and a full reload, then reach the server.
-  await expect
-    .poll(() => page.evaluate(() => window.__medhubTest!.pending()), { timeout: 10_000 })
-    .toBe(1);
+  // In development there is no service worker, so the record page cannot load
+  // offline: the patient must survive that failed navigation and a full reload,
+  // then reach the server.
   await context.setOffline(false);
   await page.goto('/app');
   await unlock(page);

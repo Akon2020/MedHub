@@ -497,7 +497,33 @@
     "rejectedEmpty": "Aucune opération rejetée.",
     "reason": "Motif",
     "command": "Commande",
-    "version": "Version de l'application"
+    "version": "Version de l'application",
+    "offlineAccess": "Accès hors connexion",
+    "offlineStates": {
+      "valid": "valable jusqu'au {date}",
+      "expiring": "expire bientôt ({date})",
+      "expired": "expiré depuis le {date}",
+      "missing": "aucun jeton sur ce poste"
+    },
+    "license": "Licence",
+    "licenseStates": {
+      "ok": "en règle",
+      "grace": "retard de paiement",
+      "read_only": "lecture seule",
+      "suspended": "suspendue",
+      "unknown": "inconnue (aucun jeton)"
+    },
+    "catalogs": "Copie des référentiels",
+    "catalogsMissing": "pas encore téléchargée",
+    "clock": "Horloge du poste",
+    "clockOk": "cohérente avec le serveur",
+    "clockSuspect": "en retard sur le serveur : vérifiez la date et l'heure",
+    "reloadCatalogs": "Recharger les catalogues",
+    "catalogsReloaded": "Référentiels rechargés depuis le serveur.",
+    "exportJournal": "Exporter le journal",
+    "journalExported": "Journal enregistré : {file}. Transmettez ce fichier au support MedHub.",
+    "journalUnavailable": "Export impossible : la clé du support n'a pas encore été reçue par ce poste. Synchronisez-le une fois en ligne, ou contactez l'administrateur de la plateforme.",
+    "journalHint": "Le journal ne contient ni nom ni donnée médicale : seulement des compteurs, des identifiants techniques et des codes d'erreur. Il est chiffré pour le support MedHub, qui seul peut le lire."
   },
   "comingSoon": {
     "title": "{module} arrive bientôt",
@@ -610,6 +636,10 @@
       "workstations": {
         "title": "Postes et sécurité",
         "text": "Verrouillage, code PIN, accès hors connexion, confirmation"
+      },
+      "training": {
+        "title": "Base de formation",
+        "text": "Copie de la structure avec des patients fictifs, pour apprendre sans risque"
       }
     },
     "organization": {
@@ -733,7 +763,10 @@
       "USER_ROLE_UNKNOWN": "Un des rôles choisis n'existe pas ou plus.",
       "AUTH_MFA_NOT_ENROLLED": "Cet utilisateur n'a pas de double authentification à réinitialiser.",
       "ROLE_CODE_TAKEN": "Ce code de rôle existe déjà dans la structure.",
-      "REF_LIST_CODE_TAKEN": "Ce code de liste existe déjà dans la structure."
+      "REF_LIST_CODE_TAKEN": "Ce code de liste existe déjà dans la structure.",
+      "TRAINING_NOT_ALLOWED": "Une base de formation ne peut pas avoir sa propre base de formation.",
+      "TRAINING_ALREADY_EXISTS": "La base de formation existe déjà : utilisez « Réinitialiser ».",
+      "TRAINING_CODE_TAKEN": "Le code de la base de formation est déjà pris par une autre structure : contactez le support MedHub."
     },
     "devices": {
       "title": "Appareils",
@@ -1100,6 +1133,36 @@
           "groupement": "Groupements",
           "quarter": "Quartiers"
         }
+      }
+    },
+    "training": {
+      "title": "Base de formation",
+      "subtitle": "Une structure d'entraînement à côté de la vôtre : même configuration, mêmes comptes, patients fictifs.",
+      "cardTitle": "Structure de formation",
+      "cardText": "Le personnel s'y exerce sans toucher aux vrais dossiers.",
+      "active": "Active",
+      "none": "Aucune base de formation pour le moment.",
+      "create": "Créer la base de formation",
+      "codeLabel": "Code de structure à saisir à la connexion",
+      "codeHint": "Mêmes identifiants et mots de passe que dans la vraie structure.",
+      "createdAt": "Créée le",
+      "content": "Contenu",
+      "counts": "{users, plural, one {# compte} other {# comptes}}, {patients, plural, one {# patient fictif} other {# patients fictifs}}",
+      "resetButton": "Réinitialiser",
+      "resetConfirm": "La base actuelle est archivée (rien n'est supprimé) et ses postes effacent leurs données de formation à leur prochain contact. Une nouvelle base est créée sous le même code, avec la configuration d'aujourd'hui et de nouveaux patients fictifs.",
+      "resetAction": "Réinitialiser la base de formation",
+      "cancel": "Annuler",
+      "createdNotice": "Base de formation créée : code {code}.",
+      "resetNotice": "Base de formation réinitialisée : code {code}.",
+      "archived": "{count, plural, one {# base précédente archivée} other {# bases précédentes archivées}}, conservées sans être accessibles.",
+      "insideTraining": "Vous êtes connecté à une base de formation : elle ne peut pas avoir sa propre base de formation.",
+      "howTitle": "Comment ça marche",
+      "how": {
+        "copy": "Copie de la configuration publiée, des sites et services, des rôles, des listes de choix et des comptes actifs (mêmes mots de passe et double authentification).",
+        "signIn": "Pour s'exercer, chacun se connecte avec le code de la base de formation au lieu du code habituel.",
+        "banner": "Un bandeau « Base de formation » reste affiché en permanence pour éviter toute confusion.",
+        "messages": "Aucun SMS ni courriel réel n'en part : les envois sont simulés.",
+        "reset": "Réinitialiser repart de la configuration du jour ; l'ancienne base est archivée, jamais supprimée."
       }
     }
   }

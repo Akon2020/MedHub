@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { openForSupport, type SupportEnvelope } from '@medhub/sync';
 import { expect, test, type Page } from '@playwright/test';
 import { generate } from 'otplib';
 import { activateDevice, TEST_PIN, tenantCode, unlock, withServer } from './support';
@@ -266,6 +268,55 @@ test('a privileged role enrolls its second factor at first sign-in, then must us
   await expect(page.getByRole('heading', { name: 'Mon compte' })).toBeVisible({
     timeout: 20_000,
   });
+
+  // Diagnostic: catalogs reloaded on demand, journal sealed for support only.
+  await page.goto('/app/diagnostic');
+  await unlock(page);
+  await page.getByRole('button', { name: 'Recharger les catalogues' }).click();
+  await expect(page.getByText('Référentiels rechargés depuis le serveur.')).toBeVisible({
+    timeout: 20_000,
+  });
+  const downloading = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Exporter le journal' }).click();
+  const download = await downloading;
+  expect(download.suggestedFilename()).toMatch(/\.medhub-diag$/);
+  const sealed = readFileSync(await download.path(), 'utf8');
+  expect(sealed).not.toContain('medhub-diagnostic');
+  const journal = JSON.parse(
+    await openForSupport(
+      JSON.parse(sealed) as SupportEnvelope,
+      process.env.E2E_SUPPORT_PRIVATE_KEY ?? '',
+    ),
+  ) as { kind: string; tenantCode: string; outbox: unknown[] };
+  expect(journal.kind).toBe('medhub-diagnostic');
+  expect(journal.tenantCode).toBe(tenantCode());
+  expect(Array.isArray(journal.outbox)).toBe(true);
+  await page.screenshot({ path: 'test-results/diagnostic-dark.png', fullPage: true });
+
+  // Training base: same accounts and passwords, a distinct code, fictitious patients.
+  await page.goto('/app/parametres/formation');
+  await unlock(page);
+  await page.getByRole('button', { name: 'Créer la base de formation' }).click();
+  const code = (await page.getByTestId('training-code').innerText({ timeout: 60_000 })).trim();
+  expect(code).toBe(`FOR${tenantCode().slice(3)}`);
+  await expect(page.getByText(/40 patients fictifs/)).toBeVisible();
+  await page.screenshot({ path: 'test-results/training-dark.png', fullPage: true });
+
+  const trainee = await browser.newContext({ locale: 'fr-FR', serviceWorkers: 'block' });
+  const learner = await trainee.newPage();
+  await learner.goto('/connexion');
+  await learner.waitForLoadState('networkidle');
+  await learner.getByLabel('Code de la structure').fill(code);
+  await learner.getByLabel('Identifiant').fill('accueil');
+  await learner.getByLabel('Mot de passe').fill(seedPassword());
+  await learner.getByRole('button', { name: 'Se connecter' }).click();
+  await learner.waitForURL(/\/connexion\/activation$/, { timeout: 30_000 });
+  const me = await learner.request.get('/api/v1/auth/me');
+  const profile = (await me.json()) as {
+    profile: { tenant: { code: string; isTraining: boolean } };
+  };
+  expect(profile.profile.tenant).toMatchObject({ code, isTraining: true });
+  await trainee.close();
 });
 
 test('content security policy carries a fresh nonce on every document', async ({ request }) => {

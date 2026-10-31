@@ -33,6 +33,7 @@ import {
 } from 'react';
 import { apiFetch } from './api';
 import { refreshCatalogs } from './catalogs';
+import { exportJournal } from './diagnostic-export';
 import { refreshTokens, tokensDue, tokenStatus, type TokenStatus } from './device-tokens';
 import { installTestHook } from './e2e-hook';
 import { clearIdentity, DEVICE_REVOKED_FLAG, readIdentity, type StoredIdentity } from './identity';
@@ -65,6 +66,8 @@ type RuntimeValue = {
   catalogs: StoredCatalogs | null;
   /** Downloads the catalogs now, without waiting for the next check. */
   reloadCatalogs: () => Promise<void>;
+  /** Diagnostic journal sealed for support (no patient data, readable by support only). */
+  exportJournal: () => Promise<{ fileName: string; content: string } | 'NO_SUPPORT_KEY' | null>;
   /** Bumped after every local write and every sync cycle; drives local queries. */
   revision: number;
   unlock: (pin: string) => Promise<UnlockOutcome>;
@@ -324,6 +327,23 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
         if (!session) return;
         await refreshCatalogs(session.unlocked.db, Date.now(), true);
         setCatalogs(await loadCatalogs(session.unlocked.db));
+      },
+      exportJournal: async () => {
+        if (!session || !identity) return null;
+        return exportJournal(session.unlocked.db, session.unlocked.store, {
+          tenantCode: identity.tenantCode,
+          userId: identity.userId,
+          deviceId: session.device.deviceId,
+          deviceCode: session.device.deviceCode,
+          status: status
+            ? {
+                pending: status.pending,
+                rejected: status.rejected,
+                conflicts: status.conflicts,
+                clockSuspect: status.clockSuspect,
+              }
+            : null,
+        });
       },
       revision,
       unlock,

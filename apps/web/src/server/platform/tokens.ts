@@ -24,6 +24,11 @@ function signingMaterial(): { kid: string; secretKey: Uint8Array; publicKey: str
  * Public keys the devices accept: the current one and the previous ones still
  * listed in MEDHUB_SIGNING_PREVIOUS_KEYS ("kid:base64,kid:base64"), for rotation.
  */
+/** Public key that seals diagnostic journals for support; null until configured. */
+export function supportPublicKey(): string | null {
+  return env().MEDHUB_SUPPORT_PUBLIC_KEY ?? null;
+}
+
 export function platformSigningKeys(): SigningKeys {
   const { kid, publicKey } = signingMaterial();
   const keys: SigningKeys = { [kid]: publicKey };

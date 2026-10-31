@@ -183,6 +183,7 @@ export async function revokeOfflineToken(db: MedHubLocalDb): Promise<void> {
       licenseToken: tokens?.licenseToken ?? '',
       signingKeys: tokens?.signingKeys ?? {},
       ...(tokens?.config ? { config: tokens.config } : {}),
+      ...(tokens?.supportKey ? { supportKey: tokens.supportKey } : {}),
       refreshedAt: tokens?.refreshedAt ?? 0,
     },
   });
