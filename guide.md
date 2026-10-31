@@ -14,7 +14,8 @@ Le jalon **J0 Fondations** est construit :
 - worker cron pour les tâches de fond, scripts de déploiement cPanel, CI GitHub Actions ;
 - thème clair, sombre ou automatique (selon le système) sur toute l'application ;
 - début de J1 (S4) : double authentification TOTP avec codes de secours, limitation de débit en base, règles d'IP, politique CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes, organisation de la structure ;
-- S5 (en cours) : appareils et effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs, éditeur de rôles, référentiels, traduction anglaise complète, diagnostic et base de formation (S5 terminée).
+- S5 (en cours) : appareils et effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs, éditeur de rôles, référentiels, traduction anglaise complète, diagnostic et base de formation (S5 terminée) ;
+- S6 (en cours) : détection des doublons de patients (alerte à la saisie, file des doublons).
 
 Le journal complet de tout ce qui a été fait se trouve dans `walkthrough.md`.
 
@@ -380,6 +381,12 @@ Menu **Paramètres** (permission `configuration:read`, administrateur de structu
 - Pour s'exercer, chacun se connecte avec ce code au lieu du code habituel. Le bandeau « Base de formation » reste affiché.
 - **Réinitialiser** : la base actuelle est archivée (rien n'est supprimé), ses postes effacent leurs données de formation à leur prochain contact, et une nouvelle base est créée sous le même code avec la configuration du jour.
 - Aucun SMS ni courriel réel ne doit partir d'une base de formation : règle à appliquer par le module de notifications quand il arrivera (aucun envoi n'existe aujourd'hui).
+
+### Doublons de patients (S6)
+
+- **À l'enregistrement**, même hors connexion : avant de créer un dossier, le poste cherche dans sa base locale les patients qui ressemblent (nom, prononciation, date ou année de naissance, téléphone). S'il en trouve, il les montre avec « Ouvrir ce dossier » ; le bouton devient « Ce n'est aucun d'eux : enregistrer ».
+- **Après la synchronisation**, le serveur compare chaque nouveau dossier à ses voisins (tâche de fond `pat.detect_duplicates`, exécutée par le cron) et range les paires ressemblantes dans **Patients, Doublons** (`/app/patients/doublons`, permission `patient:merge`, en ligne seulement) : comparaison côte à côte, différences surlignées, « Pas la même personne » avec motif. La fusion arrive dans la tranche suivante.
+- Seuils réglables dans **Paramètres, Postes et sécurité** : alerte à la saisie (50 par défaut) et candidat de fusion (60).
 
 ### Thème sombre
 
