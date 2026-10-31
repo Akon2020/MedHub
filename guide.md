@@ -14,7 +14,7 @@ Le jalon **J0 Fondations** est construit :
 - worker cron pour les tâches de fond, scripts de déploiement cPanel, CI GitHub Actions ;
 - thème clair, sombre ou automatique (selon le système) sur toute l'application ;
 - début de J1 (S4) : double authentification TOTP avec codes de secours, limitation de débit en base, règles d'IP, politique CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes, organisation de la structure ;
-- S5 (en cours) : appareils et effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs, éditeur de rôles, référentiels, traduction anglaise complète.
+- S5 (en cours) : appareils et effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs, éditeur de rôles, référentiels, traduction anglaise complète, diagnostic et base de formation (S5 terminée).
 
 Le journal complet de tout ce qui a été fait se trouve dans `walkthrough.md`.
 
@@ -365,6 +365,21 @@ Menu **Paramètres** (permission `configuration:read`, administrateur de structu
 - Français par défaut, anglais complet. Le sélecteur FR ou EN est en haut des pages publiques et de la connexion, dans le menu utilisateur et dans « Mon compte ».
 - La langue d'un utilisateur est enregistrée sur son compte (champ « Langue » de l'écran Utilisateurs, ou sélecteur une fois connecté) : elle s'applique dès sa connexion, sur n'importe quel poste. Hors connexion, le poste garde le dernier choix.
 - Aucun texte d'interface n'est écrit dans le code : tout est dans `apps/web/messages/fr.json` et `en.json`. Le test `apps/web/test/unit/messages.test.ts` refuse une clé absente d'une des deux langues, un message ICU invalide, des variables différentes entre les deux langues, un reste de français dans l'anglais et toute clé appelée par le code mais absente des fichiers.
+
+### Diagnostic du poste
+
+**Diagnostic** (menu utilisateur, `/app/diagnostic`), disponible hors connexion : opérations en attente, rejetées et en conflit, dernière synchronisation et dernière heure serveur, accès hors connexion (date d'expiration), licence, date de la copie des référentiels, état de l'horloge, version, stockage, réseau.
+- **Forcer une synchronisation**, **Recharger les catalogues** (copie des référentiels téléchargée tout de suite).
+- **Exporter le journal** : un fichier `.medhub-diag` chiffré pour le support MedHub, qui seul peut le lire. Il ne contient ni nom ni donnée médicale (compteurs, identifiants techniques, codes d'erreur). Il fonctionne hors connexion : le fichier peut être transmis par n'importe quel moyen.
+- Côté plateforme : `pnpm keys:support` produit la paire de clés du support. La clé publique va dans l'environnement du serveur (`MEDHUB_SUPPORT_PUBLIC_KEY`) et parvient aux postes avec leurs jetons ; la clé privée reste sur le poste du support, qui ouvre un journal avec `MEDHUB_SUPPORT_PRIVATE_KEY=... pnpm support:decrypt fichier.medhub-diag`. Sans clé configurée, l'export l'explique et ne produit rien.
+
+### Base de formation
+
+**Paramètres, Base de formation** (`/app/parametres/formation`, lecture `configuration:read`, création et réinitialisation `configuration:publish` avec confirmation du second facteur).
+- **Créer** : une structure d'entraînement est créée à côté de la vôtre, avec le code `FOR-` suivi de la fin de votre code (HOP-KIN-0042 donne FOR-KIN-0042). Elle reprend la configuration publiée, les sites et services, les rôles, les listes de choix et les comptes actifs (mêmes mots de passe et même double authentification), et contient 40 patients fictifs.
+- Pour s'exercer, chacun se connecte avec ce code au lieu du code habituel. Le bandeau « Base de formation » reste affiché.
+- **Réinitialiser** : la base actuelle est archivée (rien n'est supprimé), ses postes effacent leurs données de formation à leur prochain contact, et une nouvelle base est créée sous le même code avec la configuration du jour.
+- Aucun SMS ni courriel réel ne doit partir d'une base de formation : règle à appliquer par le module de notifications quand il arrivera (aucun envoi n'existe aujourd'hui).
 
 ### Thème sombre
 
