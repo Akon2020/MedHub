@@ -374,8 +374,8 @@ function NewRoleForm({
   const t = useTranslations('settings.roles');
   const online = useOnline();
   const source = roles.find((r) => r.id === copyFrom);
-  const [code, setCode] = useState(source ? `${source.code}_copie` : '');
-  const [name, setName] = useState(source ? `${source.name} (copie)` : '');
+  const [code, setCode] = useState(source ? `${source.code}_${t('copyCodeSuffix')}` : '');
+  const [name, setName] = useState(source ? t('copyName', { name: source.name }) : '');
   const [description, setDescription] = useState('');
   const [from, setFrom] = useState(copyFrom ?? '');
   const [busy, setBusy] = useState(false);

@@ -1030,7 +1030,9 @@
         "grant_remote_access": "Accès à distance",
         "activate": "Activer",
         "simulate": "Simuler"
-      }
+      },
+      "copyCodeSuffix": "copie",
+      "copyName": "{name} (copie)"
     },
     "reference": {
       "title": "Référentiels",

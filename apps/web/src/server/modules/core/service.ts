@@ -44,7 +44,13 @@ const DEVICE_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const SIGN_IN_HISTORY_DAYS = 180;
 
 export type Profile = {
-  user: { id: string; displayName: string; title: string | null; username: string };
+  user: {
+    id: string;
+    displayName: string;
+    title: string | null;
+    username: string;
+    locale: 'fr' | 'en';
+  };
   tenant: { id: string; code: string; displayName: string; isTraining: boolean; status: string };
   site: { id: string; code: string } | null;
   permissions: string[];
@@ -106,6 +112,7 @@ async function buildProfile(tx: Tx, tenant: TenantRow, user: UserRow): Promise<P
       displayName: user.displayName,
       title: user.title,
       username: user.username,
+      locale: user.locale === 'en' ? 'en' : 'fr',
     },
     tenant: {
       id: tenant.id,
@@ -826,6 +833,30 @@ export async function disableMfa(ctx: RequestContext, code: string, client: Clie
     tenantId: ctx.tenantId,
     userId: ctx.userId,
     ip: client.ip,
+  });
+}
+
+/** Language of the interface, kept on the account so that it follows the user. */
+export async function setLocale(
+  ctx: RequestContext,
+  locale: 'fr' | 'en',
+  client: Client,
+): Promise<void> {
+  await withAccount(ctx, async (tx, tenant, user) => {
+    if (user.locale === locale) return;
+    await tx
+      .update(schema.userAccount)
+      .set({ locale, updatedAt: new Date() })
+      .where(eq(schema.userAccount.id, user.id));
+    await appendAudit(tx, {
+      tenantId: tenant.id,
+      userId: user.id,
+      ip: client.ip,
+      action: 'locale_change',
+      entity: 'user_account',
+      entityId: user.id,
+      diff: { locale },
+    });
   });
 }
 

@@ -241,6 +241,31 @@ test('a privileged role enrolls its second factor at first sign-in, then must us
   await expect(
     page.getByLabel('Province').first().locator('option', { hasText: 'Kasaï-Oriental' }),
   ).toHaveCount(1, { timeout: 20_000 });
+
+  // English: the whole interface switches, and the choice is kept on the account.
+  await page.goto('/app/compte');
+  await unlock(page);
+  await page.getByRole('button', { name: 'en', exact: true }).last().click();
+  await expect(page.getByRole('heading', { name: 'My account' })).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.getByRole('link', { name: 'Settings' }).first()).toBeVisible();
+  await expect
+    .poll(() =>
+      withServer(async (client) => {
+        const { rows } = await client.query<{ locale: string }>(
+          "select locale from user_account where username = 'admin' and tenant_id = (select id from tenant where code = $1)",
+          [tenantCode()],
+        );
+        return rows[0]?.locale;
+      }),
+    )
+    .toBe('en');
+  await page.screenshot({ path: 'test-results/account-english.png', fullPage: true });
+  await page.getByRole('button', { name: 'fr', exact: true }).last().click();
+  await expect(page.getByRole('heading', { name: 'Mon compte' })).toBeVisible({
+    timeout: 20_000,
+  });
 });
 
 test('content security policy carries a fresh nonce on every document', async ({ request }) => {

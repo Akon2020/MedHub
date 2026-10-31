@@ -339,7 +339,7 @@ export function AccountSecurity() {
           </div>
           <div className="flex items-center justify-between gap-3">
             <span className="text-muted-foreground">{t('appearance.language')}</span>
-            <LocaleSwitcher />
+            <LocaleSwitcher account />
           </div>
         </CardContent>
       </Card>

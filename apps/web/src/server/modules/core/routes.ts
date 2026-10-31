@@ -2,6 +2,7 @@ import 'server-only';
 import { DEVICE_KINDS } from '@medhub/shared';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
+import { LOCALE_COOKIE, LOCALES } from '@/i18n/config';
 import { clientIp, defineRoute, json } from '../../platform/http';
 import { revokeSession, SESSION_COOKIE, sessionCookieOptions } from '../../platform/session';
 import {
@@ -17,6 +18,7 @@ import {
   registerDevice,
   revokeSessions,
   securityOverview,
+  setLocale,
   startEnrollment,
   stepUp,
   type RotatedSession,
@@ -50,9 +52,21 @@ async function setSessionCookie(session: RotatedSession): Promise<void> {
   store.set(SESSION_COOKIE, session.cookie, sessionCookieOptions(session.expiresAt));
 }
 
+/** The interface follows the language of the account from the moment it signs in. */
+async function setLocaleCookie(locale: 'fr' | 'en'): Promise<void> {
+  const store = await cookies();
+  store.set(LOCALE_COOKIE, locale, {
+    path: '/',
+    maxAge: 31_536_000,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+  });
+}
+
 async function signedIn(result: SignedIn, extra: Record<string, unknown> = {}): Promise<Response> {
   const store = await cookies();
   store.set(SESSION_COOKIE, result.cookie, sessionCookieOptions(result.expiresAt));
+  await setLocaleCookie(result.profile.user.locale);
   return json({ status: 'signed_in', profile: result.profile, ...extra });
 }
 
@@ -108,6 +122,16 @@ export const initialPasswordRoute = defineRoute({
     });
     if (result.status !== 'signed_in') return json(result);
     return signedIn(result);
+  },
+});
+
+export const accountLocaleRoute = defineRoute({
+  route: 'account.locale',
+  schema: z.object({ locale: z.enum(LOCALES) }),
+  handler: async ({ request, body, ctx }) => {
+    await setLocale(ctx, body.locale, client(request));
+    await setLocaleCookie(body.locale);
+    return json({ ok: true });
   },
 });
 

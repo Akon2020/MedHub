@@ -2,6 +2,7 @@ export {
   accountMfaConfirmRoute,
   accountMfaDisableRoute,
   accountMfaSetupRoute,
+  accountLocaleRoute,
   accountPasswordRoute,
   accountRecoveryCodesRoute,
   accountRevokeSessionsRoute,

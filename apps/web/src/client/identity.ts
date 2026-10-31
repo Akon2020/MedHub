@@ -53,7 +53,13 @@ export function readTenantCode(): string {
 }
 
 export type ServerProfile = {
-  user: { id: string; displayName: string; title: string | null; username: string };
+  user: {
+    id: string;
+    displayName: string;
+    title: string | null;
+    username: string;
+    locale?: 'fr' | 'en';
+  };
   tenant: { id: string; code: string; displayName: string; isTraining: boolean };
   site: { id: string; code: string } | null;
   permissions: string[];

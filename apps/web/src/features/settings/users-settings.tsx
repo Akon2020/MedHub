@@ -166,6 +166,7 @@ function UserEditor({
   onSaved: () => void;
 }) {
   const t = useTranslations('settings.users');
+  const tc = useTranslations('common');
   const online = useOnline();
   const [draft, setDraft] = useState<Draft>(() => draftOf(user));
   const [busy, setBusy] = useState(false);
@@ -294,8 +295,8 @@ function UserEditor({
             onChange={(e) => set('locale', e.target.value === 'en' ? 'en' : 'fr')}
             disabled={!editable}
           >
-            <option value="fr">Français</option>
-            <option value="en">English</option>
+            <option value="fr">{tc('fr')}</option>
+            <option value="en">{tc('en')}</option>
           </NativeSelect>
         </div>
       </div>

@@ -1025,7 +1025,9 @@
         "grant_remote_access": "Remote access",
         "activate": "Activate",
         "simulate": "Simulate"
-      }
+      },
+      "copyCodeSuffix": "copy",
+      "copyName": "{name} (copy)"
     },
     "reference": {
       "title": "Reference data",
