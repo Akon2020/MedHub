@@ -549,7 +549,8 @@
       "motherName": "Nom de la mère",
       "unknownName": "{sex, select, F {Inconnue femme} M {Inconnu homme} other {Inconnu}}{age, select, none {} other { {age} ans environ}}, {sex, select, F {arrivée} other {arrivé}} le {arrived}",
       "newbornName": "Nouveau-né de {mother}"
-    }
+    },
+    "favorites": "Mes favoris"
   },
   "patient": {
     "back": "Retour aux patients",
@@ -703,7 +704,9 @@
       "sensitivityText": "Un dossier sensible n'est ouvert qu'aux rôles dont le niveau le permet ; les autres postes le retirent à la prochaine synchronisation.",
       "sensitivityLevel": "Niveau",
       "sensitivityReason": "Motif",
-      "sensitivitySave": "Enregistrer le niveau"
+      "sensitivitySave": "Enregistrer le niveau",
+      "favoriteOn": "Favori",
+      "favoriteOff": "Ajouter aux favoris"
     }
   },
   "diagnostic": {
@@ -1421,6 +1424,23 @@
         "messages": "Aucun SMS ni courriel réel n'en part : les envois sont simulés.",
         "reset": "Réinitialiser repart de la configuration du jour ; l'ancienne base est archivée, jamais supprimée."
       }
+    },
+    "scope": {
+      "title": "Patients gardés sur les postes",
+      "subtitle": "Périmètre de synchronisation : quels dossiers chaque poste télécharge et garde hors connexion.",
+      "hint": "« Toute la structure » convient aux petites structures. « Périmètre » garde sur le poste les patients qui y ont été enregistrés, les favoris de l'utilisateur, les patients ouverts depuis une recherche sur le serveur et ceux qui ont eu une activité récente ; les autres restent accessibles par la recherche en ligne. La règle d'un rôle prime sur la règle de la structure ; si plusieurs rôles ont une règle, la plus large s'applique.",
+      "default": "Règle de la structure",
+      "inherit": "Règle de la structure",
+      "builtIn": "Par défaut ({rule})",
+      "mode": "Règle",
+      "recentDays": "Activité récente (jours)",
+      "days": "jours",
+      "modes": {
+        "all": "Toute la structure",
+        "scoped": "Périmètre"
+      },
+      "save": "Enregistrer",
+      "saved": "Règle enregistrée : les postes l'appliquent à leur prochaine synchronisation."
     }
   }
 }

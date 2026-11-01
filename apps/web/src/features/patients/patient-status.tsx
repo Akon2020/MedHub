@@ -2,7 +2,7 @@
 
 import type { PatientDeathPayload } from '@medhub/domain';
 import { AppError, PATIENT_SENSITIVITIES, type PatientSensitivity } from '@medhub/shared';
-import { Flag, HeartOff, Loader2, Lock, Search, Undo2 } from 'lucide-react';
+import { Flag, HeartOff, Loader2, Lock, Search, Star, Undo2 } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useState, type FormEvent } from 'react';
 import { ApiError, apiFetch } from '@/client/api';
@@ -363,5 +363,35 @@ export function SensitivityPanel({ patientId, data }: { patientId: string; data:
         </Button>
       </div>
     </form>
+  );
+}
+
+/** Personal favourite: works offline and keeps the patient on the user's devices. */
+export function FavoriteToggle({ patientId, favorite }: { patientId: string; favorite: boolean }) {
+  const t = useTranslations('patient.status');
+  const { dispatch } = useRuntime();
+  const [busy, setBusy] = useState(false);
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      aria-pressed={favorite}
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          await dispatch('patient.favorite', {
+            patientId,
+            active: !favorite,
+            at: new Date().toISOString(),
+          });
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      <Star className={favorite ? 'fill-current text-warning' : undefined} />
+      {favorite ? t('favoriteOn') : t('favoriteOff')}
+    </Button>
   );
 }

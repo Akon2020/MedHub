@@ -76,6 +76,19 @@ export const patient = pgTable(
   ],
 );
 
+/** Favourite patients of a user: one row per toggle, the latest one wins. */
+export const patientFavorite = pgTable(
+  'patient_favorite',
+  {
+    ...appendOnlyColumns(),
+    patientId: uuid('patient_id').notNull(),
+    userId: uuid('user_id').notNull(),
+    active: boolean('active').notNull(),
+    at: timestamp('at', { withTimezone: true }).notNull(),
+  },
+  (t) => [index('patient_favorite_user_idx').on(t.tenantId, t.userId, t.patientId)],
+);
+
 export const vitalSign = pgTable(
   'vital_sign',
   {

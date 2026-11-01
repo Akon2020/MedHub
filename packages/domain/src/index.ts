@@ -19,3 +19,5 @@ export * from './pat/duplicate-score';
 export * from './pat/merge';
 export * from './pat/card';
 export * from './pat/lifecycle';
+export * from './pat/favorites';
+export * from './core/sync-scope';

@@ -12,7 +12,7 @@ import {
   requireSensitivity,
 } from '../../platform/permissions';
 import type { RequestContext } from '../../platform/tenant';
-import { patientState } from '../sync';
+import { patientBundles, patientState, pinPatient } from '../sync';
 
 export const SEARCH_PAGE_SIZE = 20;
 
@@ -125,12 +125,27 @@ export async function searchPatients(
 export async function fetchPatient(
   ctx: RequestContext,
   id: string,
-): Promise<{ id: string; version: number; data: Record<string, unknown> }> {
+): Promise<{
+  id: string;
+  version: number;
+  data: Record<string, unknown>;
+  rows: { entity: string; entityId: string; version: number; data: Record<string, unknown> }[];
+}> {
   return withTenant(database().db, { tenantId: ctx.tenantId, userId: ctx.userId }, async (tx) => {
     requirePermission(await loadPermissions(tx, ctx.userId), 'patient:read');
     const state = await patientState(tx, id);
     if (!state) throw new AppError('NOT_FOUND', 404);
     requireSensitivity(state.data.sensitivity, await loadSensitivityMax(tx, ctx.userId));
-    return { id: state.id, version: state.version, data: state.data };
+    // Opened on a device, the patient stays in that device's scope.
+    if (ctx.deviceId) await pinPatient(tx, { tenantId: ctx.tenantId, deviceId: ctx.deviceId }, id);
+    const rows = (await patientBundles(tx, [id], ctx.userId))
+      .filter((r) => r.entity !== 'patient')
+      .map(({ entity, state: row }) => ({
+        entity,
+        entityId: row.id,
+        version: row.version,
+        data: row.data,
+      }));
+    return { id: state.id, version: state.version, data: state.data, rows };
   });
 }

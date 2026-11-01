@@ -9,8 +9,10 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
+import { tenantColumns } from '../columns';
 
 /** The primary key on op_id is the idempotence guarantee of the sync protocol. */
 export const opLog = pgTable(
@@ -81,4 +83,43 @@ export const syncConflict = pgTable(
     index('sync_conflict_open_idx').on(t.tenantId, t.status),
     check('sync_conflict_status_check', sql`${t.status} in ('open','resolved','dismissed')`),
   ],
+);
+
+/**
+ * Synchronisation scope (docs/02-offline-sync.md section 8): one default rule
+ * per entity for the structure (role_id null) and optional rules per role.
+ */
+export const syncScopeRule = pgTable(
+  'sync_scope_rule',
+  {
+    ...tenantColumns(),
+    roleId: uuid('role_id'),
+    entity: text('entity').notNull(),
+    rule: jsonb('rule').$type<Record<string, unknown>>().notNull(),
+    updatedBy: uuid('updated_by'),
+  },
+  (t) => [
+    uniqueIndex('sync_scope_rule_default_uq')
+      .on(t.tenantId, t.entity)
+      .where(sql`${t.roleId} is null`),
+    uniqueIndex('sync_scope_rule_role_uq')
+      .on(t.tenantId, t.entity, t.roleId)
+      .where(sql`${t.roleId} is not null`),
+  ],
+);
+
+/**
+ * Patients a device holds under a scoped rule: what the server already sent,
+ * so that a patient entering the scope arrives with its whole record, and the
+ * patients opened from a server search (pinned), which stay in the scope.
+ */
+export const devicePatient = pgTable(
+  'device_patient',
+  {
+    ...tenantColumns(),
+    deviceId: uuid('device_id').notNull(),
+    patientId: uuid('patient_id').notNull(),
+    pinned: boolean('pinned').notNull().default(false),
+  },
+  (t) => [uniqueIndex('device_patient_uq').on(t.tenantId, t.deviceId, t.patientId)],
 );

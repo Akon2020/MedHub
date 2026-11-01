@@ -9,11 +9,13 @@ import {
   dataAccessLog,
   department,
   device,
+  devicePatient,
   duplicateCandidate,
   mfaRecoveryCode,
   numberSeries,
   opLog,
   patient,
+  patientFavorite,
   patientFieldHistory,
   patientMerge,
   role,
@@ -22,6 +24,7 @@ import {
   site,
   stockMovement,
   syncConflict,
+  syncScopeRule,
   userAccount,
   userRole,
   vitalSign,
@@ -87,6 +90,32 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       name: 'Poste test',
       kind: 'desktop',
       publicKey: 'test',
+    });
+  },
+  device_patient: async (tx, tenantId) => {
+    await tx.insert(devicePatient).values({
+      id: uuidv7(),
+      tenantId,
+      deviceId: uuidv7(),
+      patientId: uuidv7(),
+    });
+  },
+  patient_favorite: async (tx, tenantId) => {
+    await tx.insert(patientFavorite).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      userId: uuidv7(),
+      active: true,
+      at: new Date(),
+    });
+  },
+  sync_scope_rule: async (tx, tenantId) => {
+    await tx.insert(syncScopeRule).values({
+      id: uuidv7(),
+      tenantId,
+      entity: 'patient',
+      rule: { mode: 'scoped', recentDays: 30 },
     });
   },
   patient_field_history: async (tx, tenantId) => {

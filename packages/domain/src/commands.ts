@@ -8,10 +8,11 @@ import {
   patientUpdatePayload,
   type PatientNameParts,
 } from './pat/commands';
+import { patientFavoritePayload } from './pat/favorites';
 import { blockedByDeath, patientDeathPayload } from './pat/lifecycle';
 import { stockMovementRecordPayload } from './phar/stock';
 
-export type EntityName = 'patient' | 'vital_sign' | 'stock_movement';
+export type EntityName = 'patient' | 'vital_sign' | 'stock_movement' | 'patient_favorite';
 
 export type EntityDefinition = {
   name: EntityName;
@@ -44,6 +45,13 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
     name: 'vital_sign',
     strategy: 'append_only',
     scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  patient_favorite: {
+    name: 'patient_favorite',
+    strategy: 'union',
+    // Only the user who marked it receives it: the pull filters on userId.
+    scopeKeys: (data) => [`user:${String(data.userId)}`],
     patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
   },
   stock_movement: {
@@ -108,6 +116,14 @@ export const COMMANDS = {
     permission: 'patient:mark_sensitive',
     onlineOnly: false,
     transientFields: ['sensitivityReason'],
+  }),
+  'patient.favorite': define({
+    name: 'patient.favorite',
+    entity: 'patient_favorite',
+    kind: 'append',
+    payloadSchema: patientFavoritePayload,
+    permission: 'patient:read',
+    onlineOnly: false,
   }),
   'vital_sign.record': define({
     name: 'vital_sign.record',

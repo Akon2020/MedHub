@@ -13,12 +13,18 @@ import { FieldHistory, IdentityCard } from '@/features/patients/identity-card';
 import { PatientCardActions } from '@/features/patients/patient-card';
 import {
   DeathPanel,
+  FavoriteToggle,
   PatientStatusBadges,
   ProvisionalPanel,
   SensitivityPanel,
   deceasedAtOf,
 } from '@/features/patients/patient-status';
-import { initialsOf, isMerged, toPatientView } from '@/features/patients/patient-helpers';
+import {
+  favoritesOf,
+  initialsOf,
+  isMerged,
+  toPatientView,
+} from '@/features/patients/patient-helpers';
 import { mergeClosure, mergeTarget } from '@medhub/domain';
 import { SyncBadge } from '@/features/patients/sync-badge';
 import { VitalsPanel, type VitalView } from '@/features/patients/vitals-panel';
@@ -64,10 +70,14 @@ function PatientRecord() {
               : null,
         }))
         .sort((a, b) => b.measuredAt.localeCompare(a.measuredAt));
+      const favorite = favoritesOf(await store.readEntitiesByPatient('patient_favorite', id)).has(
+        id,
+      );
       return {
         patient: toPatientView(entity),
         raw: entity.data,
         vitals,
+        favorite,
         mergedCount: ids.length - 1,
       };
     },
@@ -98,7 +108,7 @@ function PatientRecord() {
     );
   }
 
-  const { patient, raw, vitals, mergedCount } = data;
+  const { patient, raw, vitals, favorite, mergedCount } = data;
   const temperature = vitals
     .filter((v) => v.code === 'temp' && v.status === 'active')
     .slice(0, 12)
@@ -150,7 +160,10 @@ function PatientRecord() {
           </p>
         </div>
         <div className="grid justify-items-end gap-2">
-          <SyncBadge state={patient.syncState} />
+          <div className="flex items-center gap-2">
+            <FavoriteToggle patientId={patient.id} favorite={favorite} />
+            <SyncBadge state={patient.syncState} />
+          </div>
           <PatientCardActions
             patient={patient}
             cardToken={typeof raw.cardToken === 'string' ? raw.cardToken : null}

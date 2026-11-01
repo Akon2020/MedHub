@@ -92,6 +92,13 @@
       "when": 1793552383365,
       "tag": "0012_s6_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793554174900,
+      "tag": "0013_s6_scope",
+      "breakpoints": true
     }
   ]
 }

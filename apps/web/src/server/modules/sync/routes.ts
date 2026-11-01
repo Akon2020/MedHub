@@ -2,7 +2,9 @@ import 'server-only';
 import { AppError } from '@medhub/shared';
 import { DEFAULT_PULL_LIMIT, MAX_PUSH_BYTES, pushRequestSchema } from '@medhub/sync';
 import { z } from 'zod';
-import { defineRoute, json } from '../../platform/http';
+import { clientIp, defineRoute, json } from '../../platform/http';
+import { syncScopeRuleInput } from '@medhub/domain';
+import { listScopeRules, saveScopeRule } from './scope';
 import { pull, push, status } from './service';
 
 export const pushRoute = defineRoute({
@@ -50,4 +52,18 @@ export const pullRoute = defineRoute({
 export const statusRoute = defineRoute({
   route: 'sync.status',
   handler: async () => json(status()),
+});
+
+export const scopeRulesRoute = defineRoute({
+  route: 'sync.scope',
+  handler: async ({ ctx }) => json(await listScopeRules(ctx)),
+});
+
+export const scopeRuleSaveRoute = defineRoute({
+  route: 'sync.scope.save',
+  schema: syncScopeRuleInput,
+  handler: async ({ request, body, ctx }) => {
+    await saveScopeRule(ctx, body, { ip: clientIp(request) });
+    return json({ ok: true });
+  },
 });

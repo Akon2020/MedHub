@@ -220,6 +220,44 @@ const mappers = {
       };
     },
   },
+  patient_favorite: {
+    table: schema.patientFavorite,
+    toState(row: typeof schema.patientFavorite.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: {
+          patientId: row.patientId,
+          userId: row.userId,
+          active: row.active,
+          at: row.at.toISOString(),
+          status: row.status,
+        },
+        fieldMeta: {},
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.patientFavorite.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        // The owner is the author of the operation, never a value from the payload.
+        userId: state.createdBy,
+        active: d.active === true,
+        at: new Date(String(d.at)),
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+      };
+    },
+  },
   stock_movement: {
     table: schema.stockMovement,
     toState(row: typeof schema.stockMovement.$inferSelect): EntityState {
@@ -290,6 +328,14 @@ async function getEntity(tx: Tx, entity: EntityName, id: string): Promise<Entity
         .limit(1);
       return row ? mappers.stock_movement.toState(row) : null;
     }
+    case 'patient_favorite': {
+      const [row] = await tx
+        .select()
+        .from(schema.patientFavorite)
+        .where(eq(schema.patientFavorite.id, id))
+        .limit(1);
+      return row ? mappers.patient_favorite.toState(row) : null;
+    }
   }
 }
 
@@ -308,6 +354,13 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
       return (
         await tx.select().from(schema.stockMovement).where(inArray(schema.stockMovement.id, ids))
       ).map((r) => mappers.stock_movement.toState(r));
+    case 'patient_favorite':
+      return (
+        await tx
+          .select()
+          .from(schema.patientFavorite)
+          .where(inArray(schema.patientFavorite.id, ids))
+      ).map((r) => mappers.patient_favorite.toState(r));
   }
 }
 
@@ -397,6 +450,11 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         case 'stock_movement':
           await tx.insert(schema.stockMovement).values(mappers.stock_movement.toRow(state, ctx));
           return;
+        case 'patient_favorite':
+          await tx
+            .insert(schema.patientFavorite)
+            .values(mappers.patient_favorite.toRow(state, ctx));
+          return;
       }
     },
     async updateEntity(entity, state) {
@@ -443,7 +501,8 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
             .where(eq(schema.vitalSign.id, state.id));
           return;
         case 'stock_movement':
-          throw new Error('stock_movement rows are immutable');
+        case 'patient_favorite':
+          throw new Error(`${entity} rows are immutable`);
       }
     },
     async appendChange(change: ChangeEntry) {
@@ -683,4 +742,39 @@ export async function patientSensitivities(
         .where(inArray(schema.patient.id, [...ids])),
   );
   return new Map(rows.map((r) => [r.id, r.sensitivity]));
+}
+
+/**
+ * Every row a device needs for these patients: the record itself, its vital
+ * signs and the user's own favourite toggles, as pull changes.
+ */
+export async function patientBundles(
+  tx: Tx,
+  patientIds: readonly string[],
+  userId: string,
+): Promise<{ entity: EntityName; state: EntityState }[]> {
+  if (patientIds.length === 0) return [];
+  const ids = [...patientIds];
+  const patients = await tx.select().from(schema.patient).where(inArray(schema.patient.id, ids));
+  const vitals = await tx
+    .select()
+    .from(schema.vitalSign)
+    .where(inArray(schema.vitalSign.patientId, ids));
+  const favorites = await tx
+    .select()
+    .from(schema.patientFavorite)
+    .where(
+      and(
+        inArray(schema.patientFavorite.patientId, ids),
+        eq(schema.patientFavorite.userId, userId),
+      ),
+    );
+  return [
+    ...patients.map((r) => ({ entity: 'patient' as const, state: mappers.patient.toState(r) })),
+    ...vitals.map((r) => ({ entity: 'vital_sign' as const, state: mappers.vital_sign.toState(r) })),
+    ...favorites.map((r) => ({
+      entity: 'patient_favorite' as const,
+      state: mappers.patient_favorite.toState(r),
+    })),
+  ];
 }

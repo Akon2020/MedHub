@@ -1,6 +1,11 @@
 import 'server-only';
 import { withTenant } from '@medhub/db';
-import { ENTITIES, sensitivityAllowed, type EntityName } from '@medhub/domain';
+import {
+  ENTITIES,
+  sensitivityAllowed,
+  type EntityName,
+  type PatientScopeRule,
+} from '@medhub/domain';
 import { AppError, type PatientSensitivity } from '@medhub/shared';
 import {
   MAX_PUSH_BYTES,
@@ -22,20 +27,25 @@ import {
   pgSyncStore,
   touchDevice,
 } from './repository';
+import { applyPatientScope, loadPatientScope } from './scope';
 
 /** Entities a user may receive on pull, by read permission. */
 const READ_PERMISSION: Record<string, readonly string[]> = {
   patient: ['patient:read'],
+  patient_favorite: ['patient:read'],
   vital_sign: ['vital_sign:read', 'clinical_record:read'],
   stock_movement: ['stock:read'],
 };
 
-async function accessOf(
-  ctx: RequestContext,
-): Promise<{ permissions: Set<string>; sensitivityMax: PatientSensitivity }> {
+async function accessOf(ctx: RequestContext): Promise<{
+  permissions: Set<string>;
+  sensitivityMax: PatientSensitivity;
+  scope: PatientScopeRule;
+}> {
   return withTenant(database().db, { tenantId: ctx.tenantId, userId: ctx.userId }, async (tx) => ({
     permissions: await loadPermissions(tx, ctx.userId),
     sensitivityMax: await loadSensitivityMax(tx, ctx.userId),
+    scope: await loadPatientScope(tx, ctx.userId),
   }));
 }
 
@@ -116,7 +126,7 @@ export async function pull(
   input: { deviceId: string; cursor: number; limit: number; lookback: boolean },
 ): Promise<PullResponse> {
   const device = await activeDevice(ctx, input.deviceId, 'pull');
-  const { permissions, sensitivityMax } = await accessOf(ctx);
+  const { permissions, sensitivityMax, scope } = await accessOf(ctx);
   const store = pgSyncStore(database().db, { ...ctx, deviceId: device.id });
   const now = Date.now();
   const response = await processPull(store, {
@@ -127,12 +137,24 @@ export async function pull(
     serverTime: new Date(now).toISOString(),
   });
   // A change the user may not read still advances the cursor, but its data is never sent.
-  response.changes = await applySensitivity(
-    { ...ctx, deviceId: device.id },
-    response.changes.filter((change) =>
-      (READ_PERMISSION[change.entity] ?? []).some((key) => permissions.has(key)),
-    ),
-    sensitivityMax,
+  const readable = response.changes.filter(
+    (change) =>
+      (READ_PERMISSION[change.entity] ?? []).some((key) => permissions.has(key)) &&
+      // Favourites are personal: only their owner receives them.
+      (change.entity !== 'patient_favorite' || change.data?.userId === ctx.userId),
+  );
+  const allowed = await applySensitivity({ ...ctx, deviceId: device.id }, readable, sensitivityMax);
+  response.changes = await withTenant(
+    database().db,
+    { tenantId: ctx.tenantId, userId: ctx.userId, deviceId: device.id },
+    (tx) =>
+      applyPatientScope(
+        tx,
+        { tenantId: ctx.tenantId, userId: ctx.userId, deviceId: device.id },
+        allowed,
+        scope,
+        new Date(now),
+      ),
   );
   await touchDevice(database().db, ctx, device.id, true);
   return response;

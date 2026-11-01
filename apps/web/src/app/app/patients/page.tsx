@@ -1,7 +1,7 @@
 'use client';
 
 import { normalizeCardToken } from '@medhub/domain';
-import { ChevronRight, GitMerge, Search, UserPlus, Users } from 'lucide-react';
+import { ChevronRight, GitMerge, Search, Star, UserPlus, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -9,7 +9,12 @@ import { Suspense, useDeferredValue, useEffect, useState } from 'react';
 import { useLocalQuery, useRuntime } from '@/client/runtime';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { initialsOf, isMerged, toPatientView } from '@/features/patients/patient-helpers';
+import {
+  favoritesOf,
+  initialsOf,
+  isMerged,
+  toPatientView,
+} from '@/features/patients/patient-helpers';
 import { PatientStatusBadges } from '@/features/patients/patient-status';
 import { RegisterForm } from '@/features/patients/register-form';
 import { ServerResults } from '@/features/patients/server-results';
@@ -25,6 +30,7 @@ function PatientsScreen() {
   const [showForm, setShowForm] = useState(params.get('new') === '1');
   const canMerge = useRuntime().identity?.permissions.includes('patient:merge') ?? false;
   const deferred = useDeferredValue(query.trim());
+  const [onlyFavorites, setOnlyFavorites] = useState(false);
   const { store } = useRuntime();
 
   // A card scanner types the opaque token: the matching record opens directly.
@@ -50,14 +56,15 @@ function PatientsScreen() {
 
   const { data, loading } = useLocalQuery(
     async (store) => {
+      const favorites = favoritesOf(await store.readEntities('patient_favorite'));
       const entities = (
         deferred ? await store.searchPatients(deferred, 50) : await store.readEntities('patient')
-      ).filter((e) => !isMerged(e));
+      ).filter((e) => !isMerged(e) && (!onlyFavorites || favorites.has(e.id)));
       const views = entities.map((e) => toPatientView(e));
       if (!deferred) views.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
       return views.slice(0, 100);
     },
-    [deferred],
+    [deferred, onlyFavorites],
   );
 
   return (
@@ -106,9 +113,20 @@ function PatientsScreen() {
               className="h-10 w-full rounded-full border border-border bg-muted/50 pl-10 pr-4 text-sm outline-none focus:border-ring focus:bg-card focus:ring-[3px] focus:ring-ring/20"
             />
           </div>
-          <p className="text-sm text-muted-foreground">
-            {t('results', { count: data?.length ?? 0 })}
-          </p>
+          <div className="flex items-center gap-3">
+            <Button
+              size="sm"
+              variant={onlyFavorites ? 'secondary' : 'ghost'}
+              aria-pressed={onlyFavorites}
+              onClick={() => setOnlyFavorites((v) => !v)}
+            >
+              <Star className={onlyFavorites ? 'fill-current text-warning' : undefined} />
+              {t('favorites')}
+            </Button>
+            <p className="text-sm text-muted-foreground">
+              {t('results', { count: data?.length ?? 0 })}
+            </p>
+          </div>
         </div>
 
         {loading && !data ? (

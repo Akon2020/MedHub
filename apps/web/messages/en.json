@@ -549,7 +549,8 @@
       "motherName": "Mother's name",
       "unknownName": "Unknown {sex, select, F {woman} M {man} other {person}}{age, select, none {} other {, about {age}}}, arrived {arrived}",
       "newbornName": "Newborn of {mother}"
-    }
+    },
+    "favorites": "My favourites"
   },
   "patient": {
     "back": "Back to patients",
@@ -703,7 +704,9 @@
       "sensitivityText": "A sensitive record only opens for roles whose level allows it; other devices drop it at their next synchronisation.",
       "sensitivityLevel": "Level",
       "sensitivityReason": "Reason",
-      "sensitivitySave": "Save the level"
+      "sensitivitySave": "Save the level",
+      "favoriteOn": "Favourite",
+      "favoriteOff": "Add to favourites"
     }
   },
   "diagnostic": {
@@ -1421,6 +1424,23 @@
         "messages": "No real SMS or email leaves it: sending is simulated.",
         "reset": "Resetting starts again from today's configuration; the previous base is archived, never deleted."
       }
+    },
+    "scope": {
+      "title": "Patients kept on workstations",
+      "subtitle": "Synchronisation scope: which records each workstation downloads and keeps offline.",
+      "hint": "\"Whole structure\" suits small structures. \"Scope\" keeps on the device the patients registered there, the user's favourites, patients opened from a server search and those with recent activity; the others remain reachable through the online search. A role's rule prevails over the structure's rule; when several roles have one, the widest applies.",
+      "default": "Structure rule",
+      "inherit": "Structure rule",
+      "builtIn": "Default ({rule})",
+      "mode": "Rule",
+      "recentDays": "Recent activity (days)",
+      "days": "days",
+      "modes": {
+        "all": "Whole structure",
+        "scoped": "Scope"
+      },
+      "save": "Save",
+      "saved": "Rule saved: workstations apply it at their next synchronisation."
     }
   }
 }

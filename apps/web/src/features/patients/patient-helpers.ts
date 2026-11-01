@@ -1,4 +1,4 @@
-import { ageInYears, patientFullName } from '@medhub/domain';
+import { ageInYears, currentFavorites, patientFullName } from '@medhub/domain';
 import type { LocalEntity } from '@medhub/sync/client';
 
 export type PatientView = {
@@ -70,4 +70,16 @@ export function initialsOf(name: string): string {
     .slice(0, 2)
     .map((p) => p[0]?.toUpperCase())
     .join('');
+}
+
+/** Favourite patients among the toggles stored on the device (all are the user's own). */
+export function favoritesOf(rows: readonly LocalEntity[]): Set<string> {
+  return currentFavorites(
+    rows.map((r) => ({
+      id: r.id,
+      patientId: String(r.data.patientId ?? ''),
+      active: r.data.active === true,
+      at: String(r.data.at ?? ''),
+    })),
+  );
 }

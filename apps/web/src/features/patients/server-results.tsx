@@ -1,5 +1,6 @@
 'use client';
 
+import type { EntityName } from '@medhub/domain';
 import { applyRemote } from '@medhub/sync/client';
 import { CloudDownload, Loader2, Server } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -71,12 +72,24 @@ export function ServerResults({ query }: { query: string }) {
     setOpening(hit.id);
     setError(null);
     try {
-      const state = await apiFetch<{ id: string; version: number; data: Record<string, unknown> }>(
-        `/api/v1/patients/state?id=${hit.id}`,
-      );
-      await store.transaction((tx) =>
-        applyRemote(tx, 'patient', state.id, state.version, state.data),
-      );
+      const state = await apiFetch<{
+        id: string;
+        version: number;
+        data: Record<string, unknown>;
+        rows: {
+          entity: EntityName;
+          entityId: string;
+          version: number;
+          data: Record<string, unknown>;
+        }[];
+      }>(`/api/v1/patients/state?id=${hit.id}`);
+      // The whole record comes down: the patient now belongs to this device's scope.
+      await store.transaction(async (tx) => {
+        await applyRemote(tx, 'patient', state.id, state.version, state.data);
+        for (const row of state.rows) {
+          await applyRemote(tx, row.entity, row.entityId, row.version, row.data);
+        }
+      });
       router.push(`/app/patients/fiche?id=${hit.id}`);
     } catch {
       setError(t('error'));
