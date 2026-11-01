@@ -6,11 +6,11 @@ Tenu à jour par Claude Code à la fin de chaque session de travail. Le porteur 
 
 - Jalon en cours : **J0 Fondations** terminé côté code (critère de sortie atteint en tests automatisés) ; **J1, semaine S4, commencée** sur instruction du porteur du projet du 30/10/2026 (« poursuis avec l'étape suivante »). Reste à faire pour clore formellement J0 : liste de contrôle cPanel sur l'hébergement réel et premier déploiement, validation de la décision d'architecture et des écarts par le porteur du projet.
 - S4 livré : double authentification TOTP (imposée aux rôles privilégiés, codes de secours, sans rejeu), limitation de débit en base, règles d'IP et blocage automatique, journal `security_event`, CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes. Seconde partie de S4 livrée le même jour : écrans Paramètres (organisation : structure, sites, services ; journal de sécurité), confirmation par second facteur (step-up, 15 minutes) avec rotation de l'identifiant de session, détection des connexions inhabituelles (nouvel appareil, horaire inhabituel). **S4 terminée.**
-- S6 en cours (31/10/2026, « Start S6 ») : détection des doublons de patients livrée (score partagé, alerte avant création sur le poste, tâche de fond après synchronisation, file des doublons) , fusion supervisée et réversible, identité complète avec historique et revue des conflits (partie démographique de P2) , recherche serveur, carte patient avec QR livrées. Reste : patients provisoires, décès, sensibilité, favoris, périmètre de synchronisation.
+- S6 en cours (31/10/2026, « Start S6 ») : détection des doublons de patients livrée (score partagé, alerte avant création sur le poste, tâche de fond après synchronisation, file des doublons) , fusion supervisée et réversible, identité complète avec historique et revue des conflits (partie démographique de P2) , recherche serveur, carte patient avec QR, patients provisoires, décès, sensibilité des dossiers, favoris et périmètre de synchronisation livrés. **S6 terminée côté code** (01/11/2026).
 - S5 : appareils (liste, retrait, perte, effacement à distance) et jetons signés Ed25519 (hors connexion 14 jours, licence) livrés. Configuration versionnée (`config_entry`, brouillon, publication, archivage, restauration) livrée avec les réglages de sécurité des postes. Gestion des utilisateurs livrée (création avec mot de passe temporaire, rôles, désactivation, réinitialisation du mot de passe et de la 2FA, dernier administrateur protégé, politique de mot de passe). Éditeur de rôles livré (grille avec périmètres, duplication, retour au modèle, 2FA des rôles privilégiés). Référentiels livrés (listes de choix avec import CSV, devises, unités, provinces, copie locale sur les postes). Traduction anglaise complète livrée (langue du compte appliquée à la connexion, test de parité et de couverture des messages). Diagnostic complété et base de formation livrée. **S5 terminée.**
 - Thème sombre livré sur toute l'application (demande du porteur du 30/10/2026).
 - Récapitulatif complet de tout ce qui a été fait : `walkthrough.md`.
-- Dernière mise à jour : 31/10/2026
+- Dernière mise à jour : 01/11/2026
 - Version déployée : aucune
 - Branche de travail : `develop`
 
@@ -58,7 +58,8 @@ Environnement de développement constaté sur le poste du porteur du projet : Wi
 | 29/10/2026 | `docs/04-modele-donnees.md` | `role.tenant_id` obligatoire : les rôles modèles vivent dans `packages/shared/src/permissions.ts` et sont copiés dans chaque structure ; `role_permission` et `user_role` portent `tenant_id` pour la RLS | À valider |
 | 29/10/2026 | `docs/04-modele-donnees.md` | Colonne `patient.field_meta` (horloge HLC et version par champ) pour la stratégie `field_merge` | À valider |
 | 29/10/2026 | `docs/05-roles-permissions.md` | Permission `device:register` ajoutée au catalogue (enregistrement d'un poste) et donnée aux rôles modèles | À valider |
-| 29/10/2026 | `docs/02-offline-sync.md` section 8 | Périmètre de synchronisation : toute la structure pour l'instant, filtrée par permission de lecture par entité (`sync_scope_rule` en S6) | Temporaire |
+| 29/10/2026 | `docs/02-offline-sync.md` section 8 | Périmètre de synchronisation : toute la structure pour l'instant, filtrée par permission de lecture par entité (`sync_scope_rule` en S6) | Remplacé le 01/11/2026 (ligne suivante) |
+| 01/11/2026 | `docs/02-offline-sync.md` section 8 | `sync_scope_rule` livrée avec le mode « toute la structure » par défaut (pilote bien en dessous de 5 000 patients) ; le mode « périmètre » couvre créés sur le poste, favoris, épinglés et activité récente (dernière modification ou constante), en attendant visites, rendez-vous, hospitalisations et programmes chroniques ; table `device_patient` et retrait des postes par `evict` | À valider |
 | 30/10/2026 | `docs/10-tests-qualite.md` section 1 | Banc Playwright exécuté sur un build de production dédié (`.next-e2e`) plutôt que sur le serveur de développement, service worker bloqué | À valider |
 | 29/10/2026 | `docs/09-hebergement-deploiement.md` section 8 | Développement sur PostgreSQL local (Docker absent du poste) ; `infra/docker` reste fourni | Constat |
 | 30/10/2026 | `docs/03-multitenant-securite.md` section 2 | Défi de 2FA sans état (jeton HMAC lié à la structure, à l'utilisateur et à l'usage, 5 ou 15 minutes) ; il n'accorde rien seul et chaque échec alimente le verrouillage du compte | À valider |
@@ -70,6 +71,9 @@ Environnement de développement constaté sur le poste du porteur du projet : Wi
 | 30/10/2026 | `docs/03-multitenant-securite.md` section 2 | Connexions inhabituelles : nouvel appareil et horaire inhabituel seulement (aucune géolocalisation), signalées dans le journal de sécurité de la structure ; notification courriel ou SMS avec le module NOTIF | À valider |
 | 30/10/2026 | `docs/02-offline-sync.md` section 9 | Clés publiques des jetons remises au poste à l'activation et conservées localement, au lieu d'être compilées dans l'application | À valider |
 | 30/10/2026 | `docs/02-offline-sync.md` section 9 | Licence calquée sur l'état de la structure, tous les modules MVP, sans plan ni limite, jusqu'à SADM (S14) ; postes activés avant S5 tolérés sans jeton jusqu'à leur prochaine synchronisation | À valider |
+| 01/11/2026 | `docs/05-roles-permissions.md` section 3 | Permission `patient:mark_deceased` ajoutée (« permission dédiée » de `docs/modules/pat.md`), donnée au rôle modèle Médecin et à l'administrateur | À valider |
+| 01/11/2026 | `docs/05-roles-permissions.md` section 2 | Sans condition `sensitivity_max`, un rôle n'ouvre que les dossiers normaux, sauf s'il porte `patient:mark_sensitive` (tous les niveaux) ; pas de bris de glace avant le dossier médical (S8) : un dossier au-dessus du niveau reste fermé hors urgence | À valider |
+| 01/11/2026 | `docs/modules/pat.md` | Commandes `patient.update` (identité, identification d'un provisoire), `patient.mark_deceased`, `patient.set_sensitivity`, `patient.favorite` ; signalement manuel d'une paire de doublons (`reasons = ['manual']`) | À valider |
 | 01/11/2026 | `docs/03-multitenant-securite.md` section 7 (CSP) | `'wasm-unsafe-eval'`, `connect-src data:` et `worker-src blob:` ajoutés pour la génération de PDF sur le poste | À valider |
 | 01/11/2026 | `docs/modules/pat.md` carte | Modèle de carte fixe (format ID-1) en attendant les modèles de documents configurables ; lecture par douchette ou saisie, caméra plus tard | À valider |
 | 01/11/2026 | `docs/02-offline-sync.md` et `docs/08-parcours-acceptation.md` (P2, variante) | Contradiction : valeur serveur gardée (docs/02) ou valeur au HLC le plus récent (docs/08). Tranché par le porteur le 01/11/2026 : `docs/02` ; `docs/08` aligné | Tranché |
@@ -135,6 +139,19 @@ Constats :
 - Le compte `admin` de la structure de démonstration `HOP-DEM-0001` (rôle privilégié) devra configurer la 2FA à sa prochaine connexion.
 - Le test du worker échouait sous forte charge (build Playwright en parallèle) : le budget de 5 s du tick était dépassé avant le traitement du job de test. Budget du test porté à 20 s ; deux passes complètes de `pnpm test` vertes ensuite.
 - L'annonceur de route de Next.js porte `role="alert"` : les tests doivent cibler le texte du message d'erreur.
+
+S6, favoris et périmètre de synchronisation (01/11/2026) :
+- `packages/domain/src/pat/favorites.ts`, `packages/domain/src/core/sync-scope.ts`, migration `0013_s6_scope` (`patient_favorite` en ajout seul, `sync_scope_rule`, `device_patient`, fixtures d'isolation), `modules/sync/scope.ts` (règle effective, application au pull, arrivée du dossier complet, épinglage, écran de réglage), route `/api/v1/sync/scope`, étoile sur la fiche et filtre « Mes favoris ».
+- Le pull applique : permission de lecture, propriétaire des favoris, sensibilité, périmètre. La récupération d'un patient depuis la recherche serveur renvoie maintenant ses lignes (constantes, favoris) et l'épingle sur le poste.
+- Tests : 3 tests de domaine, 4 tests d'intégration (mode tout, périmètre, épinglage, règle de rôle).
+
+S6, sensibilité des dossiers (01/11/2026) :
+- `packages/domain/src/core/access.ts`, commande `patient.set_sensitivity`, condition `sensitivity_max` sur `patient:read` réglée depuis l'éditeur de rôles, `loadSensitivityMax` et `requireSensitivity` côté serveur, filtre du pull avec retrait des postes (`evict`), recherche, lecture et historique refusés au-delà du niveau (`PAT_SENSITIVE`), `evictPatient` dans les deux magasins du poste.
+- Tests : 2 tests de domaine, 2 tests du moteur, 1 test de la base locale, 4 tests d'intégration, test des rôles complété.
+
+S6, patients provisoires et décès (01/11/2026) :
+- `packages/domain/src/pat/lifecycle.ts`, migration `0012_s6_lifecycle` (`is_provisional`, `provisional_kind`), modes du formulaire, bandeau et identification, signalement d'un doublon, `patient.mark_deceased`, refus des actes cliniques après le décès sur le poste et le serveur, constantes en lecture seule.
+- Tests : 3 tests de domaine, 2 tests du moteur, 2 tests d'intégration, signalement et doublons provisoires (web et worker), scénario Playwright (inconnu enregistré hors connexion, favori, identifié, décès déclaré hors connexion par le médecin).
 
 S6, carte patient et QR (01/11/2026) :
 - `packages/domain/src/pat/card.ts`, migration `0011_s6_card` (`patient.card_token`), champ `cardToken` dans `patient.update`, recherche locale et serveur par jeton, `features/patients/patient-card.tsx` (PDF ID-1 avec QR, nouvelle carte en cas de perte).
