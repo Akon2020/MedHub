@@ -325,6 +325,53 @@ const mappers = {
       };
     },
   },
+  triage: {
+    table: schema.triage,
+    toState(row: typeof schema.triage.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          encounterId: row.encounterId,
+          patientId: row.patientId,
+          priority: row.priority,
+          chiefComplaint: row.chiefComplaint,
+          notes: row.notes,
+          orientationQueueId: row.orientationQueueId,
+          triagedAt: row.triagedAt.toISOString(),
+          supersedesId: row.supersedesId,
+          status: row.status,
+        }),
+        fieldMeta: {},
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.triage.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        encounterId: String(d.encounterId),
+        patientId: String(d.patientId),
+        priority: String(d.priority),
+        chiefComplaint: String(d.chiefComplaint),
+        notes: str(d.notes),
+        orientationQueueId: str(d.orientationQueueId),
+        triagedAt: new Date(String(d.triagedAt)),
+        triagedBy: state.createdBy || null,
+        supersedesId: str(d.supersedesId),
+        status: str(d.status) ?? 'active',
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+      };
+    },
+  },
   patient_favorite: {
     table: schema.patientFavorite,
     toState(row: typeof schema.patientFavorite.$inferSelect): EntityState {
@@ -457,6 +504,10 @@ async function getEntity(tx: Tx, entity: EntityName, id: string): Promise<Entity
         .limit(1);
       return row ? mappers.queue_ticket.toState(row) : null;
     }
+    case 'triage': {
+      const [row] = await tx.select().from(schema.triage).where(eq(schema.triage.id, id)).limit(1);
+      return row ? mappers.triage.toState(row) : null;
+    }
   }
 }
 
@@ -490,6 +541,10 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
       return (
         await tx.select().from(schema.queueTicket).where(inArray(schema.queueTicket.id, ids))
       ).map((r) => mappers.queue_ticket.toState(r));
+    case 'triage':
+      return (await tx.select().from(schema.triage).where(inArray(schema.triage.id, ids))).map(
+        (r) => mappers.triage.toState(r),
+      );
   }
 }
 
@@ -590,6 +645,9 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         case 'queue_ticket':
           await tx.insert(schema.queueTicket).values(mappers.queue_ticket.toRow(state, ctx));
           return;
+        case 'triage':
+          await tx.insert(schema.triage).values(mappers.triage.toRow(state, ctx));
+          return;
       }
     },
     async updateEntity(entity, state) {
@@ -655,6 +713,17 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
           await tx.update(schema.queueTicket).set(row).where(eq(schema.queueTicket.id, state.id));
           return;
         }
+        case 'triage':
+          // Append-only: only the status changes, when a correction supersedes the row.
+          await tx
+            .update(schema.triage)
+            .set({
+              status: String(state.data.status ?? 'active'),
+              version: state.version,
+              opId: state.opId,
+            })
+            .where(eq(schema.triage.id, state.id));
+          return;
         case 'stock_movement':
         case 'patient_favorite':
           throw new Error(`${entity} rows are immutable`);
@@ -932,8 +1001,13 @@ export async function patientBundles(
     .select()
     .from(schema.queueTicket)
     .where(inArray(schema.queueTicket.patientId, ids));
+  const triages = await tx
+    .select()
+    .from(schema.triage)
+    .where(inArray(schema.triage.patientId, ids));
   return [
     ...patients.map((r) => ({ entity: 'patient' as const, state: mappers.patient.toState(r) })),
+    ...triages.map((r) => ({ entity: 'triage' as const, state: mappers.triage.toState(r) })),
     ...encounters.map((r) => ({
       entity: 'encounter' as const,
       state: mappers.encounter.toState(r),

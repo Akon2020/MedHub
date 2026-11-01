@@ -1577,6 +1577,19 @@
       "soundOn": "Sound on",
       "soundOff": "Turn sound on",
       "fullscreen": "Full screen"
+    },
+    "triage": {
+      "title": "Triage of today's visit",
+      "complaint": "Main complaint",
+      "priority": "Priority",
+      "orientation": "Send to",
+      "noOrientation": "Stay in the current queue",
+      "notes": "Observations",
+      "save": "Save the triage",
+      "cancel": "Cancel",
+      "correct": "Correct",
+      "orientedTo": "sent to {queue}",
+      "hint": "Works offline. Vital signs entered below are attached to this visit. Sending the patient on finishes the current ticket and issues one in the chosen queue, with the triage priority."
     }
   }
 }

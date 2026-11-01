@@ -12,7 +12,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { syncColumns, tenantColumns } from '../columns';
+import { appendOnlyColumns, clinicalStatusCheck, syncColumns, tenantColumns } from '../columns';
 
 const RESOURCE_KIND_CHECK = sql`in ('practitioner','department','room','equipment')`;
 
@@ -152,6 +152,31 @@ export const queueTicket = pgTable(
     check(
       'queue_ticket_status_check',
       sql`${t.status} in ('waiting','called','in_service','done','left')`,
+    ),
+  ],
+);
+
+/** Triage of a visit, append-only: corrections supersede the previous row. */
+export const triage = pgTable(
+  'triage',
+  {
+    ...appendOnlyColumns(),
+    encounterId: uuid('encounter_id').notNull(),
+    patientId: uuid('patient_id').notNull(),
+    priority: text('priority').notNull(),
+    chiefComplaint: text('chief_complaint').notNull(),
+    notes: text('notes'),
+    orientationQueueId: uuid('orientation_queue_id'),
+    triagedAt: timestamp('triaged_at', { withTimezone: true }).notNull(),
+    triagedBy: uuid('triaged_by'),
+  },
+  (t) => [
+    index('triage_encounter_idx').on(t.tenantId, t.encounterId),
+    index('triage_patient_idx').on(t.tenantId, t.patientId),
+    check('triage_status_check', clinicalStatusCheck),
+    check(
+      'triage_priority_check',
+      sql`${t.priority} in ('emergency','elderly','pregnant','child','normal')`,
     ),
   ],
 );

@@ -1577,6 +1577,19 @@
       "soundOn": "Son activé",
       "soundOff": "Activer le son",
       "fullscreen": "Plein écran"
+    },
+    "triage": {
+      "title": "Triage de la visite du jour",
+      "complaint": "Motif principal",
+      "priority": "Priorité",
+      "orientation": "Orienter vers",
+      "noOrientation": "Rester dans la file actuelle",
+      "notes": "Observations",
+      "save": "Enregistrer le triage",
+      "cancel": "Annuler",
+      "correct": "Corriger",
+      "orientedTo": "orienté vers {queue}",
+      "hint": "Fonctionne hors connexion. Les constantes saisies ci-dessous sont rattachées à cette visite. Orienter le patient termine son ticket en cours et lui donne un ticket dans la file choisie, avec la priorité du triage."
     }
   }
 }

@@ -29,6 +29,8 @@ import { mergeClosure, mergeTarget } from '@medhub/domain';
 import { SyncBadge } from '@/features/patients/sync-badge';
 import { VitalsPanel, type VitalView } from '@/features/patients/vitals-panel';
 import { ArrivalPanel } from '@/features/visits/arrival-panel';
+import { TriagePanel } from '@/features/visits/triage-panel';
+import { currentTriage, openVisitOfToday, todayTickets } from '@/features/visits/visit-helpers';
 
 const TrendChart = dynamic(() => import('@/features/charts/trend-chart'), { ssr: false });
 
@@ -74,11 +76,19 @@ function PatientRecord() {
       const favorite = favoritesOf(await store.readEntitiesByPatient('patient_favorite', id)).has(
         id,
       );
+      const visitId = openVisitOfToday(await store.readEntitiesByPatient('encounter', id));
+      const triage = visitId
+        ? currentTriage(await store.readEntitiesByPatient('triage', id), visitId)
+        : null;
+      const tickets = todayTickets(await store.readEntitiesByPatient('queue_ticket', id));
       return {
         patient: toPatientView(entity),
         raw: entity.data,
         vitals,
         favorite,
+        visitId,
+        triage,
+        tickets,
         mergedCount: ids.length - 1,
       };
     },
@@ -109,7 +119,7 @@ function PatientRecord() {
     );
   }
 
-  const { patient, raw, vitals, favorite, mergedCount } = data;
+  const { patient, raw, vitals, favorite, visitId, triage, tickets, mergedCount } = data;
   const temperature = vitals
     .filter((v) => v.code === 'temp' && v.status === 'active')
     .slice(0, 12)
@@ -189,7 +199,23 @@ function PatientRecord() {
         </p>
       )}
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-        <VitalsPanel patientId={patient.id} vitals={vitals} deceasedAt={deceasedAtOf(raw)} />
+        <div className="grid content-start gap-6">
+          {visitId && (
+            <TriagePanel
+              key={`${visitId}-${triage?.id ?? 'new'}`}
+              patientId={patient.id}
+              encounterId={visitId}
+              triage={triage}
+              tickets={tickets}
+            />
+          )}
+          <VitalsPanel
+            patientId={patient.id}
+            vitals={vitals}
+            deceasedAt={deceasedAtOf(raw)}
+            encounterId={visitId}
+          />
+        </div>
         <div className="grid content-start gap-6">
           <ArrivalPanel patientId={patient.id} deceased={deceasedAtOf(raw) !== null} />
           <Card>

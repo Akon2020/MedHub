@@ -11,6 +11,7 @@ import {
 import { patientFavoritePayload } from './pat/favorites';
 import { blockedByDeath, patientDeathPayload } from './pat/lifecycle';
 import { stockMovementRecordPayload } from './phar/stock';
+import { triageRecordPayload } from './rdv/triage';
 import {
   OPEN_ENCOUNTER_STATUSES,
   TICKET_TRANSITIONS,
@@ -25,7 +26,13 @@ import {
 } from './rdv/visits';
 
 export type EntityName =
-  'patient' | 'vital_sign' | 'stock_movement' | 'patient_favorite' | 'encounter' | 'queue_ticket';
+  | 'patient'
+  | 'vital_sign'
+  | 'stock_movement'
+  | 'patient_favorite'
+  | 'encounter'
+  | 'queue_ticket'
+  | 'triage';
 
 export type EntityDefinition = {
   name: EntityName;
@@ -77,6 +84,12 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
     name: 'queue_ticket',
     strategy: 'first_wins',
     scopeKeys: (data) => [`queue:${String(data.queueId)}`, `patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  triage: {
+    name: 'triage',
+    strategy: 'append_only',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
     patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
   },
   stock_movement: {
@@ -226,6 +239,15 @@ export const COMMANDS = {
     permission: 'queue:call',
     onlineOnly: false,
     transition: TICKET_TRANSITIONS['queue_ticket.mark_left'],
+  }),
+  'triage.record': define({
+    name: 'triage.record',
+    entity: 'triage',
+    kind: 'append',
+    payloadSchema: triageRecordPayload,
+    permission: 'triage:create',
+    onlineOnly: false,
+    patientAct: (p) => ({ patientId: p.patientId, at: p.triagedAt }),
   }),
   'vital_sign.record': define({
     name: 'vital_sign.record',

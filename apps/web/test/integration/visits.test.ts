@@ -26,6 +26,8 @@ const PERMISSIONS = new Set([
   'encounter:read',
   'queue:read',
   'queue:call',
+  'triage:create',
+  'triage:read',
 ]);
 
 let handle: DbHandle;
@@ -172,5 +174,47 @@ describe.skipIf(!url)('visits and queue tickets against PostgreSQL', () => {
         startedAt: '2026-11-02T08:00:00.000Z',
       }),
     ).rejects.toMatchObject({ code: 'PAT_DECEASED' });
+  });
+
+  it('keeps a corrected triage as a new version, the first one still readable', async () => {
+    const nurse = workstation('EE');
+    const { entityId: patientId } = await nurse.client.dispatch('patient.register', {
+      mrn: 'TST-VIS-3',
+      familyName: 'Kalala',
+      sex: 'F',
+    });
+    const visit = await nurse.client.dispatch('encounter.open', {
+      patientId,
+      kind: 'outpatient',
+      visitNumber: 'KIN-EE-2026-000001',
+      startedAt: '2026-11-02T08:00:00.000Z',
+    });
+    const first = await nurse.client.dispatch('triage.record', {
+      encounterId: visit.entityId,
+      patientId,
+      priority: 'normal',
+      chiefComplaint: 'Fièvre depuis deux jours',
+      triagedAt: '2026-11-02T08:15:00.000Z',
+    });
+    await nurse.client.dispatch('triage.record', {
+      encounterId: visit.entityId,
+      patientId,
+      priority: 'child',
+      chiefComplaint: 'Fièvre depuis deux jours, enfant',
+      orientationQueueId: queueId,
+      triagedAt: '2026-11-02T08:17:00.000Z',
+      supersedesId: first.entityId,
+    });
+    await nurse.client.sync();
+    const rows = await withTenant(handle.db, { tenantId, userId: null }, (tx) =>
+      tx
+        .select({ status: schema.triage.status, priority: schema.triage.priority })
+        .from(schema.triage)
+        .where(eq(schema.triage.encounterId, visit.entityId)),
+    );
+    expect(rows.map((r) => `${r.priority}:${r.status}`).sort()).toEqual([
+      'child:active',
+      'normal:superseded',
+    ]);
   });
 });

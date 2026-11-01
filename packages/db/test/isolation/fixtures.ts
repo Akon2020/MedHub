@@ -31,6 +31,7 @@ import {
   stockMovement,
   syncConflict,
   syncScopeRule,
+  triage,
   userAccount,
   userRole,
   vitalSign,
@@ -145,6 +146,17 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       priority: 'normal',
       status: 'waiting',
       issuedAt: new Date(),
+    });
+  },
+  triage: async (tx, tenantId) => {
+    await tx.insert(triage).values({
+      id: uuidv7(),
+      tenantId,
+      encounterId: uuidv7(),
+      patientId: uuidv7(),
+      priority: 'normal',
+      chiefComplaint: 'Fièvre',
+      triagedAt: new Date(),
     });
   },
   queue: async (tx, tenantId) => {
