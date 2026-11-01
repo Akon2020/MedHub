@@ -387,6 +387,42 @@ test('a privileged role enrolls its second factor at first sign-in, then must us
     ),
   );
   expect(separated.rows[0]?.merged).toBeNull();
+
+  // Server search: a patient the device never received appears, then opens on the device.
+  const distant = uuidv7();
+  await withServer(async (client) => {
+    const tenant = (
+      await client.query<{ id: string }>("select current_setting('app.tenant_id') as id")
+    ).rows[0]?.id;
+    await client.query(
+      'insert into patient (id, tenant_id, mrn, family_name, given_name, sex, birth_date, ' +
+        "search_text, phonetic_key) values ($1, $2, 'E2E-SRV-1', 'Nzuzi', 'Merveille', 'F', " +
+        "'1979-04-02', 'nzuzi merveille e2e srv 1', 'nsusi merveil')",
+      [distant, tenant],
+    );
+  });
+  await page.goto('/app/patients');
+  await unlock(page);
+  await page.getByPlaceholder('Nom, téléphone ou numéro de dossier').fill('Nzuzi Merveille');
+  await expect(page.getByText('Hors de ce poste')).toBeVisible({ timeout: 20_000 });
+  await page.getByRole('button', { name: 'Ouvrir sur ce poste' }).click();
+  await page.waitForURL((u) => u.searchParams.get('id') === distant, { timeout: 20_000 });
+  await expect(page.getByRole('heading', { name: 'Nzuzi Merveille' })).toBeVisible();
+  await page.goto('/app/patients');
+  await unlock(page);
+  await page.getByPlaceholder('Nom, téléphone ou numéro de dossier').fill('Nzuzi Merveille');
+  await expect(page.getByRole('link', { name: /Nzuzi Merveille/ })).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.getByText('Hors de ce poste')).toHaveCount(0);
+  // Back to the normal state for the next scenarios: every device of the structure
+  // receives this patient, as if it had been registered by synchronisation.
+  await withServer((client) =>
+    client.query(
+      "insert into change_log (tenant_id, entity, entity_id, version, scope_keys) values (current_setting('app.tenant_id')::uuid, 'patient', $1, 1, $2)",
+      [distant, [`patient:${distant}`]],
+    ),
+  );
 });
 
 test('content security policy carries a fresh nonce on every document', async ({ request }) => {

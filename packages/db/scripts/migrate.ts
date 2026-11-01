@@ -2,6 +2,7 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { createDb } from '../src/client';
 import { ensureGuards } from '../src/guards';
 import { ensureRls } from '../src/rls';
+import { ensureSearchIndexes } from '../src/search-index';
 import { isMainModule, migrationsFolder, requireEnv } from './env';
 import { seedReferenceData } from './reference-data';
 
@@ -28,8 +29,14 @@ export async function runMigrations(url: string): Promise<void> {
       await client2.query('begin');
       const tables = await ensureRls(client2);
       await ensureGuards(client2);
+      const trigram = await ensureSearchIndexes(client2);
       await client2.query('commit');
       console.warn(`RLS forcée sur ${tables.length} tables.`);
+      console.warn(
+        trigram
+          ? 'Recherche serveur : index trigrammes (pg_trgm).'
+          : 'Recherche serveur : pg_trgm absent, repli sur la recherche normalisée.',
+      );
     } catch (error) {
       await client2.query('rollback');
       throw error;

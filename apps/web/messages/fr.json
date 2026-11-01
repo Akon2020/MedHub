@@ -526,6 +526,13 @@
       "apply": "Appliquer la valeur envoyée",
       "error": "La décision n'a pas pu être enregistrée : le conflit a peut-être déjà été traité.",
       "network": "Le serveur est injoignable. Vérifiez la connexion."
+    },
+    "server": {
+      "title": "Sur le serveur",
+      "hint": "Patients de la structure absents de ce poste.",
+      "badge": "Hors de ce poste",
+      "open": "Ouvrir sur ce poste",
+      "error": "Le dossier n'a pas pu être téléchargé. Vérifiez la connexion."
     }
   },
   "patient": {

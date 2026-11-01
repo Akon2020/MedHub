@@ -17,6 +17,8 @@ const schema = z.object({
   MEDHUB_SIGNING_PRIVATE_KEY: z.string().min(1).optional(),
   MEDHUB_SIGNING_PUBLIC_KEY: z.string().min(1).optional(),
   MEDHUB_SIGNING_PREVIOUS_KEYS: z.string().optional(),
+  /** "off" forces the patient search fallback even when pg_trgm is installed. */
+  MEDHUB_SEARCH_TRIGRAM: z.enum(['auto', 'off']).default('auto'),
   /** X25519 public key of support: devices seal their diagnostic journal for it. */
   MEDHUB_SUPPORT_PUBLIC_KEY: z.string().min(40).max(60).optional(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),

@@ -640,3 +640,8 @@ export async function updateServerPatient(
   });
   return state;
 }
+
+/** Current state of a patient, as a pull would deliver it. */
+export async function patientState(tx: Tx, patientId: string): Promise<EntityState | null> {
+  return getEntity(tx, 'patient', patientId);
+}

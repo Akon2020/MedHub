@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { initialsOf, isMerged, toPatientView } from '@/features/patients/patient-helpers';
 import { RegisterForm } from '@/features/patients/register-form';
+import { ServerResults } from '@/features/patients/server-results';
 import { SyncBadge } from '@/features/patients/sync-badge';
 import { PageHeader } from '@/features/shell/page-header';
 
@@ -153,6 +154,7 @@ function PatientsScreen() {
           </div>
         )}
       </Card>
+      <ServerResults query={deferred} />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { patientMergeSchema, patientUnmergeSchema } from '@medhub/domain';
 import { dismissDuplicate, listDuplicates } from './duplicates';
 import { listPatientConflicts, patientHistory, resolvePatientConflict } from './history';
 import { listMerges, mergePatients, unmergePatients } from './merge';
+import { fetchPatient, searchPatients } from './search';
 
 export const duplicatesRoute = defineRoute({
   route: 'patients.duplicates',
@@ -64,5 +65,32 @@ export const conflictResolveRoute = defineRoute({
   handler: async ({ request, body, ctx }) => {
     await resolvePatientConflict(ctx, body, { ip: clientIp(request) });
     return json({ ok: true });
+  },
+});
+
+const searchQuery = z.object({
+  q: z.string().trim().min(2).max(120),
+  cursor: z.coerce.number().int().min(0).max(10_000).default(0),
+});
+
+export const searchRoute = defineRoute({
+  route: 'patients.search',
+  handler: async ({ request, ctx }) => {
+    const params = new URL(request.url).searchParams;
+    const parsed = searchQuery.safeParse({
+      q: params.get('q') ?? '',
+      cursor: params.get('cursor') ?? undefined,
+    });
+    if (!parsed.success) throw new AppError('VALIDATION_FAILED', 400);
+    return json(await searchPatients(ctx, parsed.data));
+  },
+});
+
+export const patientStateRoute = defineRoute({
+  route: 'patients.state',
+  handler: async ({ request, ctx }) => {
+    const id = z.uuid().safeParse(new URL(request.url).searchParams.get('id'));
+    if (!id.success) throw new AppError('VALIDATION_FAILED', 400);
+    return json(await fetchPatient(ctx, id.data));
   },
 });

@@ -6,5 +6,7 @@ export {
   historyRoute,
   mergeRoute,
   mergesRoute,
+  patientStateRoute,
+  searchRoute,
   unmergeRoute,
 } from './routes';

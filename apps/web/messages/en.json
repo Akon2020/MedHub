@@ -521,6 +521,13 @@
       "apply": "Apply the value sent",
       "error": "The decision could not be saved: the conflict may already have been handled.",
       "network": "The server cannot be reached. Check the connection."
+    },
+    "server": {
+      "title": "On the server",
+      "hint": "Patients of the facility not on this device.",
+      "badge": "Not on this device",
+      "open": "Open on this device",
+      "error": "The record could not be downloaded. Check the connection."
     }
   },
   "patient": {
