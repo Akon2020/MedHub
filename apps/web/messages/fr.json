@@ -1641,5 +1641,70 @@
     "take": "Prendre rendez-vous",
     "noneUpcoming": "Aucun rendez-vous à venir.",
     "missed": "{count, plural, one {# rendez-vous manqué} other {# rendez-vous manqués}}"
+  },
+  "record": {
+    "add": "Ajouter",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "retract": "Retirer",
+    "retractReason": "Motif du retrait",
+    "pending": "à envoyer",
+    "showOld": "{count, plural, one {Afficher # élément retiré ou résolu} other {Afficher # éléments retirés ou résolus}}",
+    "hideOld": "Masquer les éléments retirés",
+    "statuses": {
+      "active": "Actif",
+      "retracted": "Retiré",
+      "resolved": "Résolu",
+      "inactive": "Inactif"
+    },
+    "allergies": {
+      "title": "Allergies",
+      "banner": "Allergies :",
+      "unknown": "Allergies non renseignées.",
+      "noneKnown": "Aucune allergie connue.",
+      "noneKnownOn": "Aucune allergie connue (déclaré le {date}).",
+      "setNoneKnown": "Aucune allergie connue",
+      "substance": "Substance ou médicament",
+      "reaction": "Réaction",
+      "category": "Catégorie",
+      "severity": "Gravité",
+      "suspected": "Allergie suspectée, non confirmée",
+      "categories": {
+        "drug": "Médicament",
+        "food": "Aliment",
+        "environment": "Environnement",
+        "other": "Autre"
+      },
+      "severities": {
+        "mild": "Légère",
+        "moderate": "Modérée",
+        "severe": "Sévère",
+        "life_threatening": "Menace vitale"
+      }
+    },
+    "history": {
+      "title": "Antécédents",
+      "empty": "Aucun antécédent renseigné.",
+      "label": "Antécédent",
+      "category": "Catégorie",
+      "icd10": "Code CIM-10 (facultatif)",
+      "startDate": "Début",
+      "categories": {
+        "medical": "Médical",
+        "surgical": "Chirurgical",
+        "obstetric": "Obstétrical",
+        "family": "Familial",
+        "social": "Mode de vie",
+        "other": "Autre"
+      }
+    },
+    "problems": {
+      "title": "Problèmes actifs",
+      "empty": "Aucun problème actif.",
+      "label": "Problème",
+      "icd10": "Code CIM-10 (facultatif)",
+      "onsetDate": "Début",
+      "resolve": "Résolu"
+    }
   }
 }

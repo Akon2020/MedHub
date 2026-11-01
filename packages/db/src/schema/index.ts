@@ -6,3 +6,4 @@ export * from './sync';
 export * from './security';
 export * from './reference';
 export * from './rdv';
+export * from './dpi';

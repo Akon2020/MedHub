@@ -2,7 +2,9 @@ import { uuidv7 } from '@medhub/shared';
 import type { Tx } from '../../src/client';
 import { appendAudit } from '../../src/audit';
 import {
+  allergy,
   appointment,
+  clinicalEvent,
   appointmentType,
   changeLog,
   choiceItem,
@@ -13,6 +15,7 @@ import {
   device,
   devicePatient,
   encounter,
+  medicalHistory,
   duplicateCandidate,
   mfaRecoveryCode,
   numberSeries,
@@ -21,6 +24,7 @@ import {
   patientFavorite,
   patientFieldHistory,
   patientMerge,
+  problem,
   queue,
   queueTicket,
   role,
@@ -170,6 +174,46 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       startsAt: new Date('2026-12-01T08:00:00Z'),
       endsAt: new Date('2026-12-01T08:15:00Z'),
       status: 'booked',
+    });
+  },
+  allergy: async (tx, tenantId) => {
+    await tx.insert(allergy).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      notedAt: new Date(),
+      substance: 'Amoxicilline',
+      severity: 'severe',
+    });
+  },
+  medical_history: async (tx, tenantId) => {
+    await tx.insert(medicalHistory).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      notedAt: new Date(),
+      category: 'surgical',
+      label: 'Appendicectomie',
+    });
+  },
+  problem: async (tx, tenantId) => {
+    await tx.insert(problem).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      notedAt: new Date(),
+      label: 'Hypertension',
+    });
+  },
+  clinical_event: async (tx, tenantId) => {
+    await tx.insert(clinicalEvent).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      kind: 'problem',
+      refTable: 'problem',
+      refId: uuidv7(),
+      occurredAt: new Date(),
     });
   },
   queue: async (tx, tenantId) => {

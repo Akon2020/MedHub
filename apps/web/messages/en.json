@@ -1641,5 +1641,70 @@
     "take": "Book an appointment",
     "noneUpcoming": "No upcoming appointment.",
     "missed": "{count, plural, one {# missed appointment} other {# missed appointments}}"
+  },
+  "record": {
+    "add": "Add",
+    "save": "Save",
+    "cancel": "Cancel",
+    "retract": "Retract",
+    "retractReason": "Reason for retracting",
+    "pending": "to send",
+    "showOld": "{count, plural, one {Show # retracted or resolved item} other {Show # retracted or resolved items}}",
+    "hideOld": "Hide retracted items",
+    "statuses": {
+      "active": "Active",
+      "retracted": "Retracted",
+      "resolved": "Resolved",
+      "inactive": "Inactive"
+    },
+    "allergies": {
+      "title": "Allergies",
+      "banner": "Allergies:",
+      "unknown": "Allergies not recorded.",
+      "noneKnown": "No known allergy.",
+      "noneKnownOn": "No known allergy (stated on {date}).",
+      "setNoneKnown": "No known allergy",
+      "substance": "Substance or drug",
+      "reaction": "Reaction",
+      "category": "Category",
+      "severity": "Severity",
+      "suspected": "Suspected allergy, not confirmed",
+      "categories": {
+        "drug": "Drug",
+        "food": "Food",
+        "environment": "Environment",
+        "other": "Other"
+      },
+      "severities": {
+        "mild": "Mild",
+        "moderate": "Moderate",
+        "severe": "Severe",
+        "life_threatening": "Life-threatening"
+      }
+    },
+    "history": {
+      "title": "Medical history",
+      "empty": "No history recorded.",
+      "label": "History item",
+      "category": "Category",
+      "icd10": "ICD-10 code (optional)",
+      "startDate": "Start",
+      "categories": {
+        "medical": "Medical",
+        "surgical": "Surgical",
+        "obstetric": "Obstetric",
+        "family": "Family",
+        "social": "Lifestyle",
+        "other": "Other"
+      }
+    },
+    "problems": {
+      "title": "Active problems",
+      "empty": "No active problem.",
+      "label": "Problem",
+      "icd10": "ICD-10 code (optional)",
+      "onsetDate": "Onset",
+      "resolve": "Resolved"
+    }
   }
 }

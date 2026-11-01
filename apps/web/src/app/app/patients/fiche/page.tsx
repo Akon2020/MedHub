@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useFormatter, useTranslations } from 'next-intl';
 import { Suspense, useEffect } from 'react';
-import { useLocalQuery } from '@/client/runtime';
+import { useLocalQuery, useRuntime } from '@/client/runtime';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FieldHistory, IdentityCard } from '@/features/patients/identity-card';
 import { PatientCardActions } from '@/features/patients/patient-card';
@@ -29,6 +29,14 @@ import { mergeClosure, mergeTarget } from '@medhub/domain';
 import { SyncBadge } from '@/features/patients/sync-badge';
 import { VitalsPanel, type VitalView } from '@/features/patients/vitals-panel';
 import { PatientAppointments } from '@/features/appointments/patient-appointments';
+import {
+  AllergiesCard,
+  AllergyBanner,
+  HistoryCard,
+  ProblemsCard,
+  toAllergyView,
+} from '@/features/record/record-lists';
+import { useRecordAccess } from '@/features/record/use-record-access';
 import { ArrivalPanel } from '@/features/visits/arrival-panel';
 import { TriagePanel } from '@/features/visits/triage-panel';
 import { currentTriage, openVisitOfToday, todayTickets } from '@/features/visits/visit-helpers';
@@ -41,6 +49,9 @@ function PatientRecord() {
   const tc = useTranslations('common');
   const format = useFormatter();
   const id = useSearchParams().get('id') ?? '';
+  const { identity } = useRuntime();
+  const clinical = identity?.permissions.includes('clinical_record:read') ?? false;
+  useRecordAccess(id, 'patient_record');
 
   const { data, loading } = useLocalQuery(
     async (store) => {
@@ -82,6 +93,12 @@ function PatientRecord() {
         ? currentTriage(await store.readEntitiesByPatient('triage', id), visitId)
         : null;
       const tickets = todayTickets(await store.readEntitiesByPatient('queue_ticket', id));
+      // Facts recorded under a merged record belong to this patient too.
+      const gather = async (entity: string) =>
+        (await Promise.all(ids.map((pid) => store.readEntitiesByPatient(entity, pid)))).flat();
+      const allergies = (await gather('allergy')).map(toAllergyView);
+      const history = await gather('medical_history');
+      const problems = await gather('problem');
       return {
         patient: toPatientView(entity),
         raw: entity.data,
@@ -90,6 +107,9 @@ function PatientRecord() {
         visitId,
         triage,
         tickets,
+        allergies,
+        history,
+        problems,
         mergedCount: ids.length - 1,
       };
     },
@@ -120,7 +140,19 @@ function PatientRecord() {
     );
   }
 
-  const { patient, raw, vitals, favorite, visitId, triage, tickets, mergedCount } = data;
+  const {
+    patient,
+    raw,
+    vitals,
+    favorite,
+    visitId,
+    triage,
+    tickets,
+    allergies,
+    history,
+    problems,
+    mergedCount,
+  } = data;
   const temperature = vitals
     .filter((v) => v.code === 'temp' && v.status === 'active')
     .slice(0, 12)
@@ -186,6 +218,7 @@ function PatientRecord() {
       </section>
 
       {raw.isProvisional === true && <ProvisionalPanel patientId={patient.id} />}
+      {clinical && <AllergyBanner rows={allergies} />}
 
       {(mergedFrom || mergedCount > 0) && (
         <p
@@ -216,6 +249,13 @@ function PatientRecord() {
             deceasedAt={deceasedAtOf(raw)}
             encounterId={visitId}
           />
+          {clinical && (
+            <>
+              <AllergiesCard patientId={patient.id} rows={allergies} />
+              <ProblemsCard patientId={patient.id} rows={problems} />
+              <HistoryCard patientId={patient.id} rows={history} />
+            </>
+          )}
         </div>
         <div className="grid content-start gap-6">
           <ArrivalPanel patientId={patient.id} deceased={deceasedAtOf(raw) !== null} />
