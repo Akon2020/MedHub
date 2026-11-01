@@ -38,11 +38,16 @@ export function ArrivalPanel({ patientId, deceased }: { patientId: string; decea
   const queues = catalogs?.snapshot.queues ?? [];
   const departments = (catalogs?.snapshot.departments ?? []).filter((d) => d.isActive);
   const [kind, setKind] = useState<EncounterKind>('outpatient');
-  const [queueId, setQueueId] = useState(queues[0]?.id ?? '');
+  const [queueId, setQueueId] = useState('');
+  // The catalogs may arrive after the first render: the first queue is the default.
+  const selectedQueue = queues.some((q) => q.id === queueId) ? queueId : (queues[0]?.id ?? '');
   const [priority, setPriority] = useState<TicketPriority>('normal');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const canOpen = identity?.permissions.includes('encounter:create') ?? false;
+  const canOpen =
+    (identity?.permissions.includes('encounter:create') &&
+      identity.permissions.includes('queue:call')) ??
+    false;
 
   const { data: tickets } = useLocalQuery(
     async (store) => todayTickets(await store.readEntitiesByPatient('queue_ticket', patientId)),
@@ -54,7 +59,7 @@ export function ArrivalPanel({ patientId, deceased }: { patientId: string; decea
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    const queue = queues.find((q) => q.id === queueId);
+    const queue = queues.find((q) => q.id === selectedQueue);
     if (!queue || !device) return;
     setBusy(true);
     setError(null);
@@ -132,7 +137,7 @@ export function ArrivalPanel({ patientId, deceased }: { patientId: string; decea
                 <Label htmlFor="arrival-queue">{t('queue')}</Label>
                 <NativeSelect
                   id="arrival-queue"
-                  value={queueId}
+                  value={selectedQueue}
                   onChange={(e) => setQueueId(e.target.value)}
                 >
                   {queues.map((q) => (
@@ -167,7 +172,7 @@ export function ArrivalPanel({ patientId, deceased }: { patientId: string; decea
               </p>
             )}
             <div>
-              <Button type="submit" disabled={busy || !queueId}>
+              <Button type="submit" disabled={busy || !selectedQueue}>
                 {busy ? <Loader2 className="animate-spin" /> : <Ticket />}
                 {t('submit')}
               </Button>

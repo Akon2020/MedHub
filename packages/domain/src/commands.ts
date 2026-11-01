@@ -223,7 +223,8 @@ export const COMMANDS = {
     entity: 'queue_ticket',
     kind: 'create',
     payloadSchema: ticketIssuePayload,
-    permission: 'encounter:create',
+    // Whoever handles a queue may give a ticket: front desk at arrival, triage when orienting.
+    permission: 'queue:call',
     onlineOnly: false,
   }),
   'queue_ticket.call': define({

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
-import { activateDevice, unlock, withServer } from './support';
+import { activateDevice, tenantCode, unlock, withServer } from './support';
 
 /**
  * J0 exit criterion (docs/02-offline-sync.md section 13): 500 operations on two
@@ -496,4 +496,142 @@ test('an unknown patient is registered offline, identified, then the physician r
   });
   expect(deceased).not.toBeNull();
   await doctor.context.close();
+});
+
+test('arrival, call and triage offline across two workstations, then an appointment', async ({
+  browser,
+}) => {
+  test.setTimeout(4 * 60_000);
+  const desk = await openDevice(browser, 'accueil');
+  await desk.page.goto('/app/patients?new=1');
+  await unlock(desk.page);
+  await desk.page.getByLabel('Nom', { exact: true }).fill('Ngalula');
+  await desk.page.getByLabel('Prénom').fill('Bénédicte');
+  await desk.page.getByLabel('ou âge estimé (ans)').fill('34');
+  await desk.page.getByRole('button', { name: 'Enregistrer le patient' }).click();
+  await desk.page.waitForURL(/\/app\/patients\/fiche/, { timeout: 20_000 });
+  const patientId = new URL(desk.page.url()).searchParams.get('id') ?? '';
+  await expect
+    .poll(() => desk.page.evaluate(() => window.__medhubTest!.sync()), { timeout: 20_000 })
+    .toBeNull();
+
+  // Arrival offline: the visit and the ticket of the reception queue.
+  await desk.context.setOffline(true);
+  await desk.page.getByLabel('File', { exact: true }).selectOption({ label: 'Accueil · Accueil' });
+  await desk.page.getByRole('button', { name: 'Créer la visite et le ticket' }).click();
+  const ticket = desk.page.getByText(/^A-[A-Z0-9]+-001$/);
+  await expect(ticket).toBeVisible({ timeout: 20_000 });
+  const number = (await ticket.textContent()) ?? '';
+  await desk.context.setOffline(false);
+  await expect
+    .poll(() => desk.page.evaluate(() => window.__medhubTest!.sync()), { timeout: 20_000 })
+    .toBeNull();
+
+  // The nurse, offline, calls the ticket, triages and sends the patient to consultation.
+  const nurse = await openDevice(browser, 'infirmier');
+  await expect
+    .poll(() => nurse.page.evaluate(() => window.__medhubTest!.sync()), { timeout: 20_000 })
+    .toBeNull();
+  await nurse.page.goto('/app/files');
+  await unlock(nurse.page);
+  await nurse.page.getByLabel('File', { exact: true }).selectOption({ label: 'Accueil' });
+  await nurse.page.getByLabel('Salle de ce poste').fill('Triage');
+  await nurse.context.setOffline(true);
+  const row = nurse.page.getByRole('listitem').filter({ hasText: number });
+  await row.getByRole('button', { name: 'Appeler' }).click();
+  await expect(
+    nurse.page.getByRole('listitem').filter({ hasText: number }).getByText('Appelé'),
+  ).toBeVisible();
+  // Without a service worker in this bench, a new page cannot load offline: the
+  // record is opened online, then the triage itself is done offline.
+  await nurse.context.setOffline(false);
+  await gotoSettled(nurse.page, `/app/patients/fiche?id=${patientId}`);
+  await unlock(nurse.page);
+  await expect(nurse.page.getByText('Triage de la visite du jour')).toBeVisible({
+    timeout: 20_000,
+  });
+  await nurse.context.setOffline(true);
+  await nurse.page.getByLabel('Motif principal').fill('Céphalées depuis trois jours');
+  await nurse.page.getByLabel('Orienter vers').selectOption({ label: 'Consultations externes' });
+  await nurse.page.getByRole('button', { name: 'Enregistrer le triage' }).click();
+  await expect(nurse.page.getByText('Céphalées depuis trois jours')).toBeVisible({
+    timeout: 20_000,
+  });
+  await nurse.context.setOffline(false);
+  await expect
+    .poll(() => nurse.page.evaluate(() => window.__medhubTest!.sync()), { timeout: 20_000 })
+    .toBeNull();
+
+  const server = await withServer(async (client) => {
+    const tickets = await client.query<{ number: string; status: string; room: string | null }>(
+      'select number, status, room from queue_ticket where patient_id = $1 order by issued_at, number',
+      [patientId],
+    );
+    const triage = await client.query<{ complaint: string }>(
+      'select chief_complaint as complaint from triage where patient_id = $1',
+      [patientId],
+    );
+    const visits = await client.query<{ n: string }>(
+      'select count(*)::text as n from encounter where patient_id = $1',
+      [patientId],
+    );
+    return {
+      tickets: tickets.rows,
+      triage: triage.rows.map((r) => r.complaint),
+      visits: Number(visits.rows[0]?.n ?? 0),
+    };
+  });
+  expect(server.visits).toBe(1);
+  expect(server.triage).toEqual(['Céphalées depuis trois jours']);
+  expect(server.tickets).toHaveLength(2);
+  expect(server.tickets.find((t) => t.number === number)).toMatchObject({
+    status: 'done',
+    room: 'Triage',
+  });
+  expect(server.tickets.find((t) => t.number !== number)).toMatchObject({ status: 'waiting' });
+
+  // The waiting-room screen shows numbers, never names.
+  const queueId = await withServer(async (client) => {
+    const { rows } = await client.query<{ id: string }>(
+      "select q.id from queue q join tenant t on t.id = q.tenant_id where t.code = $1 and q.code = 'CONS'",
+      [tenantCode()],
+    );
+    return rows[0]?.id ?? '';
+  });
+  await nurse.page.goto('/app/files');
+  await unlock(nurse.page);
+  await nurse.page
+    .getByLabel('File', { exact: true })
+    .selectOption({ label: 'Consultations externes' });
+  const consult = nurse.page.getByRole('listitem').filter({ hasText: /^C-/ }).first();
+  const consultNumber = ((await consult.locator('span').first().textContent()) ?? '').trim();
+  await consult.getByRole('button', { name: 'Appeler' }).click();
+  await nurse.page.goto(`/app/ecran-appel?queue=${queueId}`);
+  await unlock(nurse.page);
+  await expect(nurse.page.getByText(consultNumber, { exact: true })).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(nurse.page.getByText('Ngalula')).toBeHidden();
+  await nurse.context.close();
+
+  // Back at the desk, offline: an appointment on the first free slot of the physician.
+  await desk.page.goto(`/app/rendez-vous?patient=${patientId}`);
+  await unlock(desk.page);
+  await desk.context.setOffline(true);
+  await desk.page.getByRole('button', { name: 'Premier créneau libre' }).click();
+  await desk.page.getByRole('button', { name: 'Réserver' }).first().click();
+  await expect(desk.page.getByText('Rendez-vous enregistré.')).toBeVisible({ timeout: 20_000 });
+  await desk.context.setOffline(false);
+  await expect
+    .poll(() => desk.page.evaluate(() => window.__medhubTest!.sync()), { timeout: 20_000 })
+    .toBeNull();
+  const booked = await withServer(async (client) => {
+    const { rows } = await client.query<{ status: string }>(
+      'select status from appointment where patient_id = $1',
+      [patientId],
+    );
+    return rows.map((r) => r.status);
+  });
+  expect(booked).toEqual(['booked']);
+  await desk.context.close();
 });

@@ -66,10 +66,12 @@ export type StoredTokens = {
 };
 
 /**
- * Read-only catalogs (sites, departments, pick lists, units, currencies,
- * provinces): structure settings, not patient data, kept readable offline.
+ * Read-only catalogs (sites, departments, pick lists, agendas, staff names...):
+ * structure settings, encrypted with the data key like everything else that
+ * names a person.
  */
 export type StoredCatalogs = { snapshot: CatalogSnapshot; fetchedAt: number };
+export type SealedCatalogs = { etag: string; fetchedAt: number; enc: Ciphertext };
 
 export type MetaRecord =
   | { key: 'pin'; value: WrappedSecret }
@@ -77,7 +79,7 @@ export type MetaRecord =
   | { key: 'device'; value: { deviceId: string; deviceCode: string; enc: Ciphertext } }
   | { key: 'failedPins'; value: number }
   | { key: 'tokens'; value: StoredTokens }
-  | { key: 'catalogs'; value: StoredCatalogs }
+  | { key: 'catalogs'; value: SealedCatalogs }
   | { key: `counter:${string}`; value: number };
 
 export class MedHubLocalDb extends Dexie {

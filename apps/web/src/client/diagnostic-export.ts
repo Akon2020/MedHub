@@ -1,5 +1,5 @@
 import {
-  loadCatalogs,
+  catalogsInfo,
   loadTokens,
   type EncryptedClientStore,
   type MedHubLocalDb,
@@ -32,7 +32,7 @@ async function buildJournal(
     db.conflicts.toArray(),
     store.rejectedItems(),
     loadTokens(db),
-    loadCatalogs(db),
+    catalogsInfo(db),
   ]);
   const estimate = await navigator.storage?.estimate().catch(() => null);
   return {
@@ -67,7 +67,7 @@ async function buildJournal(
           config: tokens.config ?? null,
         }
       : null,
-    catalogs: catalogs ? { etag: catalogs.snapshot.etag, fetchedAt: catalogs.fetchedAt } : null,
+    catalogs,
     storage: estimate ? { usage: estimate.usage ?? 0, quota: estimate.quota ?? 0 } : null,
   };
 }

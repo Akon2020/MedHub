@@ -26,6 +26,7 @@ describe('synchronisation scope', () => {
     const rule = { mode: 'scoped' as const, recentDays: 30 };
     expect(inPatientScope(none, rule, NOW)).toBe(false);
     expect(inPatientScope({ ...none, favorite: true }, rule, NOW)).toBe(true);
+    expect(inPatientScope({ ...none, upcomingAppointment: true }, rule, NOW)).toBe(true);
     expect(inPatientScope({ ...none, createdHere: true }, rule, NOW)).toBe(true);
     expect(
       inPatientScope({ ...none, lastActivity: new Date('2026-10-10T00:00:00.000Z') }, rule, NOW),

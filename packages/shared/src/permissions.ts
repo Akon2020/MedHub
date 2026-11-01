@@ -120,6 +120,7 @@ export const ROLE_TEMPLATES: readonly RoleTemplate[] = [
     requiresMfa: false,
     permissions: [
       'patient:read',
+      'encounter:read',
       'triage:read',
       'triage:create',
       'vital_sign:read',

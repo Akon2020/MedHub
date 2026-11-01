@@ -239,7 +239,13 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
       // Devices activated before the tokens existed keep working until their next sync.
       if (current.offline === 'expired' || current.offline === 'invalid') return 'expired';
       setTokens(current);
-      setCatalogs(await loadCatalogs(unlocked.db));
+      setCatalogs(await loadCatalogs(unlocked.db, unlocked.keys.dataKey));
+      // A device just activated may go offline before its first sync: catalogs come first.
+      if (navigator.onLine) {
+        void refreshCatalogs(unlocked.db, unlocked.keys.dataKey).then(async (changed) => {
+          if (changed) setCatalogs(await loadCatalogs(unlocked.db, unlocked.keys.dataKey));
+        });
+      }
       const stored = await loadTokens(unlocked.db);
       if (stored?.config) setAutoLockMs(stored.config.autoLockMinutes * 60_000);
       if (stored?.config?.duplicateAlertScore) {
@@ -247,7 +253,9 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
       }
       const next = await startSession(identity, unlocked, {
         afterSync: async (deviceId) => {
-          if (await refreshCatalogs(unlocked.db)) setCatalogs(await loadCatalogs(unlocked.db));
+          if (await refreshCatalogs(unlocked.db, unlocked.keys.dataKey)) {
+            setCatalogs(await loadCatalogs(unlocked.db, unlocked.keys.dataKey));
+          }
           if (!(await tokensDue(unlocked.db))) return;
           if (await refreshTokens(unlocked.db, deviceId)) setTokens(await read());
         },
@@ -332,8 +340,8 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
       duplicateAlertScore,
       reloadCatalogs: async () => {
         if (!session) return;
-        await refreshCatalogs(session.unlocked.db, Date.now(), true);
-        setCatalogs(await loadCatalogs(session.unlocked.db));
+        await refreshCatalogs(session.unlocked.db, session.unlocked.keys.dataKey, Date.now(), true);
+        setCatalogs(await loadCatalogs(session.unlocked.db, session.unlocked.keys.dataKey));
       },
       exportJournal: async () => {
         if (!session || !identity) return null;

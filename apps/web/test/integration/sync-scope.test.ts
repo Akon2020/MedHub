@@ -232,6 +232,43 @@ describe.skipIf(!url)('synchronisation scope against PostgreSQL', () => {
     expect(sent(changes, 'patient')).toContain(ids.old);
   });
 
+  it('brings a patient with an appointment in the coming week', async () => {
+    const soonId = uuidv7();
+    await withTenant(handle.db, { tenantId, userId: null }, async (tx) => {
+      const [old] = await tx.select().from(schema.patient).where(eq(schema.patient.id, ids.old));
+      if (!old) throw new Error('patient');
+      // A copy of an old record with no activity, only an appointment next week.
+      await tx.insert(schema.patient).values({
+        ...old,
+        id: soonId,
+        mrn: 'TST-SCO-5',
+        deviceId: null,
+        cardToken: null,
+      });
+      await tx.insert(schema.changeLog).values({
+        tenantId,
+        entity: 'patient',
+        entityId: soonId,
+        version: 1,
+        scopeKeys: [`patient:${soonId}`],
+      });
+    });
+    expect(sent((await pullAll()).changes, 'patient')).not.toContain(soonId);
+    await withTenant(handle.db, { tenantId, userId: null }, (tx) =>
+      tx.insert(schema.appointment).values({
+        id: uuidv7(),
+        tenantId,
+        patientId: soonId,
+        resourceKind: 'practitioner',
+        resourceId: adminId,
+        startsAt: new Date(Date.now() + 5 * 86_400_000),
+        endsAt: new Date(Date.now() + 5 * 86_400_000 + 900_000),
+        status: 'booked',
+      }),
+    );
+    expect(sent((await pullAll()).changes, 'patient')).toContain(soonId);
+  });
+
   it('lets a role rule widen the scope back to the whole structure', async () => {
     await scope.saveScopeRule(
       ctxFor(adminId),
