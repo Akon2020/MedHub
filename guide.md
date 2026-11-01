@@ -15,7 +15,7 @@ Le jalon **J0 Fondations** est construit :
 - thème clair, sombre ou automatique (selon le système) sur toute l'application ;
 - début de J1 (S4) : double authentification TOTP avec codes de secours, limitation de débit en base, règles d'IP, politique CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes, organisation de la structure ;
 - S5 (en cours) : appareils et effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs, éditeur de rôles, référentiels, traduction anglaise complète, diagnostic et base de formation (S5 terminée) ;
-- S6 (en cours) : détection des doublons de patients (alerte à la saisie, file des doublons), fusion supervisée et réversible, identité complète avec historique et revue des conflits, recherche serveur.
+- S6 (en cours) : détection des doublons de patients (alerte à la saisie, file des doublons), fusion supervisée et réversible, identité complète avec historique et revue des conflits, recherche serveur, carte patient avec QR.
 
 Le journal complet de tout ce qui a été fait se trouve dans `walkthrough.md`.
 
@@ -381,6 +381,12 @@ Menu **Paramètres** (permission `configuration:read`, administrateur de structu
 - Pour s'exercer, chacun se connecte avec ce code au lieu du code habituel. Le bandeau « Base de formation » reste affiché.
 - **Réinitialiser** : la base actuelle est archivée (rien n'est supprimé), ses postes effacent leurs données de formation à leur prochain contact, et une nouvelle base est créée sous le même code avec la configuration du jour.
 - Aucun SMS ni courriel réel ne doit partir d'une base de formation : règle à appliquer par le module de notifications quand il arrivera (aucun envoi n'existe aujourd'hui).
+
+### Carte patient (S6)
+
+- Sur la fiche, **Imprimer la carte** produit un PDF au format carte bancaire (85,6 x 54 mm), même hors connexion : nom de la structure, nom, numéro de dossier, sexe, naissance et un **code QR**. Le QR contient un jeton opaque (`MHC1-` suivi de 20 caractères tirés au hasard), jamais le nom ni le numéro de dossier.
+- La première impression attribue le jeton au patient ; il se synchronise comme les autres champs d'identité. **Carte perdue** imprime une nouvelle carte avec un nouveau jeton : l'ancienne ne retrouve plus le patient.
+- Pour retrouver un patient, scannez sa carte avec une douchette (elle tape le jeton dans le champ de recherche de l'écran Patients) ou saisissez le jeton : la fiche s'ouvre directement. En ligne, le serveur retrouve aussi un patient absent du poste par son jeton.
 
 ### Recherche de patients sur le serveur (S6)
 
