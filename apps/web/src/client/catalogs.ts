@@ -14,19 +14,20 @@ type CatalogsResponse = CatalogSnapshot | { unchanged: true; etag: string };
  */
 export async function refreshCatalogs(
   db: MedHubLocalDb,
+  dataKey: CryptoKey,
   now = Date.now(),
   force = false,
 ): Promise<CatalogSnapshot | null> {
-  const stored = await loadCatalogs(db);
+  const stored = await loadCatalogs(db, dataKey);
   if (!force && stored && now - stored.fetchedAt < CATALOG_CHECK_INTERVAL_MS) return null;
   try {
     const etag = stored ? `?etag=${encodeURIComponent(stored.snapshot.etag)}` : '';
     const response = await apiFetch<CatalogsResponse>(`/api/v1/reference/catalogs${etag}`);
     if ('unchanged' in response) {
-      if (stored) await saveCatalogs(db, { ...stored, fetchedAt: now });
+      if (stored) await saveCatalogs(db, dataKey, { ...stored, fetchedAt: now });
       return null;
     }
-    await saveCatalogs(db, { snapshot: response, fetchedAt: now });
+    await saveCatalogs(db, dataKey, { snapshot: response, fetchedAt: now });
     return response;
   } catch {
     return null;

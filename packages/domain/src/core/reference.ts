@@ -187,4 +187,42 @@ export type CatalogSnapshot = {
     nameEn: string | null;
     items: { code: string; labelFr: string; labelEn: string | null }[];
   }[];
+  /** RDV configuration (S7), read-only on devices. Absent from copies made before S7. */
+  queues?: {
+    id: string;
+    code: string;
+    name: string;
+    ticketPrefix: string;
+    siteId: string;
+    departmentId: string | null;
+  }[];
+  appointmentTypes?: {
+    id: string;
+    code: string;
+    name: string;
+    durationMin: number;
+    color: string;
+    departmentId: string | null;
+  }[];
+  schedules?: {
+    resourceKind: string;
+    resourceId: string;
+    weekday: number;
+    startTime: string;
+    endTime: string;
+    slotMin: number;
+    overbookMax: number;
+  }[];
+  scheduleExceptions?: {
+    resourceId: string;
+    date: string;
+    kind: 'closed' | 'extra';
+    startTime: string | null;
+    endTime: string | null;
+    slotMin: number | null;
+  }[];
+  /** Time zone of the structure: agenda slots are local times there. */
+  timeZone?: string;
+  /** Active users, for names on screens and practitioner agendas. */
+  staff?: { id: string; displayName: string; title: string | null }[];
 };

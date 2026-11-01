@@ -11,7 +11,7 @@ import {
   type ImportError,
 } from '@medhub/domain';
 import { AppError, parseCsv, uuidv7 } from '@medhub/shared';
-import { asc, count, eq } from 'drizzle-orm';
+import { asc, count, eq, gte } from 'drizzle-orm';
 import { database } from '../../platform/db';
 import { loadPermissions, requirePermission } from '../../platform/permissions';
 import type { RequestContext } from '../../platform/tenant';
@@ -348,7 +348,89 @@ export async function catalogSnapshot(ctx: RequestContext): Promise<CatalogSnaps
           .filter((i) => i.isActive)
           .map((i) => ({ code: i.code, labelFr: i.labelFr, labelEn: i.labelEn ?? null })),
       }));
-    const body = { currencies, units, provinces, sites, departments, choiceLists };
+    const queues = await tx
+      .select({
+        id: schema.queue.id,
+        code: schema.queue.code,
+        name: schema.queue.name,
+        ticketPrefix: schema.queue.ticketPrefix,
+        siteId: schema.queue.siteId,
+        departmentId: schema.queue.departmentId,
+      })
+      .from(schema.queue)
+      .where(eq(schema.queue.isActive, true))
+      .orderBy(asc(schema.queue.name));
+    const appointmentTypes = await tx
+      .select({
+        id: schema.appointmentType.id,
+        code: schema.appointmentType.code,
+        name: schema.appointmentType.name,
+        durationMin: schema.appointmentType.durationMin,
+        color: schema.appointmentType.color,
+        departmentId: schema.appointmentType.departmentId,
+      })
+      .from(schema.appointmentType)
+      .where(eq(schema.appointmentType.isActive, true))
+      .orderBy(asc(schema.appointmentType.name));
+    const schedules = await tx
+      .select({
+        resourceKind: schema.scheduleTemplate.resourceKind,
+        resourceId: schema.scheduleTemplate.resourceId,
+        weekday: schema.scheduleTemplate.weekday,
+        startTime: schema.scheduleTemplate.startTime,
+        endTime: schema.scheduleTemplate.endTime,
+        slotMin: schema.scheduleTemplate.slotMin,
+        overbookMax: schema.scheduleTemplate.overbookMax,
+      })
+      .from(schema.scheduleTemplate)
+      .orderBy(
+        asc(schema.scheduleTemplate.resourceId),
+        asc(schema.scheduleTemplate.weekday),
+        asc(schema.scheduleTemplate.startTime),
+      );
+    // Exceptions from yesterday on: enough for an agenda kept offline for a few weeks.
+    const since = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+    const scheduleExceptions = (
+      await tx
+        .select({
+          resourceId: schema.scheduleException.resourceId,
+          date: schema.scheduleException.date,
+          kind: schema.scheduleException.kind,
+          startTime: schema.scheduleException.startTime,
+          endTime: schema.scheduleException.endTime,
+          slotMin: schema.scheduleException.slotMin,
+        })
+        .from(schema.scheduleException)
+        .where(gte(schema.scheduleException.date, since))
+        .orderBy(asc(schema.scheduleException.date), asc(schema.scheduleException.id))
+    ).map((e) => ({ ...e, kind: e.kind as 'closed' | 'extra' }));
+    const staff = await tx
+      .select({
+        id: schema.userAccount.id,
+        displayName: schema.userAccount.displayName,
+        title: schema.userAccount.title,
+      })
+      .from(schema.userAccount)
+      .where(eq(schema.userAccount.status, 'active'))
+      .orderBy(asc(schema.userAccount.displayName), asc(schema.userAccount.id));
+    const [tenant] = await tx
+      .select({ timeZone: schema.tenant.timezone })
+      .from(schema.tenant)
+      .where(eq(schema.tenant.id, ctx.tenantId));
+    const body = {
+      timeZone: tenant?.timeZone ?? 'Africa/Kinshasa',
+      currencies,
+      units,
+      provinces,
+      sites,
+      departments,
+      choiceLists,
+      queues,
+      appointmentTypes,
+      schedules,
+      scheduleExceptions,
+      staff,
+    };
     const etag = createHash('sha256').update(JSON.stringify(body)).digest('base64url').slice(0, 22);
     return { etag, ...body };
   });

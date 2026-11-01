@@ -2,6 +2,8 @@ import { uuidv7 } from '@medhub/shared';
 import type { Tx } from '../../src/client';
 import { appendAudit } from '../../src/audit';
 import {
+  appointment,
+  appointmentType,
   changeLog,
   choiceItem,
   choiceList,
@@ -10,6 +12,7 @@ import {
   department,
   device,
   devicePatient,
+  encounter,
   duplicateCandidate,
   mfaRecoveryCode,
   numberSeries,
@@ -18,13 +21,18 @@ import {
   patientFavorite,
   patientFieldHistory,
   patientMerge,
+  queue,
+  queueTicket,
   role,
   rolePermission,
+  scheduleException,
+  scheduleTemplate,
   session,
   site,
   stockMovement,
   syncConflict,
   syncScopeRule,
+  triage,
   userAccount,
   userRole,
   vitalSign,
@@ -116,6 +124,93 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       tenantId,
       entity: 'patient',
       rule: { mode: 'scoped', recentDays: 30 },
+    });
+  },
+  encounter: async (tx, tenantId) => {
+    await tx.insert(encounter).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      kind: 'outpatient',
+      status: 'arrived',
+      visitNumber: `KIN-AA-2026-${String(Math.floor(Math.random() * 1e6)).padStart(6, '0')}`,
+      startedAt: new Date(),
+    });
+  },
+  queue_ticket: async (tx, tenantId) => {
+    await tx.insert(queueTicket).values({
+      id: uuidv7(),
+      tenantId,
+      queueId: uuidv7(),
+      patientId: uuidv7(),
+      number: 'C-AA-001',
+      priority: 'normal',
+      status: 'waiting',
+      issuedAt: new Date(),
+    });
+  },
+  triage: async (tx, tenantId) => {
+    await tx.insert(triage).values({
+      id: uuidv7(),
+      tenantId,
+      encounterId: uuidv7(),
+      patientId: uuidv7(),
+      priority: 'normal',
+      chiefComplaint: 'Fièvre',
+      triagedAt: new Date(),
+    });
+  },
+  appointment: async (tx, tenantId) => {
+    await tx.insert(appointment).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      resourceKind: 'practitioner',
+      resourceId: uuidv7(),
+      startsAt: new Date('2026-12-01T08:00:00Z'),
+      endsAt: new Date('2026-12-01T08:15:00Z'),
+      status: 'booked',
+    });
+  },
+  queue: async (tx, tenantId) => {
+    await tx.insert(queue).values({
+      id: uuidv7(),
+      tenantId,
+      siteId: uuidv7(),
+      code: 'CONS',
+      name: 'Consultations',
+      ticketPrefix: 'C',
+    });
+  },
+  appointment_type: async (tx, tenantId) => {
+    await tx.insert(appointmentType).values({
+      id: uuidv7(),
+      tenantId,
+      code: 'CONS',
+      name: 'Consultation',
+      durationMin: 15,
+    });
+  },
+  schedule_template: async (tx, tenantId) => {
+    await tx.insert(scheduleTemplate).values({
+      id: uuidv7(),
+      tenantId,
+      resourceKind: 'practitioner',
+      resourceId: uuidv7(),
+      weekday: 1,
+      startTime: '08:00',
+      endTime: '12:00',
+      slotMin: 15,
+    });
+  },
+  schedule_exception: async (tx, tenantId) => {
+    await tx.insert(scheduleException).values({
+      id: uuidv7(),
+      tenantId,
+      resourceKind: 'practitioner',
+      resourceId: uuidv7(),
+      date: '2026-12-25',
+      kind: 'closed',
     });
   },
   patient_field_history: async (tx, tenantId) => {

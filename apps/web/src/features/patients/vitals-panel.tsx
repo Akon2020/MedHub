@@ -45,10 +45,13 @@ export function VitalsPanel({
   patientId,
   vitals,
   deceasedAt = null,
+  encounterId = null,
 }: {
   patientId: string;
   vitals: VitalView[];
   deceasedAt?: string | null;
+  /** Today's open visit: new measurements are attached to it. */
+  encounterId?: string | null;
 }) {
   const t = useTranslations('patient.vitals');
   const tErr = useTranslations('errors');
@@ -105,6 +108,7 @@ export function VitalsPanel({
     try {
       await dispatch('vital_sign.record', {
         patientId,
+        encounterId: supersedes ? undefined : encounterId,
         code,
         value: numeric,
         unit: definition?.unit ?? '',

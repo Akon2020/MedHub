@@ -3,6 +3,7 @@ import {
   ENTITIES,
   deathRefusal,
   mergeablePayload,
+  transitionApplies,
   PATIENT_SENSITIVE_FIELDS,
   getCommand,
   stockBalance,
@@ -55,6 +56,10 @@ export interface ServerSyncTx {
     warehouseId: string,
     productId: string,
   ): Promise<{ kind: StockMovementKind; quantity: number }[]>;
+  /** Appointments the slot can hold (0: no such slot in the resource's agenda). */
+  slotCapacity(resourceId: string, startsAt: string): Promise<number>;
+  /** Appointments already holding the slot, the one being moved excluded. */
+  countSlotBookings(resourceId: string, startsAt: string, excludeId: string): Promise<number>;
 }
 
 export interface ServerSyncStore {
@@ -186,20 +191,48 @@ async function applyOperation(
   if (ruleError) throw new Rejection(ruleError);
 
   const entity = command.entity;
+  if (command.holdsSlot) {
+    const current = command.kind === 'update' ? await tx.getEntity(entity, op.entityId) : null;
+    if (!current || transitionApplies(command, current.data)) {
+      const resourceId = String(payload.resourceId ?? current?.data.resourceId ?? '');
+      const startsAt = String(payload.startsAt);
+      const capacity = await tx.slotCapacity(resourceId, startsAt);
+      if (capacity === 0) throw new Rejection('RDV_SLOT_UNAVAILABLE');
+      if ((await tx.countSlotBookings(resourceId, startsAt, op.entityId)) >= capacity) {
+        throw new Rejection('RDV_SLOT_TAKEN');
+      }
+    }
+  }
+  if (command.patientAct && command.kind !== 'update') {
+    const { patientId } = command.patientAct(payload as never);
+    const patient = await tx.getEntity('patient', patientId);
+    const refusal = deathRefusal(command, payload, patient?.data);
+    if (refusal) throw new Rejection(refusal);
+  }
   switch (command.kind) {
     case 'create':
       return applyCreate(tx, op, entity, payload);
-    case 'update':
-      return applyUpdate(tx, op, entity, mergeablePayload(command, payload));
-    case 'append': {
-      if (command.patientAct) {
-        const { patientId } = command.patientAct(payload as never);
-        const patient = await tx.getEntity('patient', patientId);
-        const refusal = deathRefusal(command, payload, patient?.data);
-        if (refusal) throw new Rejection(refusal);
+    case 'update': {
+      const current = await tx.getEntity(entity, op.entityId);
+      // First wins: a status change that no longer applies is kept in the log only.
+      if (current && !transitionApplies(command, current.data)) {
+        return {
+          opId: op.opId,
+          status: 'merged',
+          serverVersion: current.version,
+          warnings: ['TRANSITION_IGNORED'],
+        };
       }
-      return applyAppend(tx, op, entity, payload);
+      return applyUpdate(
+        tx,
+        op,
+        entity,
+        mergeablePayload(command, payload),
+        command.transition !== undefined,
+      );
     }
+    case 'append':
+      return applyAppend(tx, op, entity, payload);
   }
 }
 
@@ -221,11 +254,12 @@ async function applyUpdate(
   op: Operation,
   entity: EntityName,
   payload: Record<string, unknown>,
+  force = false,
 ): Promise<OpResult> {
   const current = await tx.getEntity(entity, op.entityId);
   if (!current) throw new Rejection(entity === 'patient' ? 'PAT_NOT_FOUND' : 'NOT_FOUND');
   const sensitive = entity === 'patient' ? PATIENT_SENSITIVE_FIELDS : undefined;
-  const outcome = mergeFields(entity, current, op, payload, current.version + 1, sensitive);
+  const outcome = mergeFields(entity, current, op, payload, current.version + 1, sensitive, force);
 
   if (outcome.applied.length > 0) {
     await tx.updateEntity(entity, outcome.next);

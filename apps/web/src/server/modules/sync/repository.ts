@@ -1,6 +1,13 @@
 import 'server-only';
 import { appendAudit, enqueue, schema, withTenant, type Db, type Tx } from '@medhub/db';
-import { ENTITIES, getCommand, type EntityName, type PatientRegisterPayload } from '@medhub/domain';
+import {
+  ENTITIES,
+  SLOT_HOLDING_STATUSES,
+  getCommand,
+  slotCapacity,
+  type EntityName,
+  type PatientRegisterPayload,
+} from '@medhub/domain';
 import type { StockMovementKind } from '@medhub/shared';
 import { formatHlc, uuidv7 } from '@medhub/shared';
 import {
@@ -19,7 +26,7 @@ import {
   type ServerSyncStore,
   type ServerSyncTx,
 } from '@medhub/sync/server';
-import { and, asc, eq, gt, gte, inArray, isNull, lte } from 'drizzle-orm';
+import { and, asc, eq, gt, gte, inArray, isNull, lte, ne } from 'drizzle-orm';
 
 type Ctx = { tenantId: string; userId: string; deviceId: string | null };
 
@@ -30,6 +37,7 @@ function compact(data: Record<string, unknown>): Record<string, unknown> {
 }
 
 const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
+const instant = (v: unknown): Date | null => (typeof v === 'string' && v ? new Date(v) : null);
 const record = (v: unknown): Record<string, string | null> | null =>
   v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, string | null>) : null;
 
@@ -220,6 +228,208 @@ const mappers = {
       };
     },
   },
+  encounter: {
+    table: schema.encounter,
+    toState(row: typeof schema.encounter.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          kind: row.kind,
+          status: row.status,
+          departmentId: row.departmentId,
+          practitionerId: row.practitionerId,
+          appointmentId: row.appointmentId,
+          visitNumber: row.visitNumber,
+          startedAt: row.startedAt.toISOString(),
+          endedAt: row.endedAt?.toISOString(),
+        }),
+        fieldMeta: row.fieldMeta,
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.encounter.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        kind: String(d.kind),
+        status: String(d.status),
+        departmentId: str(d.departmentId),
+        practitionerId: str(d.practitionerId),
+        appointmentId: str(d.appointmentId),
+        visitNumber: String(d.visitNumber),
+        startedAt: new Date(String(d.startedAt)),
+        endedAt: instant(d.endedAt),
+        fieldMeta: state.fieldMeta,
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+        updatedAt: new Date(),
+        updatedBy: ctx.userId,
+      };
+    },
+  },
+  queue_ticket: {
+    table: schema.queueTicket,
+    toState(row: typeof schema.queueTicket.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          queueId: row.queueId,
+          patientId: row.patientId,
+          encounterId: row.encounterId,
+          number: row.number,
+          priority: row.priority,
+          status: row.status,
+          issuedAt: row.issuedAt.toISOString(),
+          calledAt: row.calledAt?.toISOString(),
+          room: row.room,
+          serviceStartedAt: row.serviceStartedAt?.toISOString(),
+          completedAt: row.completedAt?.toISOString(),
+          leftAt: row.leftAt?.toISOString(),
+        }),
+        fieldMeta: row.fieldMeta,
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.queueTicket.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        queueId: String(d.queueId),
+        patientId: String(d.patientId),
+        encounterId: str(d.encounterId),
+        number: String(d.number),
+        priority: String(d.priority),
+        status: String(d.status),
+        issuedAt: new Date(String(d.issuedAt)),
+        calledAt: instant(d.calledAt),
+        room: str(d.room),
+        serviceStartedAt: instant(d.serviceStartedAt),
+        completedAt: instant(d.completedAt),
+        leftAt: instant(d.leftAt),
+        fieldMeta: state.fieldMeta,
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+        updatedAt: new Date(),
+        updatedBy: ctx.userId,
+      };
+    },
+  },
+  triage: {
+    table: schema.triage,
+    toState(row: typeof schema.triage.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          encounterId: row.encounterId,
+          patientId: row.patientId,
+          priority: row.priority,
+          chiefComplaint: row.chiefComplaint,
+          notes: row.notes,
+          orientationQueueId: row.orientationQueueId,
+          triagedAt: row.triagedAt.toISOString(),
+          supersedesId: row.supersedesId,
+          status: row.status,
+        }),
+        fieldMeta: {},
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.triage.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        encounterId: String(d.encounterId),
+        patientId: String(d.patientId),
+        priority: String(d.priority),
+        chiefComplaint: String(d.chiefComplaint),
+        notes: str(d.notes),
+        orientationQueueId: str(d.orientationQueueId),
+        triagedAt: new Date(String(d.triagedAt)),
+        triagedBy: state.createdBy || null,
+        supersedesId: str(d.supersedesId),
+        status: str(d.status) ?? 'active',
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+      };
+    },
+  },
+  appointment: {
+    table: schema.appointment,
+    toState(row: typeof schema.appointment.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          resourceKind: row.resourceKind,
+          resourceId: row.resourceId,
+          appointmentTypeId: row.appointmentTypeId,
+          startsAt: row.startsAt.toISOString(),
+          endsAt: row.endsAt.toISOString(),
+          status: row.status,
+          cancelReason: row.cancelReason,
+          source: row.source,
+          notes: row.notes,
+        }),
+        fieldMeta: row.fieldMeta,
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.appointment.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        resourceKind: String(d.resourceKind),
+        resourceId: String(d.resourceId),
+        appointmentTypeId: str(d.appointmentTypeId),
+        startsAt: new Date(String(d.startsAt)),
+        endsAt: new Date(String(d.endsAt)),
+        status: String(d.status),
+        cancelReason: str(d.cancelReason),
+        source: str(d.source) ?? 'front_desk',
+        notes: str(d.notes),
+        fieldMeta: state.fieldMeta,
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+        updatedAt: new Date(),
+        updatedBy: ctx.userId,
+      };
+    },
+  },
   patient_favorite: {
     table: schema.patientFavorite,
     toState(row: typeof schema.patientFavorite.$inferSelect): EntityState {
@@ -336,6 +546,34 @@ async function getEntity(tx: Tx, entity: EntityName, id: string): Promise<Entity
         .limit(1);
       return row ? mappers.patient_favorite.toState(row) : null;
     }
+    case 'encounter': {
+      const [row] = await tx
+        .select()
+        .from(schema.encounter)
+        .where(eq(schema.encounter.id, id))
+        .limit(1);
+      return row ? mappers.encounter.toState(row) : null;
+    }
+    case 'queue_ticket': {
+      const [row] = await tx
+        .select()
+        .from(schema.queueTicket)
+        .where(eq(schema.queueTicket.id, id))
+        .limit(1);
+      return row ? mappers.queue_ticket.toState(row) : null;
+    }
+    case 'triage': {
+      const [row] = await tx.select().from(schema.triage).where(eq(schema.triage.id, id)).limit(1);
+      return row ? mappers.triage.toState(row) : null;
+    }
+    case 'appointment': {
+      const [row] = await tx
+        .select()
+        .from(schema.appointment)
+        .where(eq(schema.appointment.id, id))
+        .limit(1);
+      return row ? mappers.appointment.toState(row) : null;
+    }
   }
 }
 
@@ -361,6 +599,22 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
           .from(schema.patientFavorite)
           .where(inArray(schema.patientFavorite.id, ids))
       ).map((r) => mappers.patient_favorite.toState(r));
+    case 'encounter':
+      return (
+        await tx.select().from(schema.encounter).where(inArray(schema.encounter.id, ids))
+      ).map((r) => mappers.encounter.toState(r));
+    case 'queue_ticket':
+      return (
+        await tx.select().from(schema.queueTicket).where(inArray(schema.queueTicket.id, ids))
+      ).map((r) => mappers.queue_ticket.toState(r));
+    case 'triage':
+      return (await tx.select().from(schema.triage).where(inArray(schema.triage.id, ids))).map(
+        (r) => mappers.triage.toState(r),
+      );
+    case 'appointment':
+      return (
+        await tx.select().from(schema.appointment).where(inArray(schema.appointment.id, ids))
+      ).map((r) => mappers.appointment.toState(r));
   }
 }
 
@@ -455,6 +709,18 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
             .insert(schema.patientFavorite)
             .values(mappers.patient_favorite.toRow(state, ctx));
           return;
+        case 'encounter':
+          await tx.insert(schema.encounter).values(mappers.encounter.toRow(state, ctx));
+          return;
+        case 'queue_ticket':
+          await tx.insert(schema.queueTicket).values(mappers.queue_ticket.toRow(state, ctx));
+          return;
+        case 'triage':
+          await tx.insert(schema.triage).values(mappers.triage.toRow(state, ctx));
+          return;
+        case 'appointment':
+          await tx.insert(schema.appointment).values(mappers.appointment.toRow(state, ctx));
+          return;
       }
     },
     async updateEntity(entity, state) {
@@ -500,6 +766,47 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
             })
             .where(eq(schema.vitalSign.id, state.id));
           return;
+        case 'encounter': {
+          const {
+            id: _id,
+            tenantId: _t,
+            createdBy: _c,
+            ...row
+          } = mappers.encounter.toRow(state, ctx);
+          await tx.update(schema.encounter).set(row).where(eq(schema.encounter.id, state.id));
+          return;
+        }
+        case 'queue_ticket': {
+          const {
+            id: _id,
+            tenantId: _t,
+            createdBy: _c,
+            ...row
+          } = mappers.queue_ticket.toRow(state, ctx);
+          await tx.update(schema.queueTicket).set(row).where(eq(schema.queueTicket.id, state.id));
+          return;
+        }
+        case 'appointment': {
+          const {
+            id: _id,
+            tenantId: _t,
+            createdBy: _c,
+            ...row
+          } = mappers.appointment.toRow(state, ctx);
+          await tx.update(schema.appointment).set(row).where(eq(schema.appointment.id, state.id));
+          return;
+        }
+        case 'triage':
+          // Append-only: only the status changes, when a correction supersedes the row.
+          await tx
+            .update(schema.triage)
+            .set({
+              status: String(state.data.status ?? 'active'),
+              version: state.version,
+              opId: state.opId,
+            })
+            .where(eq(schema.triage.id, state.id));
+          return;
         case 'stock_movement':
         case 'patient_favorite':
           throw new Error(`${entity} rows are immutable`);
@@ -528,6 +835,41 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         clientValue: Object.fromEntries(conflict.conflicts.map((c) => [c.field, c.clientValue])),
       });
       return id;
+    },
+    async slotCapacity(resourceId, startsAt) {
+      const [tenant] = await tx
+        .select({ timeZone: schema.tenant.timezone })
+        .from(schema.tenant)
+        .where(eq(schema.tenant.id, ctx.tenantId));
+      const schedules = await tx
+        .select()
+        .from(schema.scheduleTemplate)
+        .where(eq(schema.scheduleTemplate.resourceId, resourceId));
+      const exceptions = await tx
+        .select()
+        .from(schema.scheduleException)
+        .where(eq(schema.scheduleException.resourceId, resourceId));
+      return slotCapacity({
+        resourceId,
+        startsAt,
+        timeZone: tenant?.timeZone ?? 'Africa/Kinshasa',
+        schedules,
+        exceptions: exceptions.map((e) => ({ ...e, kind: e.kind as 'closed' | 'extra' })),
+      });
+    },
+    async countSlotBookings(resourceId, startsAt, excludeId) {
+      const rows = await tx
+        .select({ id: schema.appointment.id })
+        .from(schema.appointment)
+        .where(
+          and(
+            eq(schema.appointment.resourceId, resourceId),
+            eq(schema.appointment.startsAt, new Date(startsAt)),
+            ne(schema.appointment.id, excludeId),
+            inArray(schema.appointment.status, [...SLOT_HOLDING_STATUSES]),
+          ),
+        );
+      return rows.length;
     },
     async listStockMovements(warehouseId, productId) {
       const rows = await tx
@@ -769,8 +1111,37 @@ export async function patientBundles(
         eq(schema.patientFavorite.userId, userId),
       ),
     );
+  const encounters = await tx
+    .select()
+    .from(schema.encounter)
+    .where(inArray(schema.encounter.patientId, ids));
+  const tickets = await tx
+    .select()
+    .from(schema.queueTicket)
+    .where(inArray(schema.queueTicket.patientId, ids));
+  const triages = await tx
+    .select()
+    .from(schema.triage)
+    .where(inArray(schema.triage.patientId, ids));
+  const appointments = await tx
+    .select()
+    .from(schema.appointment)
+    .where(inArray(schema.appointment.patientId, ids));
   return [
     ...patients.map((r) => ({ entity: 'patient' as const, state: mappers.patient.toState(r) })),
+    ...triages.map((r) => ({ entity: 'triage' as const, state: mappers.triage.toState(r) })),
+    ...appointments.map((r) => ({
+      entity: 'appointment' as const,
+      state: mappers.appointment.toState(r),
+    })),
+    ...encounters.map((r) => ({
+      entity: 'encounter' as const,
+      state: mappers.encounter.toState(r),
+    })),
+    ...tickets.map((r) => ({
+      entity: 'queue_ticket' as const,
+      state: mappers.queue_ticket.toState(r),
+    })),
     ...vitals.map((r) => ({ entity: 'vital_sign' as const, state: mappers.vital_sign.toState(r) })),
     ...favorites.map((r) => ({
       entity: 'patient_favorite' as const,

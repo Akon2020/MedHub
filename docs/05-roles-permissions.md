@@ -27,7 +27,7 @@
 | `patient` | `read`, `create`, `update`, `merge`, `export`, `mark_sensitive`, `mark_deceased` | site, tenant |
 | `encounter` | `read`, `create`, `update_status`, `close` | department, site, tenant |
 | `appointment` | `read`, `create`, `update`, `cancel` | self, department, site |
-| `queue` | `read`, `call`, `manage` | department, site |
+| `queue` | `read`, `call` (appel, prise en charge et délivrance de ticket), `manage` | department, site |
 | `triage` | `read`, `create` | department, site |
 | `clinical_record` | `read`, `create`, `correct`, `sign`, `break_glass`, `read_sensitive` | self, department, tenant |
 | `vital_sign` | `read`, `create`, `override_plausibility` | department, tenant |

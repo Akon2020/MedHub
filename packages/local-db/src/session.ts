@@ -20,6 +20,7 @@ import {
   type StoredTokens,
 } from './database';
 import { EncryptedClientStore } from './store';
+import type { CatalogSnapshot } from '@medhub/domain';
 
 export const DEFAULT_MAX_PIN_ATTEMPTS = 10;
 
@@ -160,13 +161,43 @@ export async function loadTokens(db: MedHubLocalDb): Promise<StoredTokens | null
   return row?.key === 'tokens' ? row.value : null;
 }
 
-export async function saveCatalogs(db: MedHubLocalDb, catalogs: StoredCatalogs): Promise<void> {
-  await db.meta.put({ key: 'catalogs', value: catalogs });
+export async function saveCatalogs(
+  db: MedHubLocalDb,
+  dataKey: CryptoKey,
+  catalogs: StoredCatalogs,
+): Promise<void> {
+  await db.meta.put({
+    key: 'catalogs',
+    value: {
+      etag: catalogs.snapshot.etag,
+      fetchedAt: catalogs.fetchedAt,
+      enc: await encryptJson(dataKey, catalogs.snapshot),
+    },
+  });
 }
 
-export async function loadCatalogs(db: MedHubLocalDb): Promise<StoredCatalogs | null> {
+/** Version and age of the local copy, readable without the data key (diagnostic journal). */
+export async function catalogsInfo(
+  db: MedHubLocalDb,
+): Promise<{ etag: string; fetchedAt: number } | null> {
   const row = await db.meta.get('catalogs');
-  return row?.key === 'catalogs' ? row.value : null;
+  if (row?.key !== 'catalogs' || !('enc' in row.value)) return null;
+  return { etag: row.value.etag, fetchedAt: row.value.fetchedAt };
+}
+
+/** Null when absent, unreadable or written in clear by an older version: it is fetched again. */
+export async function loadCatalogs(
+  db: MedHubLocalDb,
+  dataKey: CryptoKey,
+): Promise<StoredCatalogs | null> {
+  const row = await db.meta.get('catalogs');
+  if (row?.key !== 'catalogs' || !('enc' in row.value)) return null;
+  try {
+    const snapshot = await decryptJson<CatalogSnapshot>(dataKey, row.value.enc);
+    return { snapshot, fetchedAt: row.value.fetchedAt };
+  } catch {
+    return null;
+  }
 }
 
 /**

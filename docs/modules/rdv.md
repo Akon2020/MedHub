@@ -27,6 +27,14 @@
 
 Types de rendez-vous et durées, modèles d'agenda, surréservation, délais de rappel, modèles de messages, files et préfixes, règles de priorité, écran d'appel (texte d'accueil, langue, son).
 
+## Mise en œuvre (S7)
+
+- Numéro de ticket `{PRÉFIXE}-{POSTE}-{NNN}` : préfixe de la file, code du poste, compteur du jour sur ce poste ; unique sans réseau.
+- Transitions de ticket et de rendez-vous « premier arrivé gagne » : une transition dont l'état de départ ne tient plus est gardée dans `op_log` (`merged`, `TRANSITION_IGNORED`) sans modifier la ligne.
+- Réservation : le serveur recalcule la capacité du créneau depuis l'agenda et refuse au-delà (`RDV_SLOT_TAKEN`, `RDV_SLOT_UNAVAILABLE`) ; le poste propose alors un autre créneau.
+- L'orientation du triage termine le ticket en cours et en délivre un dans la file choisie, avec la priorité du triage.
+- Reportés : rappels SMS (fournisseur à choisir), rendez-vous récurrents (avec les programmes chroniques), paiement avant soins (avec la caisse).
+
 ## Commandes de synchronisation
 
 `appointment.book` (`first_wins`), `appointment.reschedule`, `appointment.cancel`, `appointment.mark_arrived`, `appointment.mark_no_show`, `encounter.open`, `encounter.update_status`, `encounter.close`, `queue_ticket.issue`, `queue_ticket.call` (`first_wins` sur statut), `queue_ticket.start_service`, `queue_ticket.complete`, `queue_ticket.mark_left`, `triage.record` (`append_only`).

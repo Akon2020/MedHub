@@ -33,6 +33,10 @@ import { applyPatientScope, loadPatientScope } from './scope';
 const READ_PERMISSION: Record<string, readonly string[]> = {
   patient: ['patient:read'],
   patient_favorite: ['patient:read'],
+  encounter: ['encounter:read'],
+  queue_ticket: ['queue:read'],
+  triage: ['triage:read', 'clinical_record:read'],
+  appointment: ['appointment:read'],
   vital_sign: ['vital_sign:read', 'clinical_record:read'],
   stock_movement: ['stock:read'],
 };

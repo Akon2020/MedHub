@@ -99,6 +99,34 @@
       "when": 1793554174900,
       "tag": "0013_s6_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793556970925,
+      "tag": "0014_s7_rdv_config",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1793557645292,
+      "tag": "0015_s7_visits",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793558457376,
+      "tag": "0016_s7_triage",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793559006284,
+      "tag": "0017_s7_appointments",
+      "breakpoints": true
     }
   ]
 }

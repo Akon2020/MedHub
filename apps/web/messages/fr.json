@@ -330,7 +330,7 @@
       "clinical": "Clinique",
       "patients": "Patients",
       "consultations": "Consultations",
-      "appointments": "Rendez-vous et files",
+      "appointments": "Rendez-vous",
       "diagnostics": "Examens",
       "laboratory": "Laboratoire",
       "operations": "Opérations",
@@ -343,7 +343,8 @@
       "diagnostic": "Diagnostic",
       "collapse": "Réduire le menu",
       "expand": "Déplier le menu",
-      "soon": "bientôt"
+      "soon": "bientôt",
+      "queues": "Files d'attente"
     },
     "header": {
       "search": "Rechercher un patient (nom, téléphone, dossier)…",
@@ -777,7 +778,10 @@
     "PAT_PROVISIONAL_KIND": "Précisez le type de dossier provisoire.",
     "PAT_NOT_FOUND": "Ce patient est introuvable sur le serveur.",
     "PAT_ALREADY_MERGED": "L'un des deux dossiers a déjà été fusionné.",
-    "PAT_SENSITIVE": "Ce dossier est protégé : votre rôle ne permet pas de l'ouvrir."
+    "PAT_SENSITIVE": "Ce dossier est protégé : votre rôle ne permet pas de l'ouvrir.",
+    "RDV_TRANSITION_NOT_ALLOWED": "Ce ticket a déjà changé d'état : l'écran va se mettre à jour.",
+    "RDV_SLOT_TAKEN": "Ce créneau vient d'être pris sur un autre poste : choisissez-en un autre.",
+    "RDV_SLOT_UNAVAILABLE": "Ce créneau n'existe plus dans l'agenda."
   },
   "account": {
     "title": "Mon compte",
@@ -878,6 +882,10 @@
       "training": {
         "title": "Base de formation",
         "text": "Copie de la structure avec des patients fictifs, pour apprendre sans risque"
+      },
+      "rdv": {
+        "title": "Accueil, files et agendas",
+        "text": "Files d'attente et préfixes des tickets, types de rendez-vous, horaires et absences."
       }
     },
     "organization": {
@@ -1004,7 +1012,8 @@
       "REF_LIST_CODE_TAKEN": "Ce code de liste existe déjà dans la structure.",
       "TRAINING_NOT_ALLOWED": "Une base de formation ne peut pas avoir sa propre base de formation.",
       "TRAINING_ALREADY_EXISTS": "La base de formation existe déjà : utilisez « Réinitialiser ».",
-      "TRAINING_CODE_TAKEN": "Le code de la base de formation est déjà pris par une autre structure : contactez le support MedHub."
+      "TRAINING_CODE_TAKEN": "Le code de la base de formation est déjà pris par une autre structure : contactez le support MedHub.",
+      "RDV_CODE_TAKEN": "Ce code est déjà utilisé."
     },
     "devices": {
       "title": "Appareils",
@@ -1441,6 +1450,196 @@
       },
       "save": "Enregistrer",
       "saved": "Règle enregistrée : les postes l'appliquent à leur prochaine synchronisation."
+    },
+    "rdv": {
+      "title": "Accueil, files et agendas",
+      "subtitle": "Configuration partagée par tous les postes : ils la reçoivent avec leurs catalogues à la prochaine connexion.",
+      "saved": "Enregistré. Les postes reçoivent la nouvelle configuration à leur prochaine synchronisation.",
+      "edit": "Modifier",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "none": "Aucun",
+      "inactive": "Inactif",
+      "fields": {
+        "name": "Nom",
+        "code": "Code",
+        "prefix": "Préfixe des tickets",
+        "site": "Site",
+        "department": "Service",
+        "active": "Active",
+        "duration": "Durée (minutes)",
+        "color": "Couleur",
+        "weekday": "Jour",
+        "start": "Début",
+        "end": "Fin",
+        "slotMin": "Créneau (min)",
+        "overbook": "Surréservation",
+        "date": "Date",
+        "kind": "Type",
+        "reason": "Motif"
+      },
+      "queues": {
+        "title": "Files d'attente",
+        "subtitle": "Une file par point de passage (accueil, triage, consultation...). Les tickets portent le préfixe de la file, le code du poste et un numéro du jour.",
+        "empty": "Aucune file pour l'instant.",
+        "newTitle": "Nouvelle file",
+        "editTitle": "Modifier la file"
+      },
+      "types": {
+        "title": "Types de rendez-vous",
+        "subtitle": "Chaque type fixe la durée proposée à la prise de rendez-vous.",
+        "empty": "Aucun type pour l'instant.",
+        "newTitle": "Nouveau type",
+        "editTitle": "Modifier le type",
+        "minutes": "{count, plural, one {# minute} other {# minutes}}"
+      },
+      "agenda": {
+        "title": "Agendas",
+        "subtitle": "Horaires hebdomadaires découpés en créneaux, par soignant ou par service, et exceptions (congés, fermetures, plages supplémentaires).",
+        "resource": "Agenda de",
+        "practitioners": "Soignants",
+        "departments": "Services",
+        "weekly": "Horaires de la semaine",
+        "noSlot": "Aucun horaire : aucun créneau ne sera proposé.",
+        "addSlot": "Ajouter une plage",
+        "removeSlot": "Retirer la plage",
+        "saveWeekly": "Enregistrer les horaires",
+        "exceptions": "Exceptions à venir",
+        "noException": "Aucune exception à venir.",
+        "addException": "Ajouter",
+        "removeException": "Retirer l'exception",
+        "hours": "de {start} à {end}",
+        "kinds": {
+          "closed": "Fermé",
+          "extra": "Plage supplémentaire"
+        }
+      }
     }
+  },
+  "visits": {
+    "kinds": {
+      "outpatient": "Consultation externe",
+      "emergency": "Urgence",
+      "inpatient": "Hospitalisation",
+      "day_care": "Hôpital de jour",
+      "teleconsult": "Téléconsultation",
+      "lab_only": "Laboratoire seul",
+      "pharmacy_only": "Pharmacie seule"
+    },
+    "priorities": {
+      "emergency": "Urgence",
+      "elderly": "Personne âgée",
+      "pregnant": "Femme enceinte",
+      "child": "Enfant",
+      "normal": "Normale"
+    },
+    "statuses": {
+      "waiting": "En attente",
+      "called": "Appelé",
+      "in_service": "En cours",
+      "done": "Terminé",
+      "left": "Parti sans être vu"
+    },
+    "arrival": {
+      "title": "Arrivée",
+      "kind": "Type de visite",
+      "queue": "File",
+      "priority": "Priorité",
+      "submit": "Créer la visite et le ticket",
+      "hint": "Fonctionne hors connexion : le numéro du ticket porte le code de ce poste, deux postes ne donnent jamais le même numéro.",
+      "noQueue": "Aucune file configurée : un administrateur les crée dans Paramètres, Accueil, files et agendas.",
+      "deceased": "Patient décédé : aucune nouvelle visite."
+    },
+    "board": {
+      "title": "Files d'attente",
+      "subtitle": "Patients du jour par file, dans l'ordre de passage : urgences d'abord, puis priorités, puis heure d'arrivée.",
+      "queue": "File",
+      "room": "Salle de ce poste",
+      "roomPlaceholder": "Salle 2",
+      "callScreen": "Écran d'appel",
+      "sections": {
+        "waiting": "En attente",
+        "called": "Appelés et en cours",
+        "finished": "Terminés"
+      },
+      "empty": "Personne pour le moment.",
+      "waited": "{minutes, plural, one {attend depuis # minute} other {attend depuis # minutes}}",
+      "unknownPatient": "Patient absent de ce poste",
+      "call": "Appeler",
+      "start": "Prendre en charge",
+      "complete": "Terminer",
+      "left": "Parti",
+      "noQueue": "Aucune file configurée : un administrateur les crée dans Paramètres, Accueil, files et agendas."
+    },
+    "screen": {
+      "title": "Salle d'attente",
+      "nowCalling": "Numéro appelé",
+      "noCall": "Aucun appel pour le moment.",
+      "waiting": "{count, plural, =0 {Personne en attente} one {# personne en attente} other {# personnes en attente}}",
+      "soundOn": "Son activé",
+      "soundOff": "Activer le son",
+      "fullscreen": "Plein écran"
+    },
+    "triage": {
+      "title": "Triage de la visite du jour",
+      "complaint": "Motif principal",
+      "priority": "Priorité",
+      "orientation": "Orienter vers",
+      "noOrientation": "Rester dans la file actuelle",
+      "notes": "Observations",
+      "save": "Enregistrer le triage",
+      "cancel": "Annuler",
+      "correct": "Corriger",
+      "orientedTo": "orienté vers {queue}",
+      "hint": "Fonctionne hors connexion. Les constantes saisies ci-dessous sont rattachées à cette visite. Orienter le patient termine son ticket en cours et lui donne un ticket dans la file choisie, avec la priorité du triage."
+    }
+  },
+  "appointments": {
+    "title": "Rendez-vous",
+    "subtitle": "Agenda du jour par soignant ou par service. Fonctionne hors connexion ; si deux postes prennent le même créneau, le premier arrivé au serveur le garde et l'autre est invité à en choisir un autre.",
+    "resource": "Agenda",
+    "date": "Jour",
+    "previousDay": "Jour précédent",
+    "nextDay": "Jour suivant",
+    "firstFree": "Premier créneau libre",
+    "noFreeSlot": "Aucun créneau libre dans les 60 prochains jours.",
+    "noAgenda": "Aucun agenda configuré : un administrateur définit les horaires dans Paramètres, Accueil, files et agendas.",
+    "bookingFor": "Rendez-vous pour",
+    "changePatient": "Changer de patient",
+    "choosePatient": "Patient (nom, téléphone, dossier)",
+    "movingHint": "Choisissez le nouveau créneau de {name}.",
+    "cancel": "Annuler",
+    "rejectedTitle": "Créneaux pris entre-temps sur un autre poste",
+    "rebook": "Choisir un autre créneau",
+    "slotCount": "{count, plural, =0 {aucun créneau} one {# créneau} other {# créneaux}}",
+    "closed": "Pas de consultation ce jour-là.",
+    "unknownPatient": "Patient absent de ce poste",
+    "pending": "à envoyer",
+    "arrive": "Arrivé",
+    "move": "Déplacer",
+    "noShow": "Absent",
+    "cancelAppointment": "Annuler le rendez-vous",
+    "cancelReason": "Motif de l'annulation",
+    "confirmCancel": "Confirmer l'annulation",
+    "moveHere": "Déplacer ici",
+    "overbook": "Ajouter (surréservation)",
+    "book": "Réserver",
+    "booked": "Rendez-vous enregistré.",
+    "moved": "Rendez-vous déplacé.",
+    "arrived": "Arrivée enregistrée : visite et ticket créés.",
+    "cancelled": "Rendez-vous annulé.",
+    "saved": "Enregistré.",
+    "statuses": {
+      "booked": "Prévu",
+      "confirmed": "Confirmé",
+      "arrived": "Arrivé",
+      "no_show": "Absent",
+      "cancelled": "Annulé",
+      "completed": "Terminé"
+    },
+    "patientTitle": "Rendez-vous",
+    "take": "Prendre rendez-vous",
+    "noneUpcoming": "Aucun rendez-vous à venir.",
+    "missed": "{count, plural, one {# rendez-vous manqué} other {# rendez-vous manqués}}"
   }
 }

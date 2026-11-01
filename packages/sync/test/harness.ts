@@ -11,6 +11,13 @@ export const ALL_PERMISSIONS = new Set([
   'patient:mark_deceased',
   'patient:mark_sensitive',
   'vital_sign:create',
+  'encounter:create',
+  'encounter:update_status',
+  'queue:call',
+  'triage:create',
+  'appointment:create',
+  'appointment:update',
+  'appointment:cancel',
   'stock:move',
 ]);
 

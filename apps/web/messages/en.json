@@ -330,7 +330,7 @@
       "clinical": "Clinical",
       "patients": "Patients",
       "consultations": "Consultations",
-      "appointments": "Appointments and queues",
+      "appointments": "Appointments",
       "diagnostics": "Diagnostics",
       "laboratory": "Laboratory",
       "operations": "Operations",
@@ -343,7 +343,8 @@
       "diagnostic": "Diagnostics",
       "collapse": "Collapse menu",
       "expand": "Expand menu",
-      "soon": "soon"
+      "soon": "soon",
+      "queues": "Waiting queues"
     },
     "header": {
       "search": "Search a patient (name, phone, record)…",
@@ -777,7 +778,10 @@
     "PAT_PROVISIONAL_KIND": "Specify the kind of provisional record.",
     "PAT_NOT_FOUND": "This patient cannot be found on the server.",
     "PAT_ALREADY_MERGED": "One of the two records was already merged.",
-    "PAT_SENSITIVE": "This record is protected: your role cannot open it."
+    "PAT_SENSITIVE": "This record is protected: your role cannot open it.",
+    "RDV_TRANSITION_NOT_ALLOWED": "This ticket has already changed: the screen will refresh.",
+    "RDV_SLOT_TAKEN": "This slot was just taken on another workstation: choose another one.",
+    "RDV_SLOT_UNAVAILABLE": "This slot no longer exists in the agenda."
   },
   "account": {
     "title": "My account",
@@ -878,6 +882,10 @@
       "training": {
         "title": "Training base",
         "text": "Copy of the facility with fictitious patients, to learn without risk"
+      },
+      "rdv": {
+        "title": "Reception, queues and agendas",
+        "text": "Waiting queues and ticket prefixes, appointment types, opening hours and absences."
       }
     },
     "organization": {
@@ -1004,7 +1012,8 @@
       "REF_LIST_CODE_TAKEN": "This list code already exists in the facility.",
       "TRAINING_NOT_ALLOWED": "A training base cannot have a training base of its own.",
       "TRAINING_ALREADY_EXISTS": "The training base already exists: use \"Reset\".",
-      "TRAINING_CODE_TAKEN": "The training base code is already used by another facility: contact MedHub support."
+      "TRAINING_CODE_TAKEN": "The training base code is already used by another facility: contact MedHub support.",
+      "RDV_CODE_TAKEN": "This code is already used."
     },
     "devices": {
       "title": "Devices",
@@ -1441,6 +1450,196 @@
       },
       "save": "Save",
       "saved": "Rule saved: workstations apply it at their next synchronisation."
+    },
+    "rdv": {
+      "title": "Reception, queues and agendas",
+      "subtitle": "Configuration shared by every workstation: devices receive it with their catalogs at their next connection.",
+      "saved": "Saved. Workstations receive the new configuration at their next synchronisation.",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "none": "None",
+      "inactive": "Inactive",
+      "fields": {
+        "name": "Name",
+        "code": "Code",
+        "prefix": "Ticket prefix",
+        "site": "Site",
+        "department": "Department",
+        "active": "Active",
+        "duration": "Duration (minutes)",
+        "color": "Colour",
+        "weekday": "Day",
+        "start": "Start",
+        "end": "End",
+        "slotMin": "Slot (min)",
+        "overbook": "Overbooking",
+        "date": "Date",
+        "kind": "Kind",
+        "reason": "Reason"
+      },
+      "queues": {
+        "title": "Waiting queues",
+        "subtitle": "One queue per step (reception, triage, consultation...). Tickets carry the queue prefix, the workstation code and a number of the day.",
+        "empty": "No queue yet.",
+        "newTitle": "New queue",
+        "editTitle": "Edit the queue"
+      },
+      "types": {
+        "title": "Appointment types",
+        "subtitle": "Each type sets the duration offered when booking.",
+        "empty": "No type yet.",
+        "newTitle": "New type",
+        "editTitle": "Edit the type",
+        "minutes": "{count, plural, one {# minute} other {# minutes}}"
+      },
+      "agenda": {
+        "title": "Agendas",
+        "subtitle": "Weekly hours cut into slots, per practitioner or department, and exceptions (leave, closures, extra hours).",
+        "resource": "Agenda of",
+        "practitioners": "Practitioners",
+        "departments": "Departments",
+        "weekly": "Weekly hours",
+        "noSlot": "No hours: no slot will be offered.",
+        "addSlot": "Add hours",
+        "removeSlot": "Remove these hours",
+        "saveWeekly": "Save the hours",
+        "exceptions": "Upcoming exceptions",
+        "noException": "No upcoming exception.",
+        "addException": "Add",
+        "removeException": "Remove the exception",
+        "hours": "from {start} to {end}",
+        "kinds": {
+          "closed": "Closed",
+          "extra": "Extra hours"
+        }
+      }
     }
+  },
+  "visits": {
+    "kinds": {
+      "outpatient": "Outpatient visit",
+      "emergency": "Emergency",
+      "inpatient": "Inpatient stay",
+      "day_care": "Day care",
+      "teleconsult": "Teleconsultation",
+      "lab_only": "Laboratory only",
+      "pharmacy_only": "Pharmacy only"
+    },
+    "priorities": {
+      "emergency": "Emergency",
+      "elderly": "Elderly person",
+      "pregnant": "Pregnant woman",
+      "child": "Child",
+      "normal": "Normal"
+    },
+    "statuses": {
+      "waiting": "Waiting",
+      "called": "Called",
+      "in_service": "In progress",
+      "done": "Done",
+      "left": "Left without being seen"
+    },
+    "arrival": {
+      "title": "Arrival",
+      "kind": "Visit type",
+      "queue": "Queue",
+      "priority": "Priority",
+      "submit": "Open the visit and the ticket",
+      "hint": "Works offline: the ticket number carries this workstation code, two workstations never give the same number.",
+      "noQueue": "No queue configured: an administrator creates them in Settings, Reception, queues and agendas.",
+      "deceased": "Patient deceased: no new visit."
+    },
+    "board": {
+      "title": "Waiting queues",
+      "subtitle": "Today's patients per queue, in order: emergencies first, then priorities, then arrival time.",
+      "queue": "Queue",
+      "room": "Room of this workstation",
+      "roomPlaceholder": "Room 2",
+      "callScreen": "Call screen",
+      "sections": {
+        "waiting": "Waiting",
+        "called": "Called and in progress",
+        "finished": "Finished"
+      },
+      "empty": "Nobody for now.",
+      "waited": "{minutes, plural, one {waiting for # minute} other {waiting for # minutes}}",
+      "unknownPatient": "Patient not on this workstation",
+      "call": "Call",
+      "start": "Take in charge",
+      "complete": "Finish",
+      "left": "Left",
+      "noQueue": "No queue configured: an administrator creates them in Settings, Reception, queues and agendas."
+    },
+    "screen": {
+      "title": "Waiting room",
+      "nowCalling": "Number called",
+      "noCall": "No call yet.",
+      "waiting": "{count, plural, =0 {Nobody waiting} one {# person waiting} other {# people waiting}}",
+      "soundOn": "Sound on",
+      "soundOff": "Turn sound on",
+      "fullscreen": "Full screen"
+    },
+    "triage": {
+      "title": "Triage of today's visit",
+      "complaint": "Main complaint",
+      "priority": "Priority",
+      "orientation": "Send to",
+      "noOrientation": "Stay in the current queue",
+      "notes": "Observations",
+      "save": "Save the triage",
+      "cancel": "Cancel",
+      "correct": "Correct",
+      "orientedTo": "sent to {queue}",
+      "hint": "Works offline. Vital signs entered below are attached to this visit. Sending the patient on finishes the current ticket and issues one in the chosen queue, with the triage priority."
+    }
+  },
+  "appointments": {
+    "title": "Appointments",
+    "subtitle": "Day agenda per practitioner or department. Works offline; when two workstations take the same slot, the first to reach the server keeps it and the other is asked to choose another one.",
+    "resource": "Agenda",
+    "date": "Day",
+    "previousDay": "Previous day",
+    "nextDay": "Next day",
+    "firstFree": "First free slot",
+    "noFreeSlot": "No free slot within the next 60 days.",
+    "noAgenda": "No agenda configured: an administrator sets the hours in Settings, Reception, queues and agendas.",
+    "bookingFor": "Appointment for",
+    "changePatient": "Change patient",
+    "choosePatient": "Patient (name, phone, record)",
+    "movingHint": "Choose the new slot for {name}.",
+    "cancel": "Cancel",
+    "rejectedTitle": "Slots taken meanwhile on another workstation",
+    "rebook": "Choose another slot",
+    "slotCount": "{count, plural, =0 {no slot} one {# slot} other {# slots}}",
+    "closed": "No consultation that day.",
+    "unknownPatient": "Patient not on this workstation",
+    "pending": "to send",
+    "arrive": "Arrived",
+    "move": "Move",
+    "noShow": "No show",
+    "cancelAppointment": "Cancel the appointment",
+    "cancelReason": "Reason for cancelling",
+    "confirmCancel": "Confirm the cancellation",
+    "moveHere": "Move here",
+    "overbook": "Add (overbooking)",
+    "book": "Book",
+    "booked": "Appointment saved.",
+    "moved": "Appointment moved.",
+    "arrived": "Arrival saved: visit and ticket created.",
+    "cancelled": "Appointment cancelled.",
+    "saved": "Saved.",
+    "statuses": {
+      "booked": "Booked",
+      "confirmed": "Confirmed",
+      "arrived": "Arrived",
+      "no_show": "No show",
+      "cancelled": "Cancelled",
+      "completed": "Completed"
+    },
+    "patientTitle": "Appointments",
+    "take": "Book an appointment",
+    "noneUpcoming": "No upcoming appointment.",
+    "missed": "{count, plural, one {# missed appointment} other {# missed appointments}}"
   }
 }

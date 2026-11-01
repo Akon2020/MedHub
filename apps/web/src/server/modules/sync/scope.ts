@@ -1,6 +1,7 @@
 import 'server-only';
 import { appendAudit, schema, withTenant, type Tx } from '@medhub/db';
 import {
+  APPOINTMENT_SCOPE_DAYS,
   DEFAULT_PATIENT_SCOPE,
   ENTITIES,
   currentFavorites,
@@ -13,7 +14,7 @@ import {
 } from '@medhub/domain';
 import { AppError, uuidv7 } from '@medhub/shared';
 import type { ChangeRecord } from '@medhub/sync';
-import { and, asc, eq, gt, inArray, isNull, max, or, sql } from 'drizzle-orm';
+import { and, asc, eq, gt, gte, inArray, isNull, lte, max, or, sql } from 'drizzle-orm';
 import { database } from '../../platform/db';
 import { loadPermissions, requirePermission } from '../../platform/permissions';
 import type { RequestContext } from '../../platform/tenant';
@@ -137,15 +138,46 @@ export async function applyPatientScope(
     ).map((r) => [r.patientId, r.at]),
   );
 
+  const lastVisit = new Map(
+    (
+      await tx
+        .select({ patientId: schema.encounter.patientId, at: max(schema.encounter.startedAt) })
+        .from(schema.encounter)
+        .where(inArray(schema.encounter.patientId, owners))
+        .groupBy(schema.encounter.patientId)
+    ).map((r) => [r.patientId, r.at]),
+  );
+  const soon = new Set(
+    (
+      await tx
+        .selectDistinct({ patientId: schema.appointment.patientId })
+        .from(schema.appointment)
+        .where(
+          and(
+            inArray(schema.appointment.patientId, owners),
+            gte(schema.appointment.startsAt, new Date(now.getTime() - 86_400_000)),
+            lte(
+              schema.appointment.startsAt,
+              new Date(now.getTime() + APPOINTMENT_SCOPE_DAYS * 86_400_000),
+            ),
+            inArray(schema.appointment.status, ['booked', 'confirmed', 'arrived']),
+          ),
+        )
+    ).map((r) => r.patientId),
+  );
+
   const inScope = new Set<string>();
   for (const p of patients) {
-    const vital = lastVital.get(p.id) ?? null;
-    const lastActivity = vital && vital > p.updatedAt ? vital : p.updatedAt;
+    const lastActivity = [lastVital.get(p.id), lastVisit.get(p.id), p.updatedAt].reduce<Date>(
+      (latest, at) => (at && at > latest ? at : latest),
+      p.updatedAt,
+    );
     const facts = {
       createdHere: p.deviceId === ctx.deviceId,
       favorite: favorites.has(p.id),
       pinned: held.get(p.id) === true,
       lastActivity,
+      upcomingAppointment: soon.has(p.id),
     };
     if (inPatientScope(facts, rule, now)) inScope.add(p.id);
   }

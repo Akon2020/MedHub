@@ -89,6 +89,11 @@ Consignes reçues et appliquées pendant les sessions :
 | `8086814` | 01/11/2026 | `feat(pat)` : patients provisoires (inconnu, nouveau-né), identification, signalement manuel d'un doublon, déclaration et retrait du décès, actes cliniques refusés après le décès |
 | `4347c73` | 01/11/2026 | `feat(pat)` : sensibilité des dossiers (commande dédiée, niveau par rôle, retrait des postes, recherche et lecture refusées) |
 | `fae2ce9` | 01/11/2026 | `feat(sync)` : favoris et périmètre de synchronisation par structure et par rôle (retrait et arrivée complète des patients, épinglage depuis la recherche serveur) |
+| `3d8656d` | 01/11/2026 | `docs(pat)` : S6 terminée, scénario Playwright (inconnu identifié, décès), documents alignés |
+| `629dcb7` | 02/11/2026 | `feat(rdv)` : files d'attente, types de rendez-vous et agendas (réglages en ligne, copie sur les postes, données de démonstration) |
+| `38d90c2` | 02/11/2026 | `feat(rdv)` : visites et tickets hors connexion, transitions « premier arrivé gagne », écran des files et écran d'appel |
+| `1bf01af` | 02/11/2026 | `feat(rdv)` : triage avec orientation vers une autre file |
+| `5b89e37` | 02/11/2026 | `feat(rdv)` : rendez-vous (créneaux dans le fuseau de la structure, surréservation, conflit tranché à l'arrivée au serveur, agenda du jour) |
 
 ---
 
@@ -196,7 +201,7 @@ Code pur, sans Node.js, DOM ni Dexie, utilisé à l'identique par le client et l
 
 ## 8. `packages/db` : base PostgreSQL, sécurité et migrations
 
-### 8.1 Schéma (37 tables)
+### 8.1 Schéma (48 tables)
 
 | Domaine | Tables |
 | --- | --- |
@@ -556,6 +561,16 @@ Chaque document reçoit une CSP avec **nonce neuf** (`src/proxy.ts`) : `script-s
 - `sync_scope_rule` (règle de la structure, règles par rôle, la plus large gagne) et `device_patient` (ce que chaque poste détient, épinglage depuis la recherche serveur). Mode « tout » par défaut ; mode « périmètre » : créés sur le poste, favoris, épinglés, activité récente (dernière modification ou dernière constante). Les visites, rendez-vous et hospitalisations rejoindront la règle avec leurs modules.
 - Le pull applique dans l'ordre : permission de lecture, propriétaire des favoris, sensibilité, périmètre. Un patient qui entre dans le périmètre arrive avec son dossier complet en tête de page ; un patient qui en sort est retiré du poste.
 
+### 13.22 Rendez-vous, files et triage (S7)
+
+- Configuration (`queue`, `appointment_type`, `schedule_template`, `schedule_exception`) éditée en ligne, envoyée aux postes dans la copie des catalogues avec les soignants actifs et le fuseau de la structure.
+- Entités synchronisées : `encounter` (visite), `queue_ticket`, `triage` (ajout seul), `appointment`. Aucune n'accepte de suppression.
+- Transitions « premier arrivé gagne » (`transition` d'une commande) : une commande dont l'état de départ ne tient plus (ticket déjà appelé, rendez-vous déjà annulé) est gardée dans `op_log` avec le statut `merged` et l'avertissement `TRANSITION_IGNORED`, sans modifier la ligne. Les champs d'une transition appliquée suivent l'ordre d'arrivée au serveur et non les horloges des postes.
+- Créneaux (`holdsSlot`) : à l'arrivée d'une réservation ou d'un déplacement, le serveur recalcule la capacité du créneau depuis l'agenda (fuseau de la structure, exceptions, surréservation) et compte les rendez-vous qui l'occupent ; au-delà, `RDV_SLOT_TAKEN`, hors agenda, `RDV_SLOT_UNAVAILABLE`. Le poste refusé garde la ligne marquée et propose un autre créneau.
+- Numéros hors connexion : ticket `{PRÉFIXE}-{POSTE}-{NNN}` par file, poste et jour ; visite `{SITE}-{POSTE}-{AAAA}-{SEQ6}`.
+- Le décès refuse aussi l'ouverture d'une visite et un triage postérieurs.
+- Périmètre de synchronisation : une visite récente compte comme activité, un rendez-vous d'hier aux sept prochains jours fait entrer le patient.
+
 ### 13.9 Mesure de la durée des requêtes
 
 Réponse au point ouvert de J0 (une connexion restée 20 s sans réponse) : chaque route renvoie `Server-Timing: app;dur=N`, la métrique `http.duration_ms` est émise, et toute requête plus lente que `MEDHUB_SLOW_REQUEST_MS` (2 s par défaut) est journalisée avec l'état du pool (`total`, `idle`, `waiting`) pour distinguer pool saturé, requête lente ou verrou.
@@ -709,6 +724,6 @@ Commandes de contrôle avant chaque commit : `pnpm typecheck`, `pnpm lint`, `pnp
 
 S4 est terminée (`docs/11-feuille-de-route.md`) : authentification complète avec 2FA, structures, sites et services, RLS sur toutes les tables, rôles et permissions vérifiés côté serveur, audit chaîné, coquille PWA, mise en page, indicateur de synchronisation, protections de la plateforme. Les salles, horaires d'ouverture et jours fériés de `docs/modules/core.md` arrivent avec les rendez-vous et files (S7).
 
-S5 est terminée. S6 (patients) est en cours : la détection des doublons, la fusion supervisée et réversible, l'identité complète avec historique, la revue des conflits (partie démographique de P2), la recherche serveur, la carte patient avec QR, les patients provisoires, le décès, la sensibilité des dossiers, les favoris et le périmètre de synchronisation sont livrés. S6 est terminée côté code.
+S5 et S6 sont terminées. En S6 : la détection des doublons, la fusion supervisée et réversible, l'identité complète avec historique, la revue des conflits (partie démographique de P2), la recherche serveur, la carte patient avec QR, les patients provisoires, le décès, la sensibilité des dossiers, les favoris et le périmètre de synchronisation ont été livrés. S7 (rendez-vous, files, triage) est terminée côté code.
 
-S6 : patients (recherche floue complète, dédoublonnage, fusion supervisée et réversible, carte et QR), périmètre de synchronisation. Puis S7 à S9 jusqu'au critère de sortie de J1 : un patient parcourt accueil, triage et consultation hors connexion et se synchronise sans erreur.
+S8 : dossier longitudinal (chronologie, résumé, antécédents, allergies, problèmes, bris de glace). Puis S9 jusqu'au critère de sortie de J1 : un patient parcourt accueil, triage et consultation hors connexion et se synchronise sans erreur.

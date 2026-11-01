@@ -4,8 +4,9 @@ import { z } from 'zod';
  * Which patients a device receives (docs/02-offline-sync.md section 8). "all"
  * is the full preload suited to small structures; "scoped" keeps the patients
  * created on the device, the user's favourites, the patients opened from a
- * server search and those with recent activity. Visits, appointments and
- * admissions join the scoped rule with their modules.
+ * server search, those with recent activity (changes, measurements, visits)
+ * and those with an appointment in the coming week. Admissions and chronic
+ * programmes join the scoped rule with their modules.
  */
 export const SYNC_SCOPE_MODES = ['all', 'scoped'] as const;
 export type SyncScopeMode = (typeof SYNC_SCOPE_MODES)[number];
@@ -49,8 +50,14 @@ export type PatientScopeFacts = {
   createdHere: boolean;
   favorite: boolean;
   pinned: boolean;
+  /** Latest change, measurement or visit of the patient. */
   lastActivity: Date | null;
+  /** An appointment from yesterday to the next seven days (docs/02 section 8). */
+  upcomingAppointment?: boolean;
 };
+
+/** Window of appointments that bring a patient to the devices. */
+export const APPOINTMENT_SCOPE_DAYS = 7;
 
 export function inPatientScope(
   facts: PatientScopeFacts,
@@ -58,7 +65,7 @@ export function inPatientScope(
   now: Date,
 ): boolean {
   if (rule.mode === 'all') return true;
-  if (facts.createdHere || facts.favorite || facts.pinned) return true;
+  if (facts.createdHere || facts.favorite || facts.pinned || facts.upcomingAppointment) return true;
   if (!facts.lastActivity) return false;
   return now.getTime() - facts.lastActivity.getTime() <= rule.recentDays * 86_400_000;
 }

@@ -75,6 +75,17 @@ export class MemoryServerStore implements ServerSyncStore, ServerPullStore {
         draft.conflicts.set(id, conflict);
         return id;
       },
+      // Without agendas in memory, every slot holds one appointment.
+      slotCapacity: async () => 1,
+      countSlotBookings: async (resourceId, startsAt, excludeId) =>
+        [...draft.entities.values()].filter(
+          (e) =>
+            e.entity === 'appointment' &&
+            e.id !== excludeId &&
+            e.data.resourceId === resourceId &&
+            Date.parse(String(e.data.startsAt)) === Date.parse(startsAt) &&
+            ['booked', 'confirmed', 'arrived', 'completed'].includes(String(e.data.status)),
+        ).length,
       listStockMovements: async (warehouseId, productId) =>
         [...draft.entities.values()]
           .filter(
