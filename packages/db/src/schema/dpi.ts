@@ -3,14 +3,16 @@ import {
   boolean,
   check,
   date,
+  doublePrecision,
   index,
   jsonb,
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { appendOnlyColumns, syncColumns } from '../columns';
+import { appendOnlyColumns, syncColumns, tenantColumns } from '../columns';
 
 const fieldMeta = () =>
   jsonb('field_meta').$type<Record<string, { hlc: string; v: number }>>().notNull().default({});
@@ -101,4 +103,23 @@ export const clinicalEvent = pgTable(
     originTenantId: uuid('origin_tenant_id'),
   },
   (t) => [index('clinical_event_patient_idx').on(t.tenantId, t.patientId, t.occurredAt)],
+);
+
+/**
+ * Vital sign settings of the structure: plausibility bounds (typing errors),
+ * stability margin of the trend arrow and normal ranges by sex and age. Codes
+ * without a row use the built-in plausibility bounds and have no normal range.
+ */
+export const vitalSignDefinition = pgTable(
+  'vital_sign_definition',
+  {
+    ...tenantColumns(),
+    code: text('code').notNull(),
+    plausibleMin: doublePrecision('plausible_min').notNull(),
+    plausibleMax: doublePrecision('plausible_max').notNull(),
+    stabilityMargin: doublePrecision('stability_margin'),
+    normalRanges: jsonb('normal_ranges').$type<Record<string, unknown>[]>().notNull().default([]),
+    updatedBy: uuid('updated_by'),
+  },
+  (t) => [uniqueIndex('vital_sign_definition_code_uq').on(t.tenantId, t.code)],
 );

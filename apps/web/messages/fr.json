@@ -886,6 +886,10 @@
       "rdv": {
         "title": "Accueil, files et agendas",
         "text": "Files d'attente et préfixes des tickets, types de rendez-vous, horaires et absences."
+      },
+      "clinical": {
+        "title": "Clinique",
+        "text": "Constantes : bornes de plausibilité, marge de tendance et plages normales par âge et sexe."
       }
     },
     "organization": {
@@ -1514,6 +1518,36 @@
           "extra": "Plage supplémentaire"
         }
       }
+    },
+    "clinical": {
+      "title": "Clinique",
+      "subtitle": "Réglages cliniques partagés par tous les postes."
+    },
+    "vitals": {
+      "title": "Constantes",
+      "subtitle": "Les bornes de plausibilité ne repèrent que les erreurs de saisie. Les plages normales sont des références cliniques choisies par la structure : aucune n'est fournie par défaut, et rien n'est signalé hors normes tant qu'elles ne sont pas renseignées.",
+      "plausible": "plausible de {min} à {max} {unit}",
+      "ranges": "{count, plural, one {# plage normale} other {# plages normales}}",
+      "noRange": "aucune plage normale",
+      "custom": "réglé par la structure",
+      "edit": "Modifier",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "saved": "Enregistré. Les postes reçoivent les nouveaux réglages avec leurs catalogues.",
+      "min": "Minimum plausible",
+      "max": "Maximum plausible",
+      "margin": "Marge de stabilité (vide : 2 %)",
+      "rangesHint": "Plages normales : sexe (ou les deux), âge en années, borne basse et borne haute. La plage la plus précise s'applique.",
+      "sex": "Sexe",
+      "anySex": "Les deux",
+      "male": "Homme",
+      "female": "Femme",
+      "ageMin": "Âge min",
+      "ageMax": "Âge max",
+      "low": "Basse",
+      "high": "Haute",
+      "addRange": "Ajouter une plage",
+      "removeRange": "Retirer la plage"
     }
   },
   "visits": {
@@ -1705,6 +1739,31 @@
       "icd10": "Code CIM-10 (facultatif)",
       "onsetDate": "Début",
       "resolve": "Résolu"
+    },
+    "vitals": {
+      "title": "Constantes et courbes",
+      "empty": "Aucune constante enregistrée.",
+      "curve": "Courbe à afficher",
+      "notEnough": "Au moins deux mesures sont nécessaires pour une courbe.",
+      "trend": {
+        "up": "en hausse",
+        "down": "en baisse",
+        "stable": "stable"
+      },
+      "flag": {
+        "low": "sous la normale",
+        "high": "au-dessus de la normale"
+      },
+      "bmi": "IMC {value} kg/m²",
+      "bsa": "Surface corporelle {value} m²",
+      "news2": "NEWS2 {score}",
+      "risk": {
+        "low": "risque faible",
+        "low_medium": "un paramètre critique",
+        "medium": "risque moyen",
+        "high": "risque élevé"
+      },
+      "partial": "partiel (conscience et oxygène non saisis)"
     }
   }
 }

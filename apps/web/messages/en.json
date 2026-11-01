@@ -886,6 +886,10 @@
       "rdv": {
         "title": "Reception, queues and agendas",
         "text": "Waiting queues and ticket prefixes, appointment types, opening hours and absences."
+      },
+      "clinical": {
+        "title": "Clinical",
+        "text": "Vital signs: plausibility bounds, trend margin and normal ranges by age and sex."
       }
     },
     "organization": {
@@ -1514,6 +1518,36 @@
           "extra": "Extra hours"
         }
       }
+    },
+    "clinical": {
+      "title": "Clinical",
+      "subtitle": "Clinical settings shared by every workstation."
+    },
+    "vitals": {
+      "title": "Vital signs",
+      "subtitle": "Plausibility bounds only catch typing errors. Normal ranges are clinical references chosen by the structure: none is provided by default, and nothing is flagged until they are set.",
+      "plausible": "plausible from {min} to {max} {unit}",
+      "ranges": "{count, plural, one {# normal range} other {# normal ranges}}",
+      "noRange": "no normal range",
+      "custom": "set by the structure",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Saved. Workstations receive the new settings with their catalogs.",
+      "min": "Plausible minimum",
+      "max": "Plausible maximum",
+      "margin": "Stability margin (empty: 2 %)",
+      "rangesHint": "Normal ranges: sex (or both), age in years, low and high bounds. The most specific range applies.",
+      "sex": "Sex",
+      "anySex": "Both",
+      "male": "Male",
+      "female": "Female",
+      "ageMin": "Min age",
+      "ageMax": "Max age",
+      "low": "Low",
+      "high": "High",
+      "addRange": "Add a range",
+      "removeRange": "Remove the range"
     }
   },
   "visits": {
@@ -1705,6 +1739,31 @@
       "icd10": "ICD-10 code (optional)",
       "onsetDate": "Onset",
       "resolve": "Resolved"
+    },
+    "vitals": {
+      "title": "Vital signs and curves",
+      "empty": "No vital sign recorded.",
+      "curve": "Curve to show",
+      "notEnough": "At least two measurements are needed for a curve.",
+      "trend": {
+        "up": "rising",
+        "down": "falling",
+        "stable": "stable"
+      },
+      "flag": {
+        "low": "below normal",
+        "high": "above normal"
+      },
+      "bmi": "BMI {value} kg/m²",
+      "bsa": "Body surface area {value} m²",
+      "news2": "NEWS2 {score}",
+      "risk": {
+        "low": "low risk",
+        "low_medium": "one critical parameter",
+        "medium": "medium risk",
+        "high": "high risk"
+      },
+      "partial": "partial (consciousness and oxygen not recorded)"
     }
   }
 }

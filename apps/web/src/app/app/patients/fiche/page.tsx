@@ -2,13 +2,11 @@
 
 import type { VitalSignCode } from '@medhub/shared';
 import { ArrowLeft, GitMerge, Phone } from 'lucide-react';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { Suspense, useEffect } from 'react';
 import { useLocalQuery, useRuntime } from '@/client/runtime';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FieldHistory, IdentityCard } from '@/features/patients/identity-card';
 import { PatientCardActions } from '@/features/patients/patient-card';
 import {
@@ -37,17 +35,16 @@ import {
   toAllergyView,
 } from '@/features/record/record-lists';
 import { useRecordAccess } from '@/features/record/use-record-access';
+import { VitalsSummary } from '@/features/record/vitals-summary';
 import { ArrivalPanel } from '@/features/visits/arrival-panel';
 import { TriagePanel } from '@/features/visits/triage-panel';
 import { currentTriage, openVisitOfToday, todayTickets } from '@/features/visits/visit-helpers';
-
-const TrendChart = dynamic(() => import('@/features/charts/trend-chart'), { ssr: false });
 
 function PatientRecord() {
   const t = useTranslations('patient');
   const tp = useTranslations('patients');
   const tc = useTranslations('common');
-  const format = useFormatter();
+
   const id = useSearchParams().get('id') ?? '';
   const { identity } = useRuntime();
   const clinical = identity?.permissions.includes('clinical_record:read') ?? false;
@@ -153,19 +150,6 @@ function PatientRecord() {
     problems,
     mergedCount,
   } = data;
-  const temperature = vitals
-    .filter((v) => v.code === 'temp' && v.status === 'active')
-    .slice(0, 12)
-    .reverse()
-    .map((v) => ({
-      label: format.dateTime(new Date(v.measuredAt), {
-        day: '2-digit',
-        month: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-      value: v.value,
-    }));
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -260,20 +244,7 @@ function PatientRecord() {
         <div className="grid content-start gap-6">
           <ArrivalPanel patientId={patient.id} deceased={deceasedAtOf(raw) !== null} />
           <PatientAppointments patientId={patient.id} />
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('trend')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {temperature.length >= 2 ? (
-                <TrendChart data={temperature} unit="°C" />
-              ) : (
-                <p className="py-10 text-center text-sm text-muted-foreground">
-                  {t('vitals.empty')}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <VitalsSummary vitals={vitals} sex={patient.sex} birthDate={patient.birthDate} />
           <IdentityCard key={patient.id} patientId={patient.id} data={raw} />
           <FieldHistory patientId={patient.id} />
         </div>

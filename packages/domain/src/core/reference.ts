@@ -221,6 +221,21 @@ export type CatalogSnapshot = {
     endTime: string | null;
     slotMin: number | null;
   }[];
+  /** Vital sign settings: plausibility, trend margin, normal ranges (S8). */
+  vitalDefinitions?: {
+    code: string;
+    unit: string;
+    plausibleMin: number;
+    plausibleMax: number;
+    stabilityMargin: number | null;
+    normalRanges: {
+      sex?: 'M' | 'F' | null;
+      ageMinYears: number;
+      ageMaxYears: number;
+      low?: number | null;
+      high?: number | null;
+    }[];
+  }[];
   /** Time zone of the structure: agenda slots are local times there. */
   timeZone?: string;
   /** Active users, for names on screens and practitioner agendas. */

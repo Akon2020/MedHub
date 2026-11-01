@@ -134,6 +134,13 @@
       "when": 1793572904078,
       "tag": "0018_s8_record",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793573538430,
+      "tag": "0019_s8_vital_definitions",
+      "breakpoints": true
     }
   ]
 }

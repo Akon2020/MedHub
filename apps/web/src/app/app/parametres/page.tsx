@@ -10,6 +10,7 @@ import {
   MonitorCog,
   ShieldAlert,
   Smartphone,
+  Stethoscope,
   UserCog,
   Users,
   type LucideIcon,
@@ -46,6 +47,12 @@ const ENTRIES: Entry[] = [
     key: 'workstations',
     icon: MonitorCog,
     href: '/app/parametres/synchronisation',
+    permission: 'configuration:read',
+  },
+  {
+    key: 'clinical',
+    icon: Stethoscope,
+    href: '/app/parametres/clinique',
     permission: 'configuration:read',
   },
   {

@@ -40,6 +40,7 @@ import {
   userAccount,
   userRole,
   vitalSign,
+  vitalSignDefinition,
 } from '../../src/schema';
 
 /**
@@ -214,6 +215,15 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       refTable: 'problem',
       refId: uuidv7(),
       occurredAt: new Date(),
+    });
+  },
+  vital_sign_definition: async (tx, tenantId) => {
+    await tx.insert(vitalSignDefinition).values({
+      id: uuidv7(),
+      tenantId,
+      code: 'pulse',
+      plausibleMin: 20,
+      plausibleMax: 250,
     });
   },
   queue: async (tx, tenantId) => {
