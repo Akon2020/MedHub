@@ -14,6 +14,8 @@ export type StoredIdentity = {
   siteId: string | null;
   siteCode: string | null;
   permissions: string[];
+  /** Missing on identities stored before S8: only normal records then open freely. */
+  sensitivityMax?: 'normal' | 'staff' | 'vip' | 'restricted';
 };
 
 const IDENTITY_KEY = 'medhub.identity';
@@ -63,6 +65,7 @@ export type ServerProfile = {
   tenant: { id: string; code: string; displayName: string; isTraining: boolean };
   site: { id: string; code: string } | null;
   permissions: string[];
+  sensitivityMax?: 'normal' | 'staff' | 'vip' | 'restricted';
 };
 
 export function identityFromProfile(profile: ServerProfile): StoredIdentity {
@@ -78,5 +81,6 @@ export function identityFromProfile(profile: ServerProfile): StoredIdentity {
     siteId: profile.site?.id ?? null,
     siteCode: profile.site?.code ?? null,
     permissions: profile.permissions,
+    sensitivityMax: profile.sensitivityMax ?? 'normal',
   };
 }

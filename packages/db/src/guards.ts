@@ -25,6 +25,7 @@ const NO_DELETE = [
   'medical_history',
   'problem',
   'clinical_event',
+  'break_glass_event',
 ];
 const NO_UPDATE = [
   'stock_movement',

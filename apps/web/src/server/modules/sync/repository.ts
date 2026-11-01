@@ -1,5 +1,13 @@
 import 'server-only';
-import { appendAudit, enqueue, schema, withTenant, type Db, type Tx } from '@medhub/db';
+import {
+  appendAudit,
+  enqueue,
+  recordSecurityEvent,
+  schema,
+  withTenant,
+  type Db,
+  type Tx,
+} from '@medhub/db';
 import {
   ENTITIES,
   SLOT_HOLDING_STATUSES,
@@ -589,6 +597,49 @@ const mappers = {
       };
     },
   },
+  break_glass: {
+    table: schema.breakGlassEvent,
+    toState(row: typeof schema.breakGlassEvent.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          userId: row.userId,
+          reasonCode: row.reasonCode,
+          reasonText: row.reasonText,
+          startedAt: row.startedAt.toISOString(),
+          endsAt: row.endsAt.toISOString(),
+          status: row.status,
+        }),
+        fieldMeta: {},
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.breakGlassEvent.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        // The user who breaks the glass is the author of the operation.
+        userId: state.createdBy,
+        patientId: String(d.patientId),
+        reasonCode: String(d.reasonCode),
+        reasonText: String(d.reasonText),
+        startedAt: new Date(String(d.startedAt)),
+        endsAt: new Date(String(d.endsAt)),
+        status: str(d.status) ?? 'active',
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+      };
+    },
+  },
   record_access: {
     table: schema.dataAccessLog,
     toState(row: typeof schema.dataAccessLog.$inferSelect): EntityState {
@@ -827,6 +878,14 @@ async function getEntity(tx: Tx, entity: EntityName, id: string): Promise<Entity
         .limit(1);
       return row ? mappers.problem.toState(row) : null;
     }
+    case 'break_glass': {
+      const [row] = await tx
+        .select()
+        .from(schema.breakGlassEvent)
+        .where(eq(schema.breakGlassEvent.id, id))
+        .limit(1);
+      return row ? mappers.break_glass.toState(row) : null;
+    }
     case 'record_access': {
       const [row] = await tx
         .select()
@@ -888,6 +947,13 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
       return (await tx.select().from(schema.problem).where(inArray(schema.problem.id, ids))).map(
         (r) => mappers.problem.toState(r),
       );
+    case 'break_glass':
+      return (
+        await tx
+          .select()
+          .from(schema.breakGlassEvent)
+          .where(inArray(schema.breakGlassEvent.id, ids))
+      ).map((r) => mappers.break_glass.toState(r));
     case 'record_access':
       return (
         await tx.select().from(schema.dataAccessLog).where(inArray(schema.dataAccessLog.id, ids))
@@ -947,7 +1013,12 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
           tenantId: ctx.tenantId,
           userId: op.userId,
           deviceId: op.deviceId,
-          action: op.command === 'record_access.log' ? 'read' : (AUDIT_ACTION[kind] ?? 'update'),
+          action:
+            op.command === 'record_access.log'
+              ? 'read'
+              : op.command === 'break_glass.start'
+                ? 'break_glass'
+                : (AUDIT_ACTION[kind] ?? 'update'),
           entity: op.entity,
           entityId: op.entityId,
           patientId:
@@ -1012,6 +1083,18 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         case 'problem':
           await tx.insert(schema.problem).values(mappers.problem.toRow(state, ctx));
           await recordClinicalEvent(tx, ctx, 'problem', state);
+          return;
+        case 'break_glass':
+          await tx.insert(schema.breakGlassEvent).values(mappers.break_glass.toRow(state, ctx));
+          // The person in charge sees it in the security journal and the review board.
+          await recordSecurityEvent(tx, {
+            kind: 'break_glass',
+            severity: 'warning',
+            tenantId: ctx.tenantId,
+            userId: state.createdBy || null,
+            ip: null,
+            detail: { breakGlassId: state.id, reason: String(state.data.reasonCode) },
+          });
           return;
         case 'record_access':
           await tx.insert(schema.dataAccessLog).values(mappers.record_access.toRow(state, ctx));
@@ -1138,6 +1221,7 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         }
         case 'stock_movement':
         case 'patient_favorite':
+        case 'break_glass':
         case 'record_access':
           throw new Error(`${entity} rows are immutable`);
       }
@@ -1395,25 +1479,6 @@ export async function updateServerPatient(
 /** Current state of a patient, as a pull would deliver it. */
 export async function patientState(tx: Tx, patientId: string): Promise<EntityState | null> {
   return getEntity(tx, 'patient', patientId);
-}
-
-/** Access level of each listed patient, for the pull filter. */
-export async function patientSensitivities(
-  db: Db,
-  ctx: Ctx,
-  ids: readonly string[],
-): Promise<Map<string, string>> {
-  if (ids.length === 0) return new Map();
-  const rows = await withTenant(
-    db,
-    { tenantId: ctx.tenantId, userId: ctx.userId, deviceId: ctx.deviceId },
-    (tx) =>
-      tx
-        .select({ id: schema.patient.id, sensitivity: schema.patient.sensitivity })
-        .from(schema.patient)
-        .where(inArray(schema.patient.id, [...ids])),
-  );
-  return new Map(rows.map((r) => [r.id, r.sensitivity]));
 }
 
 /**

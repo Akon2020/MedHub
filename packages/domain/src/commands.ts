@@ -20,6 +20,7 @@ import {
 } from './rdv/appointments';
 import { triageRecordPayload } from './rdv/triage';
 import { recordAccessPayload } from './dpi/access-log';
+import { breakGlassPayload } from './dpi/break-glass';
 import {
   allergyAddPayload,
   allergyNoneKnownPayload,
@@ -53,7 +54,8 @@ export type EntityName =
   | 'allergy'
   | 'medical_history'
   | 'problem'
-  | 'record_access';
+  | 'record_access'
+  | 'break_glass';
 
 export type EntityDefinition = {
   name: EntityName;
@@ -132,6 +134,13 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
     name: 'problem',
     strategy: 'union',
     scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  break_glass: {
+    name: 'break_glass',
+    strategy: 'append_only',
+    // Only the user who opened the access receives it back (pull filter on userId).
+    scopeKeys: (data) => [`user:${String(data.userId)}`],
     patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
   },
   record_access: {
@@ -420,6 +429,14 @@ export const COMMANDS = {
     permission: 'clinical_record:create',
     onlineOnly: false,
     transition: { from: ['active', 'resolved'], to: 'retracted' },
+  }),
+  'break_glass.start': define({
+    name: 'break_glass.start',
+    entity: 'break_glass',
+    kind: 'append',
+    payloadSchema: breakGlassPayload,
+    permission: 'clinical_record:break_glass',
+    onlineOnly: false,
   }),
   'record_access.log': define({
     name: 'record_access.log',

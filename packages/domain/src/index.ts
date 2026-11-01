@@ -28,3 +28,4 @@ export * from './rdv/appointments';
 export * from './dpi/record';
 export * from './dpi/access-log';
 export * from './dpi/calculations';
+export * from './dpi/break-glass';

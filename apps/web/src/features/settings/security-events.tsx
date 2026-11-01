@@ -33,6 +33,7 @@ const KNOWN_KINDS = new Set([
   'user_disabled',
   'user_enabled',
   'role_privileges_changed',
+  'break_glass',
 ]);
 
 const ICONS = { info: Info, warning: AlertTriangle, critical: ShieldAlert } as const;

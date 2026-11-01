@@ -123,3 +123,29 @@ export const vitalSignDefinition = pgTable(
   },
   (t) => [uniqueIndex('vital_sign_definition_code_uq').on(t.tenantId, t.code)],
 );
+
+/** Emergency accesses, reviewed afterwards (docs/03 section 4); never deleted. */
+export const breakGlassEvent = pgTable(
+  'break_glass_event',
+  {
+    ...appendOnlyColumns(),
+    userId: uuid('user_id').notNull(),
+    patientId: uuid('patient_id').notNull(),
+    reasonCode: text('reason_code').notNull(),
+    reasonText: text('reason_text').notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+    reviewedBy: uuid('reviewed_by'),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    reviewOutcome: text('review_outcome'),
+    reviewComment: text('review_comment'),
+  },
+  (t) => [
+    index('break_glass_user_idx').on(t.tenantId, t.userId, t.patientId, t.endsAt),
+    index('break_glass_review_idx').on(t.tenantId, t.reviewedAt),
+    check(
+      'break_glass_outcome_check',
+      sql`${t.reviewOutcome} is null or ${t.reviewOutcome} in ('justified','to_investigate')`,
+    ),
+  ],
+);

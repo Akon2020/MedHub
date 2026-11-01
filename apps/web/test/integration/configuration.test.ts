@@ -210,6 +210,7 @@ describe.skipIf(!url)('versioned configuration against PostgreSQL', () => {
       autoLockMinutes: 5,
       pinMaxAttempts: 10,
       duplicateAlertScore: 50,
+      breakGlassHours: 4,
     });
 
     await cfg.saveDraft(ctxFor(adminId), { key: 'security.step_up_minutes', value: 5 });

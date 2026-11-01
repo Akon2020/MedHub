@@ -534,7 +534,9 @@
       "hint": "Patients of the facility not on this device.",
       "badge": "Not on this device",
       "open": "Open on this device",
-      "error": "The record could not be downloaded. Check the connection."
+      "error": "The record could not be downloaded. Check the connection.",
+      "protected": "Protected record",
+      "emergency": "Emergency access"
     },
     "provisional": {
       "mode": "Registration type",
@@ -778,10 +780,11 @@
     "PAT_PROVISIONAL_KIND": "Specify the kind of provisional record.",
     "PAT_NOT_FOUND": "This patient cannot be found on the server.",
     "PAT_ALREADY_MERGED": "One of the two records was already merged.",
-    "PAT_SENSITIVE": "This record is protected: your role cannot open it.",
+    "PAT_SENSITIVE": "This record is protected: open an emergency access if the situation requires it.",
     "RDV_TRANSITION_NOT_ALLOWED": "This ticket has already changed: the screen will refresh.",
     "RDV_SLOT_TAKEN": "This slot was just taken on another workstation: choose another one.",
-    "RDV_SLOT_UNAVAILABLE": "This slot no longer exists in the agenda."
+    "RDV_SLOT_UNAVAILABLE": "This slot no longer exists in the agenda.",
+    "DPI_BREAK_GLASS_DURATION": "Invalid emergency access duration."
   },
   "account": {
     "title": "My account",
@@ -989,7 +992,8 @@
         "mfa_reset": "Two-factor authentication reset",
         "user_disabled": "Account disabled",
         "user_enabled": "Account enabled",
-        "role_privileges_changed": "Administration rights of a role changed"
+        "role_privileges_changed": "Administration rights of a role changed",
+        "break_glass": "Emergency access"
       },
       "anomalies": {
         "new_device": "new device",
@@ -1548,6 +1552,20 @@
       "high": "High",
       "addRange": "Add a range",
       "removeRange": "Remove the range"
+    },
+    "breakGlass": {
+      "title": "Emergency accesses to review",
+      "subtitle": "Every emergency access is reviewed: justified, or to investigate with the person concerned.",
+      "empty": "No emergency access.",
+      "error": "List unavailable.",
+      "comment": "Review comment",
+      "justified": "Justified",
+      "investigate": "To investigate",
+      "window": "from {from} to {to}",
+      "outcomes": {
+        "justified": "Justified",
+        "to_investigate": "To investigate"
+      }
     }
   },
   "visits": {
@@ -1764,6 +1782,33 @@
         "high": "high risk"
       },
       "partial": "partial (consciousness and oxygen not recorded)"
+    },
+    "breakGlass": {
+      "reason": "Reason for emergency access",
+      "details": "Details (required)",
+      "reasons": {
+        "life_threatening": "Life-threatening emergency",
+        "unconscious_patient": "Patient unconscious or unable to answer",
+        "continuity_of_care": "Continuity of care",
+        "other": "Other reason"
+      },
+      "open": "Open emergency access ({hours, plural, one {# hour} other {# hours}})",
+      "hint": "Works offline for a record present on this workstation. The access is logged, reported to the person in charge and reviewed afterwards.",
+      "notAllowed": "Your role does not allow emergency access. Ask a physician or the person in charge.",
+      "lockedTitle": "Protected record",
+      "lockedText": "This record is reserved to some roles. In an emergency you can open it for a limited time by giving the reason.",
+      "active": "Emergency access running until {time}: every opening is reviewed.",
+      "protectedName": "Protected record"
+    },
+    "access": {
+      "title": "Access journal",
+      "show": "Show",
+      "hint": "Who opened this record, when and from which workstation.",
+      "offline": "Available online.",
+      "empty": "No access recorded.",
+      "error": "Journal unavailable.",
+      "emergency": "emergency access",
+      "device": "workstation {code}"
     }
   }
 }

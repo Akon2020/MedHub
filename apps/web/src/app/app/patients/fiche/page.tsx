@@ -5,7 +5,7 @@ import { ArrowLeft, GitMerge, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useLocalQuery, useRuntime } from '@/client/runtime';
 import { FieldHistory, IdentityCard } from '@/features/patients/identity-card';
 import { PatientCardActions } from '@/features/patients/patient-card';
@@ -23,7 +23,7 @@ import {
   isMerged,
   toPatientView,
 } from '@/features/patients/patient-helpers';
-import { mergeClosure, mergeTarget } from '@medhub/domain';
+import { activeBreakGlass, mergeClosure, mergeTarget, recordAccess } from '@medhub/domain';
 import { SyncBadge } from '@/features/patients/sync-badge';
 import { VitalsPanel, type VitalView } from '@/features/patients/vitals-panel';
 import { PatientAppointments } from '@/features/appointments/patient-appointments';
@@ -35,6 +35,8 @@ import {
   toAllergyView,
 } from '@/features/record/record-lists';
 import { useRecordAccess } from '@/features/record/use-record-access';
+import { AccessJournal } from '@/features/record/access-journal';
+import { EmergencyBanner, LockedRecord, toGrant } from '@/features/record/break-glass';
 import { VitalsSummary } from '@/features/record/vitals-summary';
 import { ArrivalPanel } from '@/features/visits/arrival-panel';
 import { TriagePanel } from '@/features/visits/triage-panel';
@@ -48,7 +50,11 @@ function PatientRecord() {
   const id = useSearchParams().get('id') ?? '';
   const { identity } = useRuntime();
   const clinical = identity?.permissions.includes('clinical_record:read') ?? false;
-  useRecordAccess(id, 'patient_record');
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
 
   const { data, loading } = useLocalQuery(
     async (store) => {
@@ -96,7 +102,9 @@ function PatientRecord() {
       const allergies = (await gather('allergy')).map(toAllergyView);
       const history = await gather('medical_history');
       const problems = await gather('problem');
+      const grants = (await store.readEntitiesByPatient('break_glass', id)).map(toGrant);
       return {
+        grants,
         patient: toPatientView(entity),
         raw: entity.data,
         vitals,
@@ -121,6 +129,18 @@ function PatientRecord() {
     }
   }, [redirect, id, router]);
   const mergedFrom = useSearchParams().get('merged');
+  const loaded = data && !('redirect' in data) ? data : null;
+  const grant = loaded
+    ? activeBreakGlass(loaded.grants, identity?.userId ?? '', id, new Date(now))
+    : null;
+  const access = loaded
+    ? recordAccess(loaded.raw.sensitivity, identity?.sensitivityMax ?? 'normal', grant)
+    : null;
+  useRecordAccess(
+    id,
+    access === 'emergency' ? 'break_glass' : 'patient_record',
+    access === 'open' || access === 'emergency',
+  );
 
   if (loading && !data) return <p className="text-sm text-muted-foreground">{tc('loading')}</p>;
   if (!data || 'redirect' in data) {
@@ -136,6 +156,8 @@ function PatientRecord() {
       </div>
     );
   }
+
+  if (access === 'locked') return <LockedRecord patientId={id} mrn={data.patient.mrn} />;
 
   const {
     patient,
@@ -201,6 +223,7 @@ function PatientRecord() {
         </div>
       </section>
 
+      {grant && <EmergencyBanner endsAt={grant.endsAt} />}
       {raw.isProvisional === true && <ProvisionalPanel patientId={patient.id} />}
       {clinical && <AllergyBanner rows={allergies} />}
 
@@ -247,6 +270,7 @@ function PatientRecord() {
           <VitalsSummary vitals={vitals} sex={patient.sex} birthDate={patient.birthDate} />
           <IdentityCard key={patient.id} patientId={patient.id} data={raw} />
           <FieldHistory patientId={patient.id} />
+          <AccessJournal patientId={patient.id} />
         </div>
       </div>
     </div>

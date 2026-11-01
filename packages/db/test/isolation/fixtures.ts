@@ -6,6 +6,7 @@ import {
   appointment,
   clinicalEvent,
   appointmentType,
+  breakGlassEvent,
   changeLog,
   choiceItem,
   choiceList,
@@ -224,6 +225,18 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       code: 'pulse',
       plausibleMin: 20,
       plausibleMax: 250,
+    });
+  },
+  break_glass_event: async (tx, tenantId) => {
+    await tx.insert(breakGlassEvent).values({
+      id: uuidv7(),
+      tenantId,
+      userId: uuidv7(),
+      patientId: uuidv7(),
+      reasonCode: 'life_threatening',
+      reasonText: 'Urgence vitale',
+      startedAt: new Date(),
+      endsAt: new Date(Date.now() + 3_600_000),
     });
   },
   queue: async (tx, tenantId) => {

@@ -185,7 +185,7 @@ describe.skipIf(!url)('sensitive records against PostgreSQL', () => {
     cursor = page.nextCursor;
   });
 
-  it('withdraws the record from devices whose role does not reach the new level', async () => {
+  it('still sends a sensitive record, to be locked on devices below its level', async () => {
     await admin.dispatch(
       'patient.set_sensitivity',
       { sensitivity: 'vip', sensitivityReason: 'Personnalité publique' },
@@ -193,16 +193,15 @@ describe.skipIf(!url)('sensitive records against PostgreSQL', () => {
     );
     await admin.sync();
 
+    // Break glass must work offline (P10): the record stays on the device, locked.
     const nurse = await pullAs(nurseId, nurseDevice, cursor);
     expect(nurse.changes).toEqual([
-      expect.objectContaining({ entity: 'patient', entityId: patientId, data: null, evict: true }),
+      expect.objectContaining({ entity: 'patient', entityId: patientId }),
     ]);
-    const full = await pullAs(nurseId, nurseDevice, 0);
-    expect(full.changes.every((c) => c.data === null)).toBe(true);
-    expect(full.changes.some((c) => c.entity === 'vital_sign')).toBe(false);
+    expect(nurse.changes[0]?.data).toMatchObject({ sensitivity: 'vip' });
+    expect(nurse.changes[0]?.evict).toBeUndefined();
 
     const own = await pullAs(adminId, adminDevice, cursor);
-    expect(own.changes[0]?.data).toMatchObject({ sensitivity: 'vip' });
     // The reason stays in the operation log, never in the record.
     expect(own.changes[0]?.data).not.toHaveProperty('sensitivityReason');
     const history = await withTenant(handle.db, { tenantId, userId: null }, (tx) =>
@@ -214,12 +213,33 @@ describe.skipIf(!url)('sensitive records against PostgreSQL', () => {
     expect(history.map((h) => h.field)).toEqual(['sensitivity']);
   });
 
-  it('hides the record from the server search and refuses to open it', async () => {
-    const hits = async (userId: string) =>
-      (await search.searchPatients(ctxFor(userId), { q: 'Tshisekedi', cursor: 0 })).hits.length;
-    expect(await hits(nurseId)).toBe(0);
-    expect(await hits(adminId)).toBe(1);
+  it('masks the record in the server search and opens it only through an emergency access', async () => {
+    const hit = async (userId: string) =>
+      (await search.searchPatients(ctxFor(userId), { q: 'Tshisekedi', cursor: 0 })).hits[0];
+    expect(await hit(nurseId)).toMatchObject({ protected: true, name: '', phone: null });
+    expect(await hit(adminId)).toMatchObject({ protected: false, name: 'Tshisekedi Aimé' });
     await expectCode(search.fetchPatient(ctxFor(nurseId), patientId), 'PAT_SENSITIVE');
+
+    // An emergency access that ended no longer opens it; a running one does.
+    const grant = (startedAt: number, endsAt: number) =>
+      withTenant(handle.db, { tenantId, userId: null }, (tx) =>
+        tx.insert(schema.breakGlassEvent).values({
+          id: uuidv7(),
+          tenantId,
+          userId: nurseId,
+          patientId,
+          reasonCode: 'life_threatening',
+          reasonText: 'Patient inconscient aux urgences',
+          startedAt: new Date(startedAt),
+          endsAt: new Date(endsAt),
+        }),
+      );
+    await grant(Date.now() - 6 * 3_600_000, Date.now() - 2 * 3_600_000);
+    await expectCode(search.fetchPatient(ctxFor(nurseId), patientId), 'PAT_SENSITIVE');
+    await grant(Date.now() - 60_000, Date.now() + 4 * 3_600_000);
+    expect((await search.fetchPatient(ctxFor(nurseId), patientId)).data).toMatchObject({
+      sensitivity: 'vip',
+    });
   });
 
   it('opens it again once the role reaches the level', async () => {

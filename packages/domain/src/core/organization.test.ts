@@ -178,6 +178,7 @@ describe('configuration values', () => {
       autoLockMinutes: 5,
       pinMaxAttempts: 10,
       duplicateAlertScore: 50,
+      breakGlassHours: 4,
     });
     expect(isConfigKey('security.pin_max_attempts')).toBe(true);
     expect(isConfigKey('security.unknown')).toBe(false);
