@@ -1,0 +1,2 @@
+ALTER TABLE "patient" ADD COLUMN "card_token" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "patient_card_token_uq" ON "patient" USING btree ("tenant_id","card_token") WHERE "patient"."card_token" is not null;

@@ -1,9 +1,15 @@
 import 'server-only';
-import { appendAudit, schema, withTenant, type Db, type Tx } from '@medhub/db';
+import { appendAudit, enqueue, schema, withTenant, type Db, type Tx } from '@medhub/db';
 import { ENTITIES, getCommand, type EntityName, type PatientRegisterPayload } from '@medhub/domain';
 import type { StockMovementKind } from '@medhub/shared';
 import { formatHlc, uuidv7 } from '@medhub/shared';
-import { createState, type EntityState, type OpResult, type Operation } from '@medhub/sync';
+import {
+  createState,
+  deriveData,
+  type EntityState,
+  type OpResult,
+  type Operation,
+} from '@medhub/sync';
 import {
   DuplicateOperationError,
   type ChangeEntry,
@@ -24,6 +30,67 @@ function compact(data: Record<string, unknown>): Record<string, unknown> {
 }
 
 const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
+const record = (v: unknown): Record<string, string | null> | null =>
+  v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, string | null>) : null;
+
+/** Civil status fields traced one by one in patient_field_history. */
+const TRACKED_FIELDS = [
+  'familyName',
+  'middleName',
+  'givenName',
+  'sex',
+  'birthDate',
+  'birthDateEstimated',
+  'phone',
+  'sensitivity',
+  'address',
+  'occupation',
+  'maritalStatus',
+  'nationality',
+  'language',
+  'fatherName',
+  'motherName',
+  'contact',
+  'cardToken',
+  'isProvisional',
+  'deceasedAt',
+  'mergedIntoId',
+] as const;
+
+const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+/** One history row per field whose value really changed. */
+async function recordFieldHistory(
+  tx: Tx,
+  input: {
+    tenantId: string;
+    patientId: string;
+    before: Record<string, unknown>;
+    after: Record<string, unknown>;
+    source: 'sync' | 'merge' | 'unmerge' | 'review';
+    opId: string | null;
+    hlc: string | null;
+    deviceId: string | null;
+    changedBy: string | null;
+  },
+): Promise<void> {
+  const rows = TRACKED_FIELDS.filter((f) => !same(input.before[f], input.after[f])).map(
+    (field) => ({
+      id: uuidv7(),
+      tenantId: input.tenantId,
+      patientId: input.patientId,
+      field,
+      oldValue: input.before[field] ?? null,
+      newValue: input.after[field] ?? null,
+      source: input.source,
+      opId: input.opId,
+      hlc: input.hlc,
+      deviceId: input.deviceId,
+      changedBy: input.changedBy,
+    }),
+  );
+  if (rows.length > 0) await tx.insert(schema.patientFieldHistory).values(rows);
+}
 
 /** Mapping between the domain entity state and the PostgreSQL rows, one per entity. */
 const mappers = {
@@ -45,6 +112,19 @@ const mappers = {
           sensitivity: row.sensitivity,
           searchText: row.searchText,
           phoneticKey: row.phoneticKey,
+          mergedIntoId: row.mergedIntoId,
+          address: row.address,
+          occupation: row.occupation,
+          maritalStatus: row.maritalStatus,
+          nationality: row.nationality,
+          language: row.language,
+          fatherName: row.fatherName,
+          motherName: row.motherName,
+          contact: row.contact,
+          cardToken: row.cardToken,
+          isProvisional: row.isProvisional,
+          provisionalKind: row.provisionalKind,
+          deceasedAt: row.deceasedAt?.toISOString(),
         }),
         fieldMeta: row.fieldMeta,
         hlc: row.hlc ?? '',
@@ -70,6 +150,19 @@ const mappers = {
         sensitivity: str(d.sensitivity) ?? 'normal',
         searchText: String(d.searchText ?? ''),
         phoneticKey: String(d.phoneticKey ?? ''),
+        mergedIntoId: str(d.mergedIntoId),
+        address: record(d.address),
+        occupation: str(d.occupation),
+        maritalStatus: str(d.maritalStatus),
+        nationality: str(d.nationality),
+        language: str(d.language),
+        fatherName: str(d.fatherName),
+        motherName: str(d.motherName),
+        contact: record(d.contact),
+        cardToken: str(d.cardToken),
+        isProvisional: d.isProvisional === true,
+        provisionalKind: str(d.provisionalKind),
+        deceasedAt: str(d.deceasedAt) ? new Date(String(d.deceasedAt)) : null,
         fieldMeta: state.fieldMeta,
         hlc: state.hlc,
         opId: state.opId || null,
@@ -120,6 +213,44 @@ const mappers = {
         supersedesId: str(d.supersedesId),
         plausibilityOverrideReason: str(d.plausibilityOverrideReason),
         status: str(d.status) ?? 'active',
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+      };
+    },
+  },
+  patient_favorite: {
+    table: schema.patientFavorite,
+    toState(row: typeof schema.patientFavorite.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: {
+          patientId: row.patientId,
+          userId: row.userId,
+          active: row.active,
+          at: row.at.toISOString(),
+          status: row.status,
+        },
+        fieldMeta: {},
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.patientFavorite.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        // The owner is the author of the operation, never a value from the payload.
+        userId: state.createdBy,
+        active: d.active === true,
+        at: new Date(String(d.at)),
         hlc: state.hlc,
         opId: state.opId || null,
         deviceId: state.deviceId || null,
@@ -197,6 +328,14 @@ async function getEntity(tx: Tx, entity: EntityName, id: string): Promise<Entity
         .limit(1);
       return row ? mappers.stock_movement.toState(row) : null;
     }
+    case 'patient_favorite': {
+      const [row] = await tx
+        .select()
+        .from(schema.patientFavorite)
+        .where(eq(schema.patientFavorite.id, id))
+        .limit(1);
+      return row ? mappers.patient_favorite.toState(row) : null;
+    }
   }
 }
 
@@ -215,6 +354,13 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
       return (
         await tx.select().from(schema.stockMovement).where(inArray(schema.stockMovement.id, ids))
       ).map((r) => mappers.stock_movement.toState(r));
+    case 'patient_favorite':
+      return (
+        await tx
+          .select()
+          .from(schema.patientFavorite)
+          .where(inArray(schema.patientFavorite.id, ids))
+      ).map((r) => mappers.patient_favorite.toState(r));
   }
 }
 
@@ -288,6 +434,15 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
       switch (entity) {
         case 'patient':
           await tx.insert(schema.patient).values(mappers.patient.toRow(state, ctx));
+          // Duplicates are looked for in the background, so that a push stays short.
+          await enqueue(
+            tx,
+            'pat.detect_duplicates',
+            { patientId: state.id },
+            {
+              tenantId: ctx.tenantId,
+            },
+          );
           return;
         case 'vital_sign':
           await tx.insert(schema.vitalSign).values(mappers.vital_sign.toRow(state, ctx));
@@ -295,11 +450,17 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         case 'stock_movement':
           await tx.insert(schema.stockMovement).values(mappers.stock_movement.toRow(state, ctx));
           return;
+        case 'patient_favorite':
+          await tx
+            .insert(schema.patientFavorite)
+            .values(mappers.patient_favorite.toRow(state, ctx));
+          return;
       }
     },
     async updateEntity(entity, state) {
       switch (entity) {
         case 'patient': {
+          const before = await getEntity(tx, 'patient', state.id);
           const {
             id: _id,
             tenantId: _t,
@@ -307,6 +468,26 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
             ...row
           } = mappers.patient.toRow(state, ctx);
           await tx.update(schema.patient).set(row).where(eq(schema.patient.id, state.id));
+          // An identified provisional record is compared with the others only now.
+          if (before?.data.isProvisional === true && state.data.isProvisional !== true) {
+            await enqueue(
+              tx,
+              'pat.detect_duplicates',
+              { patientId: state.id },
+              { tenantId: ctx.tenantId },
+            );
+          }
+          await recordFieldHistory(tx, {
+            tenantId: ctx.tenantId,
+            patientId: state.id,
+            before: before?.data ?? {},
+            after: state.data,
+            source: 'sync',
+            opId: state.opId || null,
+            hlc: state.hlc || null,
+            deviceId: ctx.deviceId,
+            changedBy: ctx.userId,
+          });
           return;
         }
         case 'vital_sign':
@@ -320,7 +501,8 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
             .where(eq(schema.vitalSign.id, state.id));
           return;
         case 'stock_movement':
-          throw new Error('stock_movement rows are immutable');
+        case 'patient_favorite':
+          throw new Error(`${entity} rows are immutable`);
       }
     },
     async appendChange(change: ChangeEntry) {
@@ -475,4 +657,124 @@ export async function insertServerPatients(
     });
   }
   return payloads.length;
+}
+
+/**
+ * A change made by the server itself (merge, undo of a merge): a new version
+ * with per-field metadata and a change log entry, exactly like a synchronised
+ * update, so that every device receives it with its next pull.
+ */
+export async function updateServerPatient(
+  tx: Tx,
+  ctx: { tenantId: string; userId: string },
+  patientId: string,
+  patch: Record<string, unknown>,
+  source: 'merge' | 'unmerge' | 'review' = 'merge',
+): Promise<EntityState> {
+  const [row] = await tx
+    .select()
+    .from(schema.patient)
+    .where(eq(schema.patient.id, patientId))
+    .limit(1);
+  if (!row) throw new Error('patient not found');
+  const current = mappers.patient.toState(row);
+  const version = current.version + 1;
+  const hlc = formatHlc({ physical: Date.now(), counter: 0, node: 'server' });
+  const opId = uuidv7();
+  const fieldMeta = { ...current.fieldMeta };
+  for (const key of Object.keys(patch)) fieldMeta[key] = { hlc, v: version };
+  const state: EntityState = {
+    ...current,
+    version,
+    hlc,
+    opId,
+    fieldMeta,
+    data: deriveData('patient', { ...current.data, ...patch }),
+  };
+  const {
+    id: _id,
+    tenantId: _t,
+    createdBy: _c,
+    ...values
+  } = mappers.patient.toRow(state, { ...ctx, deviceId: null });
+  await tx.update(schema.patient).set(values).where(eq(schema.patient.id, patientId));
+  await recordFieldHistory(tx, {
+    tenantId: ctx.tenantId,
+    patientId,
+    before: current.data,
+    after: state.data,
+    source,
+    opId,
+    hlc,
+    deviceId: null,
+    changedBy: ctx.userId,
+  });
+  await tx.insert(schema.changeLog).values({
+    tenantId: ctx.tenantId,
+    entity: 'patient',
+    entityId: patientId,
+    version,
+    opId,
+    scopeKeys: ENTITIES.patient.scopeKeys(state.data, patientId),
+  });
+  return state;
+}
+
+/** Current state of a patient, as a pull would deliver it. */
+export async function patientState(tx: Tx, patientId: string): Promise<EntityState | null> {
+  return getEntity(tx, 'patient', patientId);
+}
+
+/** Access level of each listed patient, for the pull filter. */
+export async function patientSensitivities(
+  db: Db,
+  ctx: Ctx,
+  ids: readonly string[],
+): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map();
+  const rows = await withTenant(
+    db,
+    { tenantId: ctx.tenantId, userId: ctx.userId, deviceId: ctx.deviceId },
+    (tx) =>
+      tx
+        .select({ id: schema.patient.id, sensitivity: schema.patient.sensitivity })
+        .from(schema.patient)
+        .where(inArray(schema.patient.id, [...ids])),
+  );
+  return new Map(rows.map((r) => [r.id, r.sensitivity]));
+}
+
+/**
+ * Every row a device needs for these patients: the record itself, its vital
+ * signs and the user's own favourite toggles, as pull changes.
+ */
+export async function patientBundles(
+  tx: Tx,
+  patientIds: readonly string[],
+  userId: string,
+): Promise<{ entity: EntityName; state: EntityState }[]> {
+  if (patientIds.length === 0) return [];
+  const ids = [...patientIds];
+  const patients = await tx.select().from(schema.patient).where(inArray(schema.patient.id, ids));
+  const vitals = await tx
+    .select()
+    .from(schema.vitalSign)
+    .where(inArray(schema.vitalSign.patientId, ids));
+  const favorites = await tx
+    .select()
+    .from(schema.patientFavorite)
+    .where(
+      and(
+        inArray(schema.patientFavorite.patientId, ids),
+        eq(schema.patientFavorite.userId, userId),
+      ),
+    );
+  return [
+    ...patients.map((r) => ({ entity: 'patient' as const, state: mappers.patient.toState(r) })),
+    ...vitals.map((r) => ({ entity: 'vital_sign' as const, state: mappers.vital_sign.toState(r) })),
+    ...favorites.map((r) => ({
+      entity: 'patient_favorite' as const,
+      state: mappers.patient_favorite.toState(r),
+    })),
+  ];
 }

@@ -1,5 +1,6 @@
-import { uuidv7 } from '@medhub/shared';
+import { ManualClock, uuidv7 } from '@medhub/shared';
 import { describe, expect, it } from 'vitest';
+import { SyncClient } from '../src/client/engine';
 import type { Operation } from '../src/protocol';
 import { createWorld } from './harness';
 
@@ -159,5 +160,123 @@ describe('server engine', () => {
       'SYNC_SIGNATURE_INVALID',
       'DEPENDENCY_REJECTED',
     ]);
+  });
+
+  it('refuses a clinical act dated after a death recorded on another device', async () => {
+    const { a, b, server } = setup();
+    const { entityId: patientId } = await a.client.dispatch('patient.register', registration);
+    await a.client.sync();
+    await b.client.sync();
+
+    await a.client.dispatch(
+      'patient.mark_deceased',
+      { deceasedAt: '2026-10-29T10:00:00.000Z' },
+      { entityId: patientId },
+    );
+    await a.client.sync();
+    // B has not pulled yet: one measurement taken before the death, one after.
+    const vital = (measuredAt: string) => ({
+      patientId,
+      code: 'temp' as const,
+      value: 37.2,
+      unit: '°C',
+      measuredAt,
+    });
+    await b.client.dispatch('vital_sign.record', vital('2026-10-29T09:00:00.000Z'));
+    await b.client.dispatch('vital_sign.record', vital('2026-10-29T11:00:00.000Z'));
+    const res = await b.transport.push({
+      deviceId: b.id,
+      schemaVersion: 1,
+      ops: await pendingOps(b),
+    });
+    expect(res.results.map((r) => r.reason ?? r.status)).toEqual(['applied', 'PAT_DECEASED']);
+    expect(server.entitiesOf('vital_sign')).toHaveLength(1);
+
+    // Once it knows, the device itself refuses the act before queueing it.
+    await a.client.sync();
+    await expect(
+      a.client.dispatch('vital_sign.record', vital('2026-10-29T12:00:00.000Z')),
+    ).rejects.toMatchObject({ code: 'PAT_DECEASED' });
+  });
+
+  it('withdraws a death declaration only with a reason', async () => {
+    const { a, server } = setup();
+    const { entityId } = await a.client.dispatch('patient.register', registration);
+    await a.client.dispatch(
+      'patient.mark_deceased',
+      { deceasedAt: '2026-10-29T10:00:00.000Z' },
+      { entityId },
+    );
+    await expect(
+      a.client.dispatch('patient.mark_deceased', { deceasedAt: null }, { entityId }),
+    ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+    await a.client.dispatch(
+      'patient.mark_deceased',
+      { deceasedAt: null, correctionReason: 'Erreur de dossier' },
+      { entityId },
+    );
+    await a.client.sync();
+    expect(server.entitiesOf('patient')[0]?.data.deceasedAt).toBeNull();
+  });
+
+  it('marks sensitivity with its own permission, the reason staying in the log', async () => {
+    const { a, server } = setup();
+    const { entityId } = await a.client.dispatch('patient.register', registration);
+    await a.client.dispatch(
+      'patient.set_sensitivity',
+      { sensitivity: 'staff', sensitivityReason: 'Agent de la structure' },
+      { entityId },
+    );
+    // A plain identity update cannot carry the level.
+    await a.client.dispatch(
+      'patient.update',
+      { phone: '+243 81 4444444', sensitivity: 'normal' } as never,
+      { entityId },
+    );
+    await a.client.sync();
+    const [patient] = server.entitiesOf('patient');
+    expect(patient?.data).toMatchObject({ sensitivity: 'staff', phone: '+243 81 4444444' });
+    expect(patient?.data).not.toHaveProperty('sensitivityReason');
+  });
+
+  it('drops a patient and its rows when the server says it left the device', async () => {
+    const { a } = setup();
+    const { entityId: patientId } = await a.client.dispatch('patient.register', registration);
+    await a.client.dispatch('vital_sign.record', {
+      patientId,
+      code: 'temp',
+      value: 37,
+      unit: '°C',
+      measuredAt: '2026-10-29T08:00:00.000Z',
+    });
+    await a.client.sync();
+    const evicting = new SyncClient({
+      store: a.store,
+      transport: {
+        push: async () => ({ results: [], serverTime: '2026-10-29T09:00:00.000Z' }),
+        pull: async () => ({
+          changes: [
+            {
+              seq: 99,
+              entity: 'patient',
+              entityId: patientId,
+              version: 2,
+              data: null,
+              evict: true,
+            },
+          ],
+          nextCursor: 99,
+          hasMore: false,
+          serverTime: '2026-10-29T09:00:00.000Z',
+        }),
+      },
+      clock: new ManualClock(Date.UTC(2026, 9, 29, 9)),
+      identity: { tenantId: uuidv7(), siteId: null, userId: uuidv7(), deviceId: a.id },
+      sign: (op) => ({ ...op, signature: '' }),
+      permissions: new Set<string>(),
+    });
+    await evicting.pull();
+    expect(a.store.entitiesOf('patient')).toEqual([]);
+    expect(a.store.entitiesOf('vital_sign')).toEqual([]);
   });
 });

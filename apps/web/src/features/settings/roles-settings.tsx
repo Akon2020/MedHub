@@ -2,9 +2,11 @@
 
 import { grantChanges, isPrivilegedRole, templateGrants, type RoleGrant } from '@medhub/domain';
 import {
+  PATIENT_SENSITIVITIES,
   PERMISSION_CATALOG,
   PRIVILEGED_PERMISSIONS,
   RESOURCE_SCOPES,
+  type PatientSensitivity,
   type PermissionScope,
 } from '@medhub/shared';
 import {
@@ -42,6 +44,7 @@ type Role = {
   version: number;
   members: number;
   grants: RoleGrant[];
+  sensitivityMax: PatientSensitivity | null;
 };
 
 type Overview = { roles: Role[]; canManage: boolean };
@@ -222,7 +225,11 @@ function RoleEditor({
   const [description, setDescription] = useState(role.description ?? '');
   const [requiresMfa, setRequiresMfa] = useState(role.requiresMfa);
   const [grants, setGrants] = useState<RoleGrant[]>(role.grants);
+  const [sensitivityMax, setSensitivityMax] = useState<PatientSensitivity | null>(
+    role.sensitivityMax,
+  );
   const [busy, setBusy] = useState(false);
+  const readsPatients = grants.some((g) => g.key === 'patient:read');
   const privileged = isPrivilegedRole(
     role.templateCode,
     grants.map((g) => g.key),
@@ -238,7 +245,8 @@ function RoleEditor({
     pending > 0 ||
     name !== role.name ||
     description !== (role.description ?? '') ||
-    requiresMfa !== role.requiresMfa;
+    requiresMfa !== role.requiresMfa ||
+    sensitivityMax !== role.sensitivityMax;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -250,6 +258,7 @@ function RoleEditor({
         description,
         requiresMfa: privileged || requiresMfa,
         grants,
+        sensitivityMax,
       });
       if (ok) onSaved();
     } finally {
@@ -300,6 +309,28 @@ function RoleEditor({
         </span>
       </label>
 
+      {readsPatients && (
+        <div className="grid gap-2 sm:max-w-md">
+          <Label htmlFor="role-sensitivity">{t('fields.sensitivityMax')}</Label>
+          <NativeSelect
+            id="role-sensitivity"
+            value={sensitivityMax ?? ''}
+            disabled={!canManage}
+            onChange={(e) =>
+              setSensitivityMax(e.target.value ? (e.target.value as PatientSensitivity) : null)
+            }
+          >
+            <option value="">{t('sensitivity.default')}</option>
+            {PATIENT_SENSITIVITIES.map((level) => (
+              <option key={level} value={level}>
+                {t(`sensitivity.levels.${level}`)}
+              </option>
+            ))}
+          </NativeSelect>
+          <p className="text-xs text-muted-foreground">{t('sensitivity.hint')}</p>
+        </div>
+      )}
+
       {template && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl bg-muted/50 px-3 py-2.5 text-sm">
           <span className="min-w-0 flex-1">
@@ -337,6 +368,7 @@ function RoleEditor({
                 setDescription(role.description ?? '');
                 setRequiresMfa(role.requiresMfa);
                 setGrants(role.grants);
+                setSensitivityMax(role.sensitivityMax);
               }}
             >
               {t('reset')}

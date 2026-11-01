@@ -17,14 +17,14 @@
 - **Quatre yeux** : une action au-delà du seuil (`amount_max` ou seuil de configuration) crée une `approval_request`. Hors connexion, la demande est envoyée à la synchronisation ; l'action reste en attente (remise non appliquée) ou est appliquée avec validation par un second utilisateur **présent sur le même poste** (saisie de son PIN), selon la configuration `four_eyes_mode` (`remote` ou `same_device`).
 - **Bris de glace** : voir `docs/03-multitenant-securite.md`.
 - **Délégations** : `access_delegation` (remplacement pendant une garde ou un congé), date de fin obligatoire, tracée.
-- **Sensibilité des dossiers** : un patient `staff`, `vip` ou `restricted`, ou une catégorie de donnée sensible (VIH, santé mentale, violences), exige `sensitivity_max` suffisant ou un bris de glace.
+- **Sensibilité des dossiers** : un patient `staff`, `vip` ou `restricted`, ou une catégorie de donnée sensible (VIH, santé mentale, violences), exige `sensitivity_max` suffisant ou un bris de glace. La condition se place sur la permission `patient:read` du rôle ; sans condition, le rôle n'ouvre que les dossiers `normal`, sauf s'il porte `patient:mark_sensitive` (tous les niveaux). L'utilisateur reçoit le niveau le plus large de ses rôles.
 - **2FA obligatoire** pour les rôles `is_privileged` ou `requires_mfa`.
 
 ## 3. Catalogue de permissions (MVP)
 
 | Ressource | Actions | Portées |
 | --- | --- | --- |
-| `patient` | `read`, `create`, `update`, `merge`, `export`, `mark_sensitive` | site, tenant |
+| `patient` | `read`, `create`, `update`, `merge`, `export`, `mark_sensitive`, `mark_deceased` | site, tenant |
 | `encounter` | `read`, `create`, `update_status`, `close` | department, site, tenant |
 | `appointment` | `read`, `create`, `update`, `cancel` | self, department, site |
 | `queue` | `read`, `call`, `manage` | department, site |

@@ -1,4 +1,11 @@
-import { getCommand, type CommandName, type CommandPayload, type EntityName } from '@medhub/domain';
+import {
+  deathRefusal,
+  getCommand,
+  mergeablePayload,
+  type CommandName,
+  type CommandPayload,
+  type EntityName,
+} from '@medhub/domain';
 import { AppError, HybridLogicalClock, toIso, uuidv7, type Clock } from '@medhub/shared';
 import {
   DEFAULT_PULL_LIMIT,
@@ -56,6 +63,8 @@ export interface ClientSyncTx {
   getSyncState(): Promise<SyncStateRecord>;
   setSyncState(patch: Partial<SyncStateRecord>): Promise<void>;
   addConflict(conflict: LocalConflict): Promise<void>;
+  /** Removes a patient and the rows attached to it from the device (not from the server). */
+  evictPatient(patientId: string): Promise<void>;
 }
 
 export interface ClientSyncStore {
@@ -144,6 +153,12 @@ export class SyncClient {
       const current =
         command.kind === 'update' ? await tx.getEntity(command.entity, entityId) : null;
       if (command.kind === 'update' && !current) throw new AppError('NOT_FOUND', 404);
+      if (command.patientAct) {
+        const { patientId } = command.patientAct(parsed.data as never);
+        const patient = await tx.getEntity('patient', patientId);
+        const refusal = deathRefusal(command, parsed.data, patient?.data);
+        if (refusal) throw new AppError(refusal as never, 409);
+      }
 
       const now = this.opts.clock.now();
       const clockSuspect =
@@ -273,6 +288,10 @@ export class SyncClient {
 
       await this.opts.store.transaction(async (tx) => {
         for (const change of response.changes) {
+          if (change.evict) {
+            if (change.entity === 'patient') await tx.evictPatient(change.entityId);
+            continue;
+          }
           await applyRemote(
             tx,
             change.entity as EntityName,
@@ -312,7 +331,7 @@ export async function applyLocal(tx: ClientSyncTx, op: Operation): Promise<void>
   const command = getCommand(op.command);
   if (!command) throw new AppError('SYNC_UNKNOWN_COMMAND');
   const entity = command.entity;
-  const payload = op.payload as Record<string, unknown>;
+  const payload = mergeablePayload(command, op.payload as Record<string, unknown>);
   const existing = await tx.getEntity(entity, op.entityId);
 
   if (command.kind === 'update' || (command.kind === 'create' && existing)) {

@@ -80,7 +80,15 @@ Consignes reçues et appliquées pendant les sessions :
 | `e49e687` | 30/10/2026 | `feat(core)` : éditeur de rôles (grille ressource et action avec périmètre, duplication, retour au modèle, rôle privilégié et 2FA automatiques, dernier administrateur protégé), libellés des nouveaux événements de sécurité |
 | `e43ca85` | 30/10/2026 | `feat(core)` : référentiels (listes de choix avec import CSV vérifié, devises, unités UCUM, 26 provinces, import plateforme des zones administratives, copie locale sur les postes, province des adresses en liste) |
 | `33951e8` | 30/10/2026 | `feat(web)` : traduction anglaise complète vérifiée par test (parité, ICU, couverture des clés), langue du compte appliquée à la connexion et enregistrée depuis l'application |
-| (S5, diagnostic et formation) | 31/10/2026 | `feat(core)` : diagnostic (horloge, accès hors connexion, licence, rechargement des catalogues, journal chiffré pour le support) et base de formation (copie de la structure, patients fictifs, réinitialisation par archivage) |
+| `267beb8` | 31/10/2026 | `feat(core)` : diagnostic (horloge, accès hors connexion, licence, rechargement des catalogues, journal chiffré pour le support) et base de formation (copie de la structure, patients fictifs, réinitialisation par archivage) |
+| `0f1d6b2` | 31/10/2026 | `feat(pat)` : score de doublon partagé, alerte avant création sur le poste, détection en tâche de fond après synchronisation, file des doublons avec paire écartée |
+| `3f8ce3a` | 31/10/2026 | `feat(pat)` : fusion supervisée et réversible (dossier conservé, valeurs choisies, instantané, annulation), redirection et constantes rattachées sur les postes |
+| `8156924` | 01/11/2026 | `feat(pat)` : identité complète modifiable hors connexion, historique champ par champ, revue des conflits de modification, partie démographique du scénario P2 |
+| `fc88f2c` | 01/11/2026 | `feat(pat)` : recherche serveur avec `pg_trgm` ou repli, index conditionnel, section « Sur le serveur » et ouverture d'un patient absent du poste |
+| `9065901` | 01/11/2026 | `feat(pat)` : carte patient en PDF avec QR opaque, imprimée sur le poste, nouvelle carte en cas de perte, ouverture de la fiche par le jeton scanné ; CSP adaptée à la génération de PDF |
+| `8086814` | 01/11/2026 | `feat(pat)` : patients provisoires (inconnu, nouveau-né), identification, signalement manuel d'un doublon, déclaration et retrait du décès, actes cliniques refusés après le décès |
+| `4347c73` | 01/11/2026 | `feat(pat)` : sensibilité des dossiers (commande dédiée, niveau par rôle, retrait des postes, recherche et lecture refusées) |
+| `fae2ce9` | 01/11/2026 | `feat(sync)` : favoris et périmètre de synchronisation par structure et par rôle (retrait et arrivée complète des patients, épinglage depuis la recherche serveur) |
 
 ---
 
@@ -148,6 +156,11 @@ Code pur, sans Node.js, DOM ni Dexie, utilisé à l'identique par le client et l
 - `commands.ts` : registre des entités et des commandes synchronisées : `patient.register`, `patient.update`, `vital_sign.record` (permission `vital_sign:create`), `stock_movement.record`. Chaque commande a un schéma Zod, une permission, une stratégie de conflit et une fonction d'application.
 - `pat/search.ts` : normalisation (accents, casse), clé phonétique adaptée aux noms congolais, trigrammes pour la recherche floue.
 - `pat/commands.ts`, `pat/age.ts` : enregistrement rapide, âge exact ou estimé.
+- `pat/commands.ts` (S6, démographie) : adresse structurée (même forme que les sites), profession, état civil (liste générique), nationalité, langue, noms du père et de la mère, personne à contacter, dans l'enregistrement et dans `patient.update` (champs fusionnables) ; les noms des parents entrent dans le texte de recherche.
+- `pat/card.ts` (S6) : jeton de carte opaque (`MHC1-` et 20 caractères d'un alphabet de 32, soit 100 bits fournis par l'appelant), lecture tolérante d'une saisie de douchette ; `parsePatientQuery` reconnaît un jeton et fait alors une recherche exacte.
+- `pat/search.ts` (S6) : `parsePatientQuery` sépare d'une recherche les mots, l'année de naissance, un téléphone (même saisi en groupes, « +243 991 234 567 ») et un numéro de dossier.
+- `pat/merge.ts` (S6) : champs fusionnables (nom, postnom, prénom, sexe, naissance avec son indicateur d'estimation, téléphone), valeurs reprises de l'autre dossier, restauration à l'annulation sans écraser une valeur modifiée depuis, fermeture transitive des fusions (chronologie) et dossier cible d'un ancien identifiant.
+- `pat/duplicate-score.ts` (S6) : score de doublon de `docs/modules/pat.md` (prononciation identique +35, noms proches par trigrammes au-delà de 0,7 +20, même date de naissance exacte +25 ou même année +10, même téléphone +30, même père ou mère +15, sexe différent -40), normalisation des numéros congolais (+243), seuils par défaut 50 (alerte) et 60 (candidat). Le même calcul sert au poste et au serveur ; le scénario P3 donne 95.
 - `dpi/vital-signs.ts` : plausibilité des constantes ; une valeur hors limites exige un motif (`DPI_VITAL_IMPLAUSIBLE`).
 - `phar/stock.ts` : solde = somme des mouvements, alerte de stock négatif.
 - `core/numbering.ts` : numérotation hors connexion sans collision (`{PREFIX}-{DEVICE}-{YY}-{SEQ:5}` par défaut, configurable).
@@ -183,7 +196,7 @@ Code pur, sans Node.js, DOM ni Dexie, utilisé à l'identique par le client et l
 
 ## 8. `packages/db` : base PostgreSQL, sécurité et migrations
 
-### 8.1 Schéma (34 tables)
+### 8.1 Schéma (37 tables)
 
 | Domaine | Tables |
 | --- | --- |
@@ -225,6 +238,11 @@ Colonnes communes, index composites commençant par `tenant_id`, contraintes `ch
 
 - `migrations/0000_init.sql` : schéma initial.
 - `migrations/0001_s4_mfa_security.sql` : colonnes 2FA de `user_account`, tables `mfa_recovery_code`, `rate_limit`, `ip_rule`, `security_event` et leurs index.
+- `src/search-index.ts` (S6) : index GIN trigrammes sur `patient.search_text`, créé par le script de migration seulement si `pg_trgm` est installé (message dans la sortie de `pnpm db:migrate`).
+- `migrations/0011_s6_card.sql` : colonne `patient.card_token`, unique par structure quand elle est renseignée.
+- `migrations/0010_s6_demographics.sql` : colonnes démographiques de `patient` et table `patient_field_history` (ajout seul, protégée contre la modification et la suppression), RLS forcée.
+- `migrations/0009_s6_merge.sql` : table `patient_merge` (survivant, dossier fusionné, choix, instantanés des deux dossiers, valeurs appliquées, motif, état actif ou annulé), RLS forcée.
+- `migrations/0008_s6_duplicates.sql` : table `duplicate_candidate` (paire ordonnée unique, score, raisons, état ouvert, écarté ou fusionné, décision), RLS forcée.
 - `migrations/0007_s5_training.sql` : `tenant.training_source_id` et unicité du code limitée aux structures qui ne sont pas des bases de formation archivées.
 - `migrations/0006_s5_reference.sql` : tables plateforme `currency`, `unit`, `admin_area` (sans `tenant_id`, en lecture pour toutes les structures) et tables de structure `choice_list`, `choice_item` (RLS forcée).
 - `scripts/import-areas.ts` (`pnpm db:import-areas`) : import plateforme des zones administratives depuis un fichier officiel, simulation par défaut, `--apply` pour écrire, mise à jour sans suppression.
@@ -285,6 +303,8 @@ Colonnes communes, index composites commençant par `tenant_id`, contraintes `ch
 | `/app/parametres/utilisateurs` | En ligne seulement (S5) | Comptes de la structure : recherche, création avec mot de passe temporaire affiché une fois, profil, site et service principaux, rôles, réinitialisation du mot de passe et de la 2FA, déverrouillage, désactivation et réactivation avec motif |
 | `/app/parametres/roles` | En ligne seulement (S5) | Rôles de la structure : membres et nombre de permissions, grille par domaine (patients et soins, laboratoire, pharmacie, finances, administration) avec actions et périmètre, 2FA, duplication, différences et retour au rôle modèle, résumé des changements avant enregistrement |
 | `/app/parametres/referentiels` | En ligne seulement (S5) | Listes de choix (création, éléments, ordre, activation, import CSV avec vérification ligne par ligne et modèle téléchargeable) ; catalogues de la plateforme (zones administratives, provinces, devises, unités) |
+| `/app/patients/fiche?id=` (S6) | Opérationnelle | Carte d'identité complète, modifiable hors connexion ; historique des modifications en ligne, à la demande |
+| `/app/patients/doublons` | En ligne seulement (S6) | Conflits de modification à revoir (valeur en vigueur et valeur envoyée, motif) ; file des doublons possibles : paires classées par score, comparaison côte à côte avec différences surlignées, raisons, « Pas la même personne » avec motif, fusion (dossier conservé, valeur à garder pour chaque différence, motif), fusions récentes et annulation |
 | `/app/parametres/formation` | En ligne seulement (S5) | Base de formation : code à communiquer, contenu, création, réinitialisation avec confirmation, bases archivées |
 | `/app/parametres/synchronisation` | En ligne seulement (S5) | Postes et sécurité : réglages versionnés (brouillon, publication, historique, restauration) |
 | `/app/parametres/appareils` | En ligne seulement (S5) | Postes de la structure : utilisateur, dernière synchronisation, version, état ; retrait (avec dernier envoi autorisé ou non) et déclaration de perte ; recommandation de chiffrement des disques |
@@ -302,6 +322,8 @@ La coquille `/app` (`features/shell`) comprend la barre latérale repliable filt
 - `service-worker.tsx` : enregistrement et mises à jour contrôlées.
 - Sur `AUTH_USER_DISABLED` (S5), la boucle de synchronisation s'arrête, le runtime vide le jeton hors connexion (`revokeOfflineToken` de `packages/local-db`) puis verrouille : le PIN n'ouvre plus le poste, mais les opérations en attente sont conservées si le compte est réactivé.
 - `diagnostic-export.ts` (S5) : journal de diagnostic (compteurs, état de synchronisation, métadonnées de l'outbox sans contenu, commandes et codes d'erreur des rejets, conflits, état des jetons et des référentiels, stockage) scellé pour le support avec `sealForSupport` de `packages/sync` (X25519, HKDF-SHA256, AES-256-GCM).
+- `features/patients/patient-card.tsx` (S6) : impression de la carte (PDF ID-1 construit sur le poste par `@react-pdf/renderer`, QR par `qrcode`, tous deux chargés à la demande), attribution du jeton à la première impression et nouveau jeton pour une carte perdue (`patient.update`) ; l'écran Patients ouvre directement la fiche quand la recherche est un jeton présent sur le poste.
+- `features/patients/server-results.tsx` (S6) : section « Sur le serveur » de l'écran Patients, limitée aux patients absents du poste ; l'ouverture enregistre l'état reçu par `applyRemote` (même chemin qu'un tirage de synchronisation) puis ouvre la fiche.
 - `catalogs.ts` (S5) : copie locale des référentiels dans `meta` (`saveCatalogs`, `loadCatalogs` de `packages/local-db`), vérifiée au plus toutes les dix minutes après une synchronisation avec l'empreinte du serveur ; `reloadCatalogs` du runtime la force après une modification. Les données de structure qu'elle contient (sites, services, listes) ne sont pas des données de patient.
 - `device-tokens.ts` (S5) : stockage, renouvellement (au plus une fois par heure après une synchronisation réussie) et vérification hors connexion des jetons ; au déverrouillage, un jeton expiré est renouvelé si le réseau est là, sinon le poste reste verrouillé avec « Me connecter en ligne » (l'outbox est conservée). Sur `DEVICE_REVOKED`, le runtime arrête la synchronisation, efface la base locale et l'identité, puis la page de connexion explique le retrait.
 - `e2e-hook.ts` : `window.__medhubTest`, compilé **uniquement** quand `NEXT_PUBLIC_MEDHUB_E2E=1` (build Playwright séparé, jamais déployé).
@@ -317,6 +339,12 @@ Toutes les routes passent par `defineRoute` (`server/platform/http.ts`) : identi
 | `POST /api/v1/auth/password` | Mot de passe personnel après un mot de passe temporaire, avec le défi signé de l'étape précédente ; poursuit vers la 2FA ou la session (S5) |
 | `POST /api/v1/account/locale` | Langue de l'interface enregistrée sur le compte et cookie de langue mis à jour (S5) |
 | `POST /api/v1/account/password` | Changement de son mot de passe avec l'actuel ; autres sessions fermées (S5) |
+| `GET /api/v1/patients/duplicates`, `POST /api/v1/patients/duplicates/dismiss` | File des doublons et paire écartée avec motif (`patient:merge`) (S6) |
+| `GET /api/v1/patients?q=&cursor=` | Recherche serveur (`patient:read`), 20 résultats par page, dossiers fusionnés exclus (S6) |
+| `GET /api/v1/patients/state?id=` | État courant d'un patient, enregistré sur le poste comme un changement reçu (S6) |
+| `GET /api/v1/patients/history?id=` | Historique champ par champ (`patient:read`), consultation inscrite au journal d'accès (S6) |
+| `GET /api/v1/patients/conflicts`, `POST /api/v1/patients/conflicts/resolve` | Conflits de modification et décision avec motif (`patient:merge`) (S6) |
+| `POST /api/v1/patients/merge`, `POST /api/v1/patients/unmerge`, `GET /api/v1/patients/merges` | Fusion supervisée, annulation et fusions récentes (`patient:merge`, motif obligatoire) (S6) |
 | `GET /api/v1/training`, `POST /api/v1/training` | État de la base de formation (`configuration:read`) ; création ou réinitialisation (`configuration:publish`, step-up) (S5) |
 | `GET /api/v1/reference` | Listes de choix et catalogues de la plateforme (`configuration:read`) (S5) |
 | `GET /api/v1/reference/catalogs?etag=` | Copie des référentiels pour les postes (tout utilisateur connecté) ; `unchanged` si l'empreinte n'a pas changé (S5) |
@@ -356,6 +384,10 @@ Toutes les routes passent par `defineRoute` (`server/platform/http.ts`) : identi
 - `modules/core/configuration.ts` (S5) : lecture des valeurs publiées (`loadConfig`), brouillon, publication avec audit `config_publish` (ancienne et nouvelle valeur), archivage, restauration en brouillon ; `requireRecentStepUp` lit la fenêtre de confirmation dans la configuration. La durée du jeton hors connexion et la configuration remise aux postes en dépendent.
 - `platform/tokens.ts` (S5) : émission des jetons avec `MEDHUB_SIGNING_*` (`SIGNING_KEY_MISSING` si absentes), clés publiques acceptées (actuelle et `MEDHUB_SIGNING_PREVIOUS_KEYS`), licence calquée sur l'état de la structure et ouvrant tous les modules MVP tant que les abonnements n'existent pas.
 - `platform/session.ts` (S5) : `sessionEndReason` ; `platform/tenant.ts` répond `DEVICE_REVOKED` au lieu de `UNAUTHENTICATED` quand la session a été fermée par le retrait de son poste, pour que le poste s'efface au lieu de demander une connexion, et `AUTH_USER_DISABLED` quand son utilisateur a été désactivé, pour que le poste retire l'accès hors connexion.
+- `modules/pat/search.ts` (S6) : recherche par `word_similarity` (pg_trgm) ou, en repli, par mots dans `search_text` et début de clé phonétique ; filtres par numéro de dossier (y compris officiel), 9 derniers chiffres du téléphone et année de naissance ; `MEDHUB_SEARCH_TRIGRAM=off` force le repli. `fetchPatient` remet l'état d'un patient (`patientState` du module sync).
+- `modules/pat/history.ts` (S6) : historique champ par champ avec auteur et poste (et ligne au journal d'accès), conflits de modification ouverts, décision « garder » ou « appliquer » (valeur appliquée par `updateServerPatient`, origine « revue », audit `conflict_keep` ou `conflict_apply`). `modules/sync/repository.ts` écrit `patient_field_history` à chaque mise à jour synchronisée et à chaque changement fait par le serveur.
+- `modules/pat/merge.ts` (S6) : fusion (valeurs choisies appliquées au survivant, `merged_into_id` sur l'autre dossier, instantané dans `patient_merge`, paire passée à « fusionnée », audit `patient_merge`), annulation (valeurs restaurées sauf celles modifiées depuis, dossier séparé, paire rouverte, audit `patient_unmerge`), fusions récentes. `modules/sync/repository.ts` : `updateServerPatient` (nouvelle version, métadonnées par champ, entrée du journal des changements) et `mergedIntoId` dans l'état du patient remis aux postes.
+- `modules/pat` (S6) : premier module serveur des patients ; `duplicates.ts` (file des paires ouvertes avec les deux dossiers, paire écartée avec décision tracée). `modules/sync/repository.ts` met en file `pat.detect_duplicates` dans la transaction de chaque enregistrement synchronisé.
 - `modules/core/training.ts`, `training-routes.ts` (S5) : construction de la base de formation (lecture de la structure réelle, création de la structure en `prospect`, copie avec nouveaux identifiants, secrets de double authentification rechiffrés pour la nouvelle structure, patients fictifs par `insertServerPatients` du module sync, passage en `active`), archivage de la base remplacée (postes retirés, sessions fermées), audit `training_create`, `training_reset` et `training_seed`.
 - `modules/sync/repository.ts` (S5) : `insertServerPatients`, patients créés par le serveur avec la même ligne et la même entrée du journal des changements qu'un enregistrement synchronisé.
 - `platform/tokens.ts` (S5) : `supportPublicKey`, remise aux postes avec les jetons.
@@ -429,6 +461,10 @@ Table `security_event` en ajout seul (triggers) : `rate_limited`, `ip_auto_block
 
 Chaque document reçoit une CSP avec **nonce neuf** (`src/proxy.ts`) : `script-src 'self' 'nonce-...' 'strict-dynamic'` (plus `'unsafe-eval'` en développement uniquement, exigé par React), `style-src 'self' 'unsafe-inline'` (attributs `style` de React et des graphiques ; aucun script en ligne), `img-src 'self' blob: data:`, `connect-src 'self'`, `worker-src 'self'`, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'`, et `upgrade-insecure-requests` quand l'adresse publique est en HTTPS. Next.js applique le nonce à ses scripts ; toutes les pages sont rendues dynamiquement.
 
+### 13.5 bis CSP et génération de PDF (S6)
+
+`@react-pdf/renderer` place son moteur de mise en page (Yoga) en WebAssembly intégré à une URL `data:` et crée un worker `blob:`. La CSP ajoute donc `'wasm-unsafe-eval'` à `script-src` (compilation WebAssembly seulement, aucun `eval` de JavaScript), `data:` à `connect-src` et `blob:` à `worker-src` ; le nonce et `strict-dynamic` restent la seule porte d'entrée des scripts. Le test Playwright de la CSP vérifie toujours l'absence de `'unsafe-eval'`.
+
 ### 13.6 Confirmation par second facteur (step-up) et rotation de session
 
 - Toute modification de configuration (profil de la structure, sites, services, et à venir utilisateurs et rôles) exige `configuration:edit` **et** une preuve du second facteur datant de moins de **15 minutes** (`session.mfa_verified_at`). Une session ouverte avec un code TOTP ou un code de secours en bénéficie d'emblée.
@@ -485,6 +521,41 @@ Chaque document reçoit une CSP avec **nonce neuf** (`src/proxy.ts`) : `script-s
 - Une base remplacée garde son code mais ne permet plus de se connecter ; l'unicité du code ignore les bases de formation archivées.
 - Les secrets de double authentification sont scellés par structure : ils sont ouverts avec la clé de la structure réelle et rescellés pour la base de formation.
 
+### 13.16 Doublons de patients (S6, première tranche)
+
+- Poste : `features/patients/similar.ts` cherche dans l'index local chiffré (nom complet, nom de famille, téléphone) et applique le score ; le formulaire montre les patients semblables au-delà du seuil d'alerte et demande une confirmation explicite, valable pour les valeurs saisies (tout changement relance la vérification).
+- Serveur : `apps/worker/src/duplicates.ts` compare le dossier aux voisins qui partagent le début de la clé phonétique ou les 9 derniers chiffres du téléphone (200 au plus), enregistre chaque paire au-delà du seuil de candidat une seule fois et l'inscrit à l'audit (`duplicate_detected`).
+
+### 13.17 Fusion de patients (S6)
+
+- Aucune ligne clinique, financière ou de rendez-vous n'est réécrite : le dossier fusionné garde ses lignes et pointe vers le survivant ; la fiche du survivant affiche les constantes de tous les dossiers rattachés, même par fusions successives.
+- Sur le poste, un dossier fusionné disparaît des listes, de la recherche, du tableau de bord et de l'alerte de doublon ; sa fiche redirige vers le dossier conservé avec un bandeau.
+- Le mode « quatre yeux » (validation par un second utilisateur) attend le module d'approbations ; la fusion exige pour l'instant `patient:merge` et un motif.
+
+### 13.18 Identité complète et scénario P2 (S6)
+
+- Partie démographique de P2 vérifiée contre PostgreSQL avec deux postes : téléphone de A et adresse de B gardés, aucun conflit, historique des deux champs ; même date de naissance changée par les deux : valeur du premier arrivé gardée, conflit ouvert puis arbitré.
+- Les allergies et antécédents du scénario P2 relèvent du dossier médical (S8).
+- Une seule personne à contacter pour l'instant (valeur structurée fusionnée d'un bloc) ; la liste de contacts en union (`patient.add_contact`) viendra avec le reste de la fiche.
+
+### 13.19 Patients provisoires et décès (S6)
+
+- `packages/domain/src/pat/lifecycle.ts` : types de dossier provisoire (`unknown`, `newborn`), commande `patient.mark_deceased` (retrait avec motif obligatoire, motif gardé dans le journal des opérations seulement), règle `blockedByDeath` partagée.
+- Une commande clinique déclare l'acte qu'elle porte (`patientAct`) : le poste la refuse avant de l'écrire dans la file d'envoi, le serveur la rejette (`PAT_DECEASED`) si un autre poste a déclaré le décès entre-temps.
+- La détection de doublons ignore les dossiers provisoires (leur nom ne décrit personne) et s'exécute à l'identification ; `POST /api/v1/patients/duplicates/report` place une paire signalée par un utilisateur dans la file (`reasons = ['manual']`).
+
+### 13.20 Sensibilité des dossiers (S6)
+
+- `packages/domain/src/core/access.ts` : rang des niveaux, niveau d'un rôle (`sensitivity_max` de la permission `patient:read`, sinon tout pour un rôle qui marque la sensibilité, sinon normal), niveau de l'utilisateur (le plus large de ses rôles).
+- `patient.set_sensitivity` (permission `patient:mark_sensitive`) ; l'enregistrement et la modification d'identité ne peuvent plus changer le niveau. Les champs « transitoires » d'une commande (motifs) restent dans `op_log` et ne sont jamais fusionnés dans l'entité.
+- Protocole : un changement de pull peut porter `evict: true` (données absentes) ; le poste retire alors le patient et toutes les lignes qui lui sont rattachées (`patientIdOf` de chaque entité), index de recherche compris.
+
+### 13.21 Favoris et périmètre de synchronisation (S6)
+
+- `patient_favorite` en ajout seul (une ligne par bascule, la dernière gagne), envoyée à son seul propriétaire.
+- `sync_scope_rule` (règle de la structure, règles par rôle, la plus large gagne) et `device_patient` (ce que chaque poste détient, épinglage depuis la recherche serveur). Mode « tout » par défaut ; mode « périmètre » : créés sur le poste, favoris, épinglés, activité récente (dernière modification ou dernière constante). Les visites, rendez-vous et hospitalisations rejoindront la règle avec leurs modules.
+- Le pull applique dans l'ordre : permission de lecture, propriétaire des favoris, sensibilité, périmètre. Un patient qui entre dans le périmètre arrive avec son dossier complet en tête de page ; un patient qui en sort est retiré du poste.
+
 ### 13.9 Mesure de la durée des requêtes
 
 Réponse au point ouvert de J0 (une connexion restée 20 s sans réponse) : chaque route renvoie `Server-Timing: app;dur=N`, la métrique `http.duration_ms` est émise, et toute requête plus lente que `MEDHUB_SLOW_REQUEST_MS` (2 s par défaut) est journalisée avec l'état du pool (`total`, `idle`, `waiting`) pour distinguer pool saturé, requête lente ou verrou.
@@ -530,8 +601,17 @@ Réponse au point ouvert de J0 (une connexion restée 20 s sans réponse) : chaq
 | Playwright `sync-bench.spec.ts` | Deux navigateurs réels, 500 opérations, coupures, réponses perdues | 500 opérations (226 enregistrements, 96 modifications, 178 constantes), 109 cycles coupés, 41 réponses perdues ; zéro rejet, zéro doublon, convergence, aucun nom en clair |
 | Playwright `sync-bench.spec.ts` (second scénario) | Enregistrement hors connexion par le formulaire, rechargement, synchronisation | Vert |
 | Playwright `public.spec.ts` | Page publique vers connexion ; bouton désactivé hors connexion ; projet tablette | Vert |
-| Playwright `mfa.spec.ts` (S4) | Configuration imposée de la 2FA à l'écran, codes de secours, seconde connexion avec code faux puis bon code, activation du poste, « Mon compte » en thème sombre, création d'un site, modification après expiration de la preuve avec boîte de step-up, **effacement à distance** d'une tablette déclarée perdue (second navigateur : identité et IndexedDB vides, message sur la page de connexion) ; création d'un utilisateur à l'écran, mot de passe temporaire, première connexion dans un autre navigateur avec mot de passe refusé puis accepté, désactivation, duplication d'un rôle puis modification de sa grille, liste de choix importée d'un CSV avec ligne fautive puis enregistrée, provinces proposées dans les adresses, passage en anglais enregistré sur le compte puis retour au français, catalogues rechargés et journal exporté puis ouvert avec la clé du support, base de formation créée puis connexion au code de formation dans un autre navigateur (S5) ; CSP à nonce neuf | 2 tests verts |
+| Playwright `mfa.spec.ts` (S4) | Configuration imposée de la 2FA à l'écran, codes de secours, seconde connexion avec code faux puis bon code, activation du poste, « Mon compte » en thème sombre, création d'un site, modification après expiration de la preuve avec boîte de step-up, **effacement à distance** d'une tablette déclarée perdue (second navigateur : identité et IndexedDB vides, message sur la page de connexion) ; création d'un utilisateur à l'écran, mot de passe temporaire, première connexion dans un autre navigateur avec mot de passe refusé puis accepté, désactivation, duplication d'un rôle puis modification de sa grille, liste de choix importée d'un CSV avec ligne fautive puis enregistrée, provinces proposées dans les adresses, passage en anglais enregistré sur le compte puis retour au français, catalogues rechargés et journal exporté puis ouvert avec la clé du support, base de formation créée puis connexion au code de formation dans un autre navigateur (S5) ; fusion de deux dossiers depuis la file (valeur choisie, vérifiée en base), réception sur le poste avec redirection de l'ancienne fiche, puis annulation, patient présent seulement sur le serveur trouvé, ouvert sur le poste puis retrouvé dans la liste locale (S6) ; dans `sync-bench.spec.ts`, fiche complétée hors connexion (profession, nom de la mère, commune) puis synchronisée, valeurs et historique vérifiés en base, carte imprimée (PDF vérifié), jeton synchronisé puis « scanné » dans la recherche qui ouvre la fiche (S6) ; dans `sync-bench.spec.ts`, le même patient saisi une seconde fois déclenche l'alerte « Un patient semblable est déjà enregistré » sans rien créer (S6) ; CSP à nonce neuf | 2 tests verts |
 | `apps/web` intégration configuration (S5) | Valeurs par défaut, validation, brouillon par un rédacteur et publication refusée sans `configuration:publish`, archivage, trigger d'immuabilité (modification et suppression refusées), restauration, jeton de 21 jours après publication, fenêtre de step-up configurée, audit chaîné | 5 tests verts (32 au total pour `apps/web`) |
+| `packages/domain` doublons (S6) | Scénario P3 (95), date exacte contre année, variantes d'orthographe et sexe différent, parent commun compté une fois, numéros congolais | 5 tests verts (42 au total pour le paquet) |
+| `apps/worker` doublons (S6) | Paire P3 enregistrée une fois avec score et raisons, homonyme de sexe différent écarté | 1 test vert (4 au total pour le worker) |
+| `packages/domain` fusion (S6) | Valeurs reprises (naissance avec son indicateur), annulation sans écraser une valeur récente, chaînes de fusions, refus d'une fusion sur soi-même | 4 tests verts (46 au total pour le paquet) |
+| `packages/domain` carte (S6) | Jeton opaque de longueur fixe, relu depuis une saisie de douchette, numéros de dossier refusés | 2 tests verts (51 au total pour le paquet) |
+| `apps/web` intégration recherche serveur (S6) | Mêmes attentes avec `pg_trgm` et en repli : nom, variante d'orthographe, accents, dossier fusionné exclu, année, téléphone en groupes, numéro de dossier, nom de la mère, permission, état remis au poste | 6 tests verts (3 par mode) |
+| `packages/domain` requête de recherche (S6) | Nom et année, téléphone et numéro de dossier, nom composé et année future | 3 tests verts |
+| `apps/web` intégration scénario P2 (S6) | Deux postes hors connexion : champs différents gardés sans conflit et visibles sur les deux postes, historique et journal d'accès ; même date de naissance : valeur du premier arrivé, conflit visible puis appliqué, double décision refusée, audit chaîné | 2 tests verts |
+| `apps/web` intégration fusion (S6) | Permission, valeurs choisies sur le survivant, pointeur sur l'autre dossier, constante non modifiée, entrées du journal des changements, paire « fusionnée », double fusion refusée, fusions récentes, annulation avec valeur récente conservée, paire rouverte, double annulation refusée, audit chaîné | 3 tests verts |
+| `apps/web` intégration file des doublons (S6) | Paires visibles avec `patient:merge` seulement, paire écartée une fois avec motif et audit chaîné ; une tâche de détection par enregistrement synchronisé, même avec des accusés perdus | 2 tests verts et une vérification ajoutée au banc PostgreSQL |
 | `apps/web` intégration base de formation (S5) | Permission et step-up, copie (services, liste, configuration publiée, comptes actifs seulement), 40 patients fictifs sans téléphone avec leurs entrées du journal des changements, connexion au code de formation avec le mot de passe et la double authentification habituels, réinitialisation (ancienne base archivée, postes retirés, même code), pas de base de formation d'une base de formation, audit chaîné des deux structures | 5 tests verts |
 | `apps/web` journal de support (S5) | Fichier scellé par un poste ouvert par le script du support (interopérabilité navigateur et Node) | 1 test vert (61 au total pour `apps/web`) |
 | `packages/sync` enveloppe de support (S5) | Lisible avec la clé privée du support seulement, altération détectée | 1 test vert |
@@ -589,6 +669,12 @@ Commandes de contrôle avant chaque commit : `pnpm typecheck`, `pnpm lint`, `pnp
 | 30/10/2026 | Clés publiques des jetons | Remises au poste à son activation (en ligne, TLS) puis conservées localement, au lieu d'être compilées dans l'application : un même build sert tous les environnements (à valider) |
 | 30/10/2026 | Licence avant SADM | Jeton calqué sur l'état de la structure, tous les modules MVP, aucun plan ni limite inventés (à valider) |
 | 30/10/2026 | Postes activés avant S5 | Sans jeton, ils restent utilisables jusqu'à leur prochaine synchronisation, qui leur en remet un (à valider) |
+| 01/11/2026 | Carte patient | Jeton aléatoire attribué à la première impression (champ synchronisé, dernier écrit gagnant si deux postes impriment hors connexion au même moment) ; modèle de carte fixe en attendant `document_template` ; lecture par douchette ou saisie, pas encore par la caméra (à valider) |
+| 01/11/2026 | CSP | `'wasm-unsafe-eval'`, `connect-src data:` et `worker-src blob:` pour la génération de PDF sur le poste (à valider) |
+| 01/11/2026 | Recherche serveur | Pagination par décalage (20 résultats) ; seuil de `word_similarity` à 0,45 complété par le début de la clé phonétique ; un patient ouvert depuis le serveur reste sur le poste (à valider) |
+| 31/10/2026 | Conflits d'identité | Comportement de `docs/02` (valeur du premier arrivé gardée, conflit à revoir) appliqué ; `docs/08` P2 demandait la valeur au HLC le plus récent : contradiction tranchée par le porteur le 01/11/2026 en faveur de `docs/02`, `docs/08` aligné ; revue des conflits réservée à `patient:merge` (à valider) |
+| 31/10/2026 | Fusion | Survivant par défaut : le dossier le plus ancien ; une valeur vide prend celle de l'autre dossier ; à l'annulation, une valeur modifiée depuis la fusion est conservée ; quatre yeux reporté au module d'approbations (à valider) |
+| 31/10/2026 | Doublons | Voisins choisis par début de clé phonétique ou fin de numéro de téléphone avant le calcul du score ; noms des parents lus dans `patient.extra` en attendant les champs démographiques complets (à valider) |
 | 31/10/2026 | Base de formation | Code `FOR-` et fin du code de la structure ; réinitialisation par archivage et recréation sous le même code plutôt que par suppression ; comptes copiés avec leurs mots de passe et double authentification ; 40 patients fictifs (à valider) |
 | 31/10/2026 | Journal de diagnostic | Chiffré pour une clé publique du support (X25519) remise aux postes avec leurs jetons ; sans clé configurée, pas d'export (à valider) |
 | 30/10/2026 | Langue | La langue du compte s'impose à la connexion ; avant la connexion, le choix du poste (cookie) ou le français (à valider) |
@@ -623,6 +709,6 @@ Commandes de contrôle avant chaque commit : `pnpm typecheck`, `pnpm lint`, `pnp
 
 S4 est terminée (`docs/11-feuille-de-route.md`) : authentification complète avec 2FA, structures, sites et services, RLS sur toutes les tables, rôles et permissions vérifiés côté serveur, audit chaîné, coquille PWA, mise en page, indicateur de synchronisation, protections de la plateforme. Les salles, horaires d'ouverture et jours fériés de `docs/modules/core.md` arrivent avec les rendez-vous et files (S7).
 
-S5 est terminée : appareils, effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs, éditeur de rôles, référentiels, traduction anglaise, diagnostic et base de formation. Prochaine étape : S6, patients (recherche floue complète, dédoublonnage, fusion supervisée et réversible, carte et QR) et périmètre de synchronisation.
+S5 est terminée. S6 (patients) est en cours : la détection des doublons, la fusion supervisée et réversible, l'identité complète avec historique, la revue des conflits (partie démographique de P2), la recherche serveur, la carte patient avec QR, les patients provisoires, le décès, la sensibilité des dossiers, les favoris et le périmètre de synchronisation sont livrés. S6 est terminée côté code.
 
 S6 : patients (recherche floue complète, dédoublonnage, fusion supervisée et réversible, carte et QR), périmètre de synchronisation. Puis S7 à S9 jusqu'au critère de sortie de J1 : un patient parcourt accueil, triage et consultation hors connexion et se synchronise sans erreur.

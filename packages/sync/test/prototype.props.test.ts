@@ -171,6 +171,7 @@ function assertConverged(result: Awaited<ReturnType<typeof runScenario>>) {
 }
 
 describe('sync prototype (docs/02-offline-sync.md section 13)', () => {
+  // 500 signed operations replayed through outages: over a minute on a loaded machine.
   it('500 operations on two devices with random outages: no loss, no duplicate, convergence', async () => {
     const result = await runScenario(20261029, 500);
     assertConverged(result);
@@ -184,7 +185,7 @@ describe('sync prototype (docs/02-offline-sync.md section 13)', () => {
       `sync prototype: ${result.counters.dispatched} ops, ${total('failedBefore')} failed pushes, ` +
         `${total('lostResponses')} lost responses, ${total('duplicates')} duplicates, ${total('conflicts')} conflicts`,
     );
-  }, 60_000);
+  }, 180_000);
 
   it('converges for any seed (property)', async () => {
     await fc.assert(

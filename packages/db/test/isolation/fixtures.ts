@@ -9,16 +9,22 @@ import {
   dataAccessLog,
   department,
   device,
+  devicePatient,
+  duplicateCandidate,
   mfaRecoveryCode,
   numberSeries,
   opLog,
   patient,
+  patientFavorite,
+  patientFieldHistory,
+  patientMerge,
   role,
   rolePermission,
   session,
   site,
   stockMovement,
   syncConflict,
+  syncScopeRule,
   userAccount,
   userRole,
   vitalSign,
@@ -66,6 +72,15 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       kind: 'clinical',
     });
   },
+  duplicate_candidate: async (tx, tenantId) => {
+    await tx.insert(duplicateCandidate).values({
+      id: uuidv7(),
+      tenantId,
+      patientAId: '00000000-0000-7000-8000-000000000001',
+      patientBId: '00000000-0000-7000-8000-000000000002',
+      score: 95,
+    });
+  },
   device: async (tx, tenantId) => {
     await tx.insert(device).values({
       id: uuidv7(),
@@ -75,6 +90,55 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       name: 'Poste test',
       kind: 'desktop',
       publicKey: 'test',
+    });
+  },
+  device_patient: async (tx, tenantId) => {
+    await tx.insert(devicePatient).values({
+      id: uuidv7(),
+      tenantId,
+      deviceId: uuidv7(),
+      patientId: uuidv7(),
+    });
+  },
+  patient_favorite: async (tx, tenantId) => {
+    await tx.insert(patientFavorite).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      userId: uuidv7(),
+      active: true,
+      at: new Date(),
+    });
+  },
+  sync_scope_rule: async (tx, tenantId) => {
+    await tx.insert(syncScopeRule).values({
+      id: uuidv7(),
+      tenantId,
+      entity: 'patient',
+      rule: { mode: 'scoped', recentDays: 30 },
+    });
+  },
+  patient_field_history: async (tx, tenantId) => {
+    await tx.insert(patientFieldHistory).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      field: 'phone',
+      oldValue: null,
+      newValue: '0991234567',
+      source: 'sync',
+    });
+  },
+  patient_merge: async (tx, tenantId) => {
+    await tx.insert(patientMerge).values({
+      id: uuidv7(),
+      tenantId,
+      survivorId: uuidv7(),
+      mergedId: uuidv7(),
+      survivorBefore: {},
+      mergedBefore: {},
+      reason: 'Doublon de test',
+      mergedBy: uuidv7(),
     });
   },
   role: async (tx, tenantId) => {

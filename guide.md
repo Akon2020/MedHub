@@ -14,7 +14,8 @@ Le jalon **J0 Fondations** est construit :
 - worker cron pour les tâches de fond, scripts de déploiement cPanel, CI GitHub Actions ;
 - thème clair, sombre ou automatique (selon le système) sur toute l'application ;
 - début de J1 (S4) : double authentification TOTP avec codes de secours, limitation de débit en base, règles d'IP, politique CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes, organisation de la structure ;
-- S5 (en cours) : appareils et effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs, éditeur de rôles, référentiels, traduction anglaise complète, diagnostic et base de formation (S5 terminée).
+- S5 (en cours) : appareils et effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs, éditeur de rôles, référentiels, traduction anglaise complète, diagnostic et base de formation (S5 terminée) ;
+- S6 (en cours) : détection des doublons de patients (alerte à la saisie, file des doublons), fusion supervisée et réversible, identité complète avec historique et revue des conflits, recherche serveur, carte patient avec QR, patients provisoires, décès, sensibilité des dossiers, favoris et périmètre de synchronisation.
 
 Le journal complet de tout ce qui a été fait se trouve dans `walkthrough.md`.
 
@@ -380,6 +381,56 @@ Menu **Paramètres** (permission `configuration:read`, administrateur de structu
 - Pour s'exercer, chacun se connecte avec ce code au lieu du code habituel. Le bandeau « Base de formation » reste affiché.
 - **Réinitialiser** : la base actuelle est archivée (rien n'est supprimé), ses postes effacent leurs données de formation à leur prochain contact, et une nouvelle base est créée sous le même code avec la configuration du jour.
 - Aucun SMS ni courriel réel ne doit partir d'une base de formation : règle à appliquer par le module de notifications quand il arrivera (aucun envoi n'existe aujourd'hui).
+
+### Patients provisoires (S6)
+
+- Dans le formulaire d'enregistrement, choisissez **Inconnu** (urgence non identifiée : sexe et âge apparent) ou **Nouveau-né** (nom de la mère, date de naissance du jour). Le dossier reçoit un nom descriptif, par exemple « Inconnu homme 30 ans environ, arrivé le 14/03 22:15 » ou « Nouveau-né de MBUYI Grâce », et le badge **Provisoire**. Cela fonctionne hors connexion.
+- Dès que l'identité est connue : sur la fiche, **Identifier le patient** (carte Identité), saisissez les noms, laissez cochée « Identité confirmée » et enregistrez. La recherche de doublons s'applique alors au dossier.
+- Si la personne avait déjà un dossier : dans le bandeau « Dossier provisoire », recherchez ce dossier et cliquez **C'est la même personne** (en ligne). La paire arrive dans la file des doublons, où un utilisateur habilité fusionne les deux dossiers.
+
+### Décès (S6)
+
+- Permission dédiée `patient:mark_deceased` (rôle modèle Médecin et administrateur). Sur la fiche, **Déclarer le décès**, date et heure, **Confirmer le décès** ; fonctionne hors connexion.
+- Ensuite, le dossier refuse tout nouvel acte clinique daté après le décès, sur le poste comme sur le serveur (un autre poste qui ne le savait pas encore voit son envoi refusé avec le motif « Patient décédé »). Une mesure antérieure peut encore être saisie ou corrigée.
+- Une déclaration faite par erreur se retire avec un motif (**Annuler la déclaration de décès**) ; les deux restent dans l'historique.
+
+### Sensibilité des dossiers (S6)
+
+- Permission `patient:mark_sensitive`. Sur la fiche, **Sensibilité du dossier** : Normal, Membre du personnel, Personnalité, Accès restreint, avec un motif.
+- Un dossier sensible n'est ouvert qu'aux rôles dont le niveau le permet. Réglage dans **Paramètres, Rôles**, champ « Dossiers sensibles accessibles ». Par défaut, un rôle n'ouvre que les dossiers normaux, sauf s'il peut lui-même marquer la sensibilité (il les ouvre alors tous).
+- Les postes des utilisateurs qui n'ont pas le niveau retirent le dossier et ses constantes à leur prochaine synchronisation ; la recherche serveur ne le montre pas. L'accès d'urgence (bris de glace) viendra avec le dossier médical (S8).
+
+### Favoris et patients gardés sur les postes (S6)
+
+- L'étoile **Ajouter aux favoris** de la fiche est personnelle et fonctionne hors connexion ; le bouton **Mes favoris** de l'écran Patients filtre la liste.
+- **Paramètres, Postes et synchronisation, Patients gardés sur les postes** : règle de la structure et, au besoin, règle par rôle. **Toute la structure** (par défaut) convient aux petites structures. **Périmètre** garde sur le poste les patients enregistrés sur ce poste, les favoris de l'utilisateur, les patients ouverts depuis la section « Sur le serveur » et ceux qui ont eu une activité récente (nombre de jours réglable) ; les autres restent accessibles par la recherche en ligne.
+- Un patient qui sort du périmètre disparaît du poste à la synchronisation suivante ; un patient qui y entre arrive avec tout son dossier.
+
+### Carte patient (S6)
+
+- Sur la fiche, **Imprimer la carte** produit un PDF au format carte bancaire (85,6 x 54 mm), même hors connexion : nom de la structure, nom, numéro de dossier, sexe, naissance et un **code QR**. Le QR contient un jeton opaque (`MHC1-` suivi de 20 caractères tirés au hasard), jamais le nom ni le numéro de dossier.
+- La première impression attribue le jeton au patient ; il se synchronise comme les autres champs d'identité. **Carte perdue** imprime une nouvelle carte avec un nouveau jeton : l'ancienne ne retrouve plus le patient.
+- Pour retrouver un patient, scannez sa carte avec une douchette (elle tape le jeton dans le champ de recherche de l'écran Patients) ou saisissez le jeton : la fiche s'ouvre directement. En ligne, le serveur retrouve aussi un patient absent du poste par son jeton.
+
+### Recherche de patients sur le serveur (S6)
+
+- La recherche de l'écran **Patients** fonctionne d'abord sur le poste, même hors connexion. En ligne, une section **Sur le serveur** ajoute les patients de la structure absents de ce poste (badge « Hors de ce poste ») ; **Ouvrir sur ce poste** copie le dossier sur le poste, qui l'ouvre ensuite même sans réseau.
+- On peut taper un nom (orthographe approximative tolérée), un téléphone (« 0991234567 » ou « +243 991 234 567 »), un numéro de dossier, le nom du père ou de la mère, et ajouter une année de naissance (« Kabila 1990 »).
+- Le serveur utilise `pg_trgm` s'il est installé (index créé par `pnpm db:migrate`, qui l'annonce) ; sinon, une recherche par mots et par prononciation. `MEDHUB_SEARCH_TRIGRAM=off` force ce repli.
+
+### Identité complète et historique (S6)
+
+- Sur la fiche patient, **Compléter ou corriger** (même hors connexion) : noms, sexe, naissance (date ou estimée), téléphone, adresse (province choisie dans la liste), profession, état civil, nationalité, langue parlée, noms du père et de la mère, personne à contacter. Seuls les champs modifiés partent au serveur, fusionnés champ par champ : deux postes qui changent des champs différents gardent tous les deux leur modification (scénario P2).
+- Si deux postes changent hors connexion la même date de naissance, le même nom ou le même sexe, la valeur arrivée la première est gardée et l'autre devient un **conflit à revoir**, en tête de **Patients, Doublons et conflits** (`patient:merge`) : « Garder la valeur en vigueur » ou « Appliquer la valeur envoyée », avec motif.
+- **Historique des modifications** (en ligne, sur la fiche) : chaque changement d'identité, champ par champ, avec l'ancienne et la nouvelle valeur, l'auteur, le poste et l'origine (synchronisation, fusion, revue). Chaque consultation est tracée.
+
+### Doublons de patients (S6)
+
+- **À l'enregistrement**, même hors connexion : avant de créer un dossier, le poste cherche dans sa base locale les patients qui ressemblent (nom, prononciation, date ou année de naissance, téléphone). S'il en trouve, il les montre avec « Ouvrir ce dossier » ; le bouton devient « Ce n'est aucun d'eux : enregistrer ».
+- **Après la synchronisation**, le serveur compare chaque nouveau dossier à ses voisins (tâche de fond `pat.detect_duplicates`, exécutée par le cron) et range les paires ressemblantes dans **Patients, Doublons** (`/app/patients/doublons`, permission `patient:merge`, en ligne seulement) : comparaison côte à côte, différences surlignées, « Pas la même personne » avec motif, ou **Fusionner**.
+- **Fusionner** (en ligne, `patient:merge`, motif obligatoire) : choix du dossier conservé (le plus ancien par défaut) et, pour chaque information qui diffère, de la valeur à garder (une valeur vide prend celle de l'autre dossier). L'autre dossier n'est pas effacé : il renvoie vers le dossier conservé, ses constantes et actes y restent rattachés et s'affichent sur la fiche conservée. Les postes reçoivent la fusion à la synchronisation suivante ; l'ancienne fiche ouvre la fiche conservée.
+- **Fusions récentes**, sous la file : « Annuler la fusion » (motif) sépare à nouveau les dossiers et rend au dossier conservé ses anciennes valeurs, sauf celles modifiées depuis ; la paire revient dans la file.
+- Seuils réglables dans **Paramètres, Postes et sécurité** : alerte à la saisie (50 par défaut) et candidat de fusion (60).
 
 ### Thème sombre
 

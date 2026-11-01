@@ -1,15 +1,31 @@
 'use client';
 
 import type { VitalSignCode } from '@medhub/shared';
-import { ArrowLeft, Phone, UserRound } from 'lucide-react';
+import { ArrowLeft, GitMerge, Phone } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useFormatter, useTranslations } from 'next-intl';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useLocalQuery } from '@/client/runtime';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { initialsOf, toPatientView } from '@/features/patients/patient-helpers';
+import { FieldHistory, IdentityCard } from '@/features/patients/identity-card';
+import { PatientCardActions } from '@/features/patients/patient-card';
+import {
+  DeathPanel,
+  FavoriteToggle,
+  PatientStatusBadges,
+  ProvisionalPanel,
+  SensitivityPanel,
+  deceasedAtOf,
+} from '@/features/patients/patient-status';
+import {
+  favoritesOf,
+  initialsOf,
+  isMerged,
+  toPatientView,
+} from '@/features/patients/patient-helpers';
+import { mergeClosure, mergeTarget } from '@medhub/domain';
 import { SyncBadge } from '@/features/patients/sync-badge';
 import { VitalsPanel, type VitalView } from '@/features/patients/vitals-panel';
 
@@ -26,7 +42,20 @@ function PatientRecord() {
     async (store) => {
       const entity = id ? await store.readEntity('patient', id) : null;
       if (!entity || entity.rejected) return null;
-      const vitals = (await store.readEntitiesByPatient('vital_sign', id))
+      const records = (await store.readEntities('patient')).map((p) => ({
+        id: p.id,
+        mergedIntoId: typeof p.data.mergedIntoId === 'string' ? p.data.mergedIntoId : null,
+      }));
+      if (isMerged(entity)) {
+        const into = new Map(records.map((r) => [r.id, r.mergedIntoId]));
+        return { redirect: mergeTarget(id, (r) => into.get(r)) } as const;
+      }
+      // Records merged into this one keep their own rows: their vitals are shown here too.
+      const ids = mergeClosure(id, records);
+      const rows = (
+        await Promise.all(ids.map((pid) => store.readEntitiesByPatient('vital_sign', pid)))
+      ).flat();
+      const vitals = rows
         .map<VitalView>((v) => ({
           id: v.id,
           code: v.data.code as VitalSignCode,
@@ -41,13 +70,34 @@ function PatientRecord() {
               : null,
         }))
         .sort((a, b) => b.measuredAt.localeCompare(a.measuredAt));
-      return { patient: toPatientView(entity), vitals };
+      const favorite = favoritesOf(await store.readEntitiesByPatient('patient_favorite', id)).has(
+        id,
+      );
+      return {
+        patient: toPatientView(entity),
+        raw: entity.data,
+        vitals,
+        favorite,
+        mergedCount: ids.length - 1,
+      };
     },
     [id],
   );
 
+  const router = useRouter();
+  const redirect = data && 'redirect' in data ? data.redirect : null;
+  useEffect(() => {
+    if (redirect && redirect !== id) {
+      router.replace(`/app/patients/fiche?id=${redirect}&merged=${id}`);
+    }
+  }, [redirect, id, router]);
+  const mergedFrom = useSearchParams().get('merged');
+
   if (loading && !data) return <p className="text-sm text-muted-foreground">{tc('loading')}</p>;
-  if (!data) {
+  if (!data || 'redirect' in data) {
+    if (data && 'redirect' in data) {
+      return <p className="text-sm text-muted-foreground">{t('mergedRedirect')}</p>;
+    }
     return (
       <div className="mx-auto max-w-xl py-16 text-center">
         <p className="text-muted-foreground">{t('notFound')}</p>
@@ -58,7 +108,7 @@ function PatientRecord() {
     );
   }
 
-  const { patient, vitals } = data;
+  const { patient, raw, vitals, favorite, mergedCount } = data;
   const temperature = vitals
     .filter((v) => v.code === 'temp' && v.status === 'active')
     .slice(0, 12)
@@ -88,7 +138,10 @@ function PatientRecord() {
           {initialsOf(patient.name)}
         </span>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-2xl font-semibold">{patient.name}</h1>
+          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold">
+            <span className="truncate">{patient.name}</span>
+            <PatientStatusBadges data={raw} />
+          </h1>
           <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
             <span className="font-mono text-xs text-slate-ink">{patient.mrn}</span>
             <span>{tp(`sex.${patient.sex}`)}</span>
@@ -106,11 +159,36 @@ function PatientRecord() {
             )}
           </p>
         </div>
-        <SyncBadge state={patient.syncState} />
+        <div className="grid justify-items-end gap-2">
+          <div className="flex items-center gap-2">
+            <FavoriteToggle patientId={patient.id} favorite={favorite} />
+            <SyncBadge state={patient.syncState} />
+          </div>
+          <PatientCardActions
+            patient={patient}
+            cardToken={typeof raw.cardToken === 'string' ? raw.cardToken : null}
+          />
+          <SensitivityPanel patientId={patient.id} data={raw} />
+          <DeathPanel patientId={patient.id} data={raw} />
+        </div>
       </section>
 
+      {raw.isProvisional === true && <ProvisionalPanel patientId={patient.id} />}
+
+      {(mergedFrom || mergedCount > 0) && (
+        <p
+          role="status"
+          className="mb-6 flex items-start gap-2 rounded-xl bg-info-soft px-4 py-3 text-sm text-info"
+        >
+          <GitMerge className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>
+            {mergedFrom ? `${t('mergedFrom')} ` : ''}
+            {mergedCount > 0 ? t('mergedCount', { count: mergedCount }) : ''}
+          </span>
+        </p>
+      )}
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-        <VitalsPanel patientId={patient.id} vitals={vitals} />
+        <VitalsPanel patientId={patient.id} vitals={vitals} deceasedAt={deceasedAtOf(raw)} />
         <div className="grid content-start gap-6">
           <Card>
             <CardHeader>
@@ -126,31 +204,8 @@ function PatientRecord() {
               )}
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserRound className="size-4 text-primary" aria-hidden />
-                {t('identity')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                <dt className="text-muted-foreground">{t('mrn')}</dt>
-                <dd className="font-mono text-xs">{patient.mrn}</dd>
-                <dt className="text-muted-foreground">{tp('form.birthDate')}</dt>
-                <dd>
-                  {patient.birthDate
-                    ? format.dateTime(new Date(`${patient.birthDate}T00:00:00Z`), {
-                        dateStyle: 'long',
-                        timeZone: 'UTC',
-                      })
-                    : ''}
-                </dd>
-                <dt className="text-muted-foreground">{tp('columns.phone')}</dt>
-                <dd>{patient.phone ?? ''}</dd>
-              </dl>
-            </CardContent>
-          </Card>
+          <IdentityCard key={patient.id} patientId={patient.id} data={raw} />
+          <FieldHistory patientId={patient.id} />
         </div>
       </div>
     </div>

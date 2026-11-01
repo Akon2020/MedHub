@@ -206,7 +206,11 @@ describe.skipIf(!url)('versioned configuration against PostgreSQL', () => {
     );
     const offline = verifyToken(device.tokens.offlineToken, device.tokens.signingKeys, 'offline');
     expect((offline?.exp ?? 0) - (offline?.iat ?? 0)).toBe(21 * 86_400);
-    expect(device.tokens.config).toEqual({ autoLockMinutes: 5, pinMaxAttempts: 10 });
+    expect(device.tokens.config).toEqual({
+      autoLockMinutes: 5,
+      pinMaxAttempts: 10,
+      duplicateAlertScore: 50,
+    });
 
     await cfg.saveDraft(ctxFor(adminId), { key: 'security.step_up_minutes', value: 5 });
     await cfg.publishDraft(ctxFor(adminId), 'security.step_up_minutes', { ip: null });

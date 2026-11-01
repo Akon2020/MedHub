@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { uuidv7 } from '@medhub/shared';
 import { openForSupport, type SupportEnvelope } from '@medhub/sync';
 import { expect, test, type Page } from '@playwright/test';
 import { generate } from 'otplib';
@@ -317,6 +318,111 @@ test('a privileged role enrolls its second factor at first sign-in, then must us
   };
   expect(profile.profile.tenant).toMatchObject({ code, isTraining: true });
   await trainee.close();
+
+  // Merge: two records of the same person found by the server, merged, then separated again.
+  const [first, second] = [uuidv7(), uuidv7()].sort();
+  await withServer(async (client) => {
+    const tenant = (
+      await client.query<{ id: string }>("select current_setting('app.tenant_id') as id")
+    ).rows[0]?.id;
+    const insert =
+      'insert into patient (id, tenant_id, mrn, family_name, given_name, sex, birth_date, ' +
+      "birth_date_estimated, phone, search_text, phonetic_key) values ($1, $2, $3, 'Ngoy', " +
+      "'Daniel', 'M', $4, $5, $6, 'ngoy daniel', 'ngoi daniel')";
+    await client.query(insert, [first, tenant, 'E2E-MRG-1', '1985-01-01', true, null]);
+    await client.query(insert, [second, tenant, 'E2E-MRG-2', '1985-06-20', false, '0997654321']);
+    await client.query(
+      'insert into duplicate_candidate (id, tenant_id, patient_a_id, patient_b_id, score, reasons) ' +
+        "values ($1, $2, $3, $4, 85, '{phonetic,name_similar,birth_year}')",
+      [uuidv7(), tenant, first, second],
+    );
+  });
+  await page.goto('/app/patients/doublons');
+  await unlock(page);
+  await page.getByRole('button', { name: 'Fusionner', exact: true }).click();
+  await page.getByRole('radio', { name: 'Naissance : 1985-06-20' }).check();
+  await page.getByLabel('Motif (consigné dans le journal)').fill('Même personne (fictif)');
+  await page.getByRole('button', { name: 'Fusionner les dossiers' }).click();
+  await expect(page.getByText(/Dossiers fusionnés/)).toBeVisible({ timeout: 20_000 });
+  await page.screenshot({ path: 'test-results/merge-dark.png', fullPage: true });
+  const merged = await withServer(async (client) => {
+    const { rows } = await client.query<{
+      id: string;
+      merged: string | null;
+      phone: string | null;
+      birth: string;
+    }>(
+      'select id, merged_into_id as merged, phone, birth_date::text as birth from patient where id in ($1, $2)',
+      [first, second],
+    );
+    return rows;
+  });
+  expect(merged.find((r) => r.id === second)?.merged).toBe(first);
+  expect(merged.find((r) => r.id === first)).toMatchObject({
+    phone: '0997654321',
+    birth: '1985-06-20',
+  });
+
+  // The device receives the merge: the old record leads to the one that was kept.
+  await expect
+    .poll(() => page.evaluate(() => window.__medhubTest!.sync()), { timeout: 20_000 })
+    .toBeNull();
+  await page.goto(`/app/patients/fiche?id=${second}`);
+  await unlock(page);
+  await expect(page.getByText('Le dossier demandé a été fusionné dans celui-ci.')).toBeVisible({
+    timeout: 20_000,
+  });
+  expect(page.url()).toContain(`id=${first}`);
+
+  await page.goto('/app/patients/doublons');
+  await unlock(page);
+  await page.getByRole('button', { name: 'Annuler la fusion' }).first().click();
+  await page.getByLabel('Motif (consigné dans le journal)').fill('Fusion de test annulée');
+  await page.getByRole('button', { name: 'Séparer à nouveau les dossiers' }).click();
+  await expect(page.getByText(/Fusion annulée/)).toBeVisible({ timeout: 20_000 });
+  const separated = await withServer((client) =>
+    client.query<{ merged: string | null }>(
+      'select merged_into_id as merged from patient where id = $1',
+      [second],
+    ),
+  );
+  expect(separated.rows[0]?.merged).toBeNull();
+
+  // Server search: a patient the device never received appears, then opens on the device.
+  const distant = uuidv7();
+  await withServer(async (client) => {
+    const tenant = (
+      await client.query<{ id: string }>("select current_setting('app.tenant_id') as id")
+    ).rows[0]?.id;
+    await client.query(
+      'insert into patient (id, tenant_id, mrn, family_name, given_name, sex, birth_date, ' +
+        "search_text, phonetic_key) values ($1, $2, 'E2E-SRV-1', 'Nzuzi', 'Merveille', 'F', " +
+        "'1979-04-02', 'nzuzi merveille e2e srv 1', 'nsusi merveil')",
+      [distant, tenant],
+    );
+  });
+  await page.goto('/app/patients');
+  await unlock(page);
+  await page.getByPlaceholder('Nom, téléphone ou numéro de dossier').fill('Nzuzi Merveille');
+  await expect(page.getByText('Hors de ce poste')).toBeVisible({ timeout: 20_000 });
+  await page.getByRole('button', { name: 'Ouvrir sur ce poste' }).click();
+  await page.waitForURL((u) => u.searchParams.get('id') === distant, { timeout: 20_000 });
+  await expect(page.getByRole('heading', { name: 'Nzuzi Merveille' })).toBeVisible();
+  await page.goto('/app/patients');
+  await unlock(page);
+  await page.getByPlaceholder('Nom, téléphone ou numéro de dossier').fill('Nzuzi Merveille');
+  await expect(page.getByRole('link', { name: /Nzuzi Merveille/ })).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.getByText('Hors de ce poste')).toHaveCount(0);
+  // Back to the normal state for the next scenarios: every device of the structure
+  // receives this patient, as if it had been registered by synchronisation.
+  await withServer((client) =>
+    client.query(
+      "insert into change_log (tenant_id, entity, entity_id, version, scope_keys) values (current_setting('app.tenant_id')::uuid, 'patient', $1, 1, $2)",
+      [distant, [`patient:${distant}`]],
+    ),
+  );
 });
 
 test('content security policy carries a fresh nonce on every document', async ({ request }) => {
@@ -325,6 +431,7 @@ test('content security policy carries a fresh nonce on every document', async ({
   const policy = first.headers()['content-security-policy'] ?? '';
   expect(policy).toContain("'strict-dynamic'");
   expect(policy).not.toContain("'unsafe-eval'");
+  expect(policy).toContain("'wasm-unsafe-eval'");
   const nonce = /'nonce-([^']+)'/.exec(policy)?.[1];
   expect(nonce).toBeTruthy();
   expect(second.headers()['content-security-policy']).not.toContain(nonce as string);

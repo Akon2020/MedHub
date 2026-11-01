@@ -13,7 +13,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { appendOnlyColumns, clinicalStatusCheck, syncColumns } from '../columns';
+import { appendOnlyColumns, clinicalStatusCheck, syncColumns, tenantColumns } from '../columns';
 
 export const patient = pgTable(
   'patient',
@@ -30,6 +30,18 @@ export const patient = pgTable(
     birthDateEstimated: boolean('birth_date_estimated').notNull().default(false),
     ageAtRegistration: integer('age_at_registration'),
     phone: text('phone'),
+    /** Structured address: province, city or territory, commune, quarter, street. */
+    address: jsonb('address').$type<Record<string, string | null>>(),
+    occupation: text('occupation'),
+    maritalStatus: text('marital_status'),
+    nationality: text('nationality'),
+    language: text('language'),
+    fatherName: text('father_name'),
+    motherName: text('mother_name'),
+    /** Person to contact: name, relation, phone. */
+    contact: jsonb('contact').$type<Record<string, string | null>>(),
+    /** Opaque token of the printed card's QR code (no personal data). */
+    cardToken: text('card_token'),
     sensitivity: text('sensitivity').notNull().default('normal'),
     searchText: text('search_text').notNull(),
     phoneticKey: text('phonetic_key').notNull(),
@@ -41,17 +53,40 @@ export const patient = pgTable(
       .default({}),
     mergedIntoId: uuid('merged_into_id'),
     deceasedAt: timestamp('deceased_at', { withTimezone: true }),
+    /** Unidentified emergency or newborn, identified later or merged into a known record. */
+    isProvisional: boolean('is_provisional').notNull().default(false),
+    provisionalKind: text('provisional_kind'),
   },
   (t) => [
     uniqueIndex('patient_mrn_uq').on(t.tenantId, t.mrn),
     index('patient_phonetic_idx').on(t.tenantId, t.phoneticKey),
     index('patient_phone_idx').on(t.tenantId, t.phone),
+    uniqueIndex('patient_card_token_uq')
+      .on(t.tenantId, t.cardToken)
+      .where(sql`${t.cardToken} is not null`),
     check('patient_sex_check', sql`${t.sex} in ('M','F','U')`),
+    check(
+      'patient_provisional_kind_check',
+      sql`${t.provisionalKind} is null or ${t.provisionalKind} in ('unknown','newborn')`,
+    ),
     check(
       'patient_sensitivity_check',
       sql`${t.sensitivity} in ('normal','staff','vip','restricted')`,
     ),
   ],
+);
+
+/** Favourite patients of a user: one row per toggle, the latest one wins. */
+export const patientFavorite = pgTable(
+  'patient_favorite',
+  {
+    ...appendOnlyColumns(),
+    patientId: uuid('patient_id').notNull(),
+    userId: uuid('user_id').notNull(),
+    active: boolean('active').notNull(),
+    at: timestamp('at', { withTimezone: true }).notNull(),
+  },
+  (t) => [index('patient_favorite_user_idx').on(t.tenantId, t.userId, t.patientId)],
 );
 
 export const vitalSign = pgTable(
@@ -72,5 +107,93 @@ export const vitalSign = pgTable(
   (t) => [
     index('vital_sign_patient_idx').on(t.tenantId, t.patientId, t.measuredAt),
     check('vital_sign_status_check', clinicalStatusCheck),
+  ],
+);
+
+/**
+ * Pair of records that may describe the same person, found on the server after
+ * a synchronised registration. Patient A has the smaller identifier, so a pair
+ * is stored once. A decision closes the pair; nothing is deleted.
+ */
+export const duplicateCandidate = pgTable(
+  'duplicate_candidate',
+  {
+    ...tenantColumns(),
+    patientAId: uuid('patient_a_id').notNull(),
+    patientBId: uuid('patient_b_id').notNull(),
+    score: integer('score').notNull(),
+    reasons: text('reasons')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    status: text('status').notNull().default('open'),
+    decidedBy: uuid('decided_by'),
+    decidedAt: timestamp('decided_at', { withTimezone: true }),
+    decisionReason: text('decision_reason'),
+  },
+  (t) => [
+    uniqueIndex('duplicate_candidate_pair_uq').on(t.tenantId, t.patientAId, t.patientBId),
+    index('duplicate_candidate_status_idx').on(t.tenantId, t.status, t.score),
+    check('duplicate_candidate_status_check', sql`${t.status} in ('open','dismissed','merged')`),
+    check('duplicate_candidate_order_check', sql`${t.patientAId} < ${t.patientBId}`),
+  ],
+);
+
+/**
+ * A supervised merge: the merged record points to the survivor, the snapshot
+ * of both records before the merge allows it to be undone. Never deleted.
+ */
+export const patientMerge = pgTable(
+  'patient_merge',
+  {
+    ...tenantColumns(),
+    survivorId: uuid('survivor_id').notNull(),
+    mergedId: uuid('merged_id').notNull(),
+    candidateId: uuid('candidate_id'),
+    keep: jsonb('keep').$type<Record<string, string>>().notNull().default({}),
+    survivorBefore: jsonb('survivor_before').$type<Record<string, unknown>>().notNull(),
+    mergedBefore: jsonb('merged_before').$type<Record<string, unknown>>().notNull(),
+    appliedPatch: jsonb('applied_patch').$type<Record<string, unknown>>().notNull().default({}),
+    reason: text('reason').notNull(),
+    mergedBy: uuid('merged_by').notNull(),
+    status: text('status').notNull().default('active'),
+    undoneBy: uuid('undone_by'),
+    undoneAt: timestamp('undone_at', { withTimezone: true }),
+    undoReason: text('undo_reason'),
+  },
+  (t) => [
+    index('patient_merge_survivor_idx').on(t.tenantId, t.survivorId),
+    index('patient_merge_merged_idx').on(t.tenantId, t.mergedId),
+    check('patient_merge_status_check', sql`${t.status} in ('active','undone')`),
+  ],
+);
+
+/**
+ * Every change of a patient's civil status, field by field (docs/modules/pat.md):
+ * written by the server when a synchronised update or a merge is applied.
+ * Append-only, like the audit trail.
+ */
+export const patientFieldHistory = pgTable(
+  'patient_field_history',
+  {
+    id: uuid('id').primaryKey(),
+    tenantId: uuid('tenant_id').notNull(),
+    patientId: uuid('patient_id').notNull(),
+    field: text('field').notNull(),
+    oldValue: jsonb('old_value'),
+    newValue: jsonb('new_value'),
+    source: text('source').notNull(),
+    opId: uuid('op_id'),
+    hlc: text('hlc'),
+    deviceId: uuid('device_id'),
+    changedBy: uuid('changed_by'),
+    changedAt: timestamp('changed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('patient_field_history_patient_idx').on(t.tenantId, t.patientId, t.changedAt),
+    check(
+      'patient_field_history_source_check',
+      sql`${t.source} in ('sync','merge','unmerge','review')`,
+    ),
   ],
 );

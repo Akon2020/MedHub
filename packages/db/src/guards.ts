@@ -15,6 +15,8 @@ const NO_DELETE = [
   'platform_audit_log',
   'security_event',
   'patient',
+  'patient_field_history',
+  'patient_favorite',
 ];
 const NO_UPDATE = [
   'stock_movement',
@@ -24,6 +26,8 @@ const NO_UPDATE = [
   'data_access_log',
   'platform_audit_log',
   'security_event',
+  'patient_field_history',
+  'patient_favorite',
 ];
 const STATUS_ONLY_UPDATE = ['vital_sign'];
 

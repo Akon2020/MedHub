@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@medhub/db": "workspace:*",
+    "@medhub/domain": "workspace:*",
     "@medhub/shared": "workspace:*",
     "dotenv": "18.0.9",
     "drizzle-orm": "0.45.4",

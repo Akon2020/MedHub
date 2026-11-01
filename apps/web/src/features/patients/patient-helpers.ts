@@ -1,4 +1,4 @@
-import { ageInYears, patientFullName } from '@medhub/domain';
+import { ageInYears, currentFavorites, patientFullName } from '@medhub/domain';
 import type { LocalEntity } from '@medhub/sync/client';
 
 export type PatientView = {
@@ -13,6 +13,13 @@ export type PatientView = {
   phone: string | null;
   syncState: 'synced' | 'pending' | 'rejected';
   createdAt: string | null;
+  /** Provisional and death markers, in the shape the status badges read. */
+  status: {
+    isProvisional: boolean;
+    provisionalKind: string | null;
+    deceasedAt: string | null;
+    sensitivity: string;
+  };
 };
 
 const s = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 ? v : null);
@@ -21,6 +28,11 @@ const s = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 
 function hlcInstant(hlc: string): string | null {
   const ms = Number(hlc.split(':')[0]);
   return Number.isFinite(ms) && ms > 0 ? new Date(ms).toISOString() : null;
+}
+
+/** A record merged into another one: hidden from lists, its page leads to the survivor. */
+export function isMerged(entity: LocalEntity): boolean {
+  return typeof entity.data.mergedIntoId === 'string' && entity.data.mergedIntoId !== '';
 }
 
 export function toPatientView(entity: LocalEntity, now = new Date()): PatientView {
@@ -42,6 +54,12 @@ export function toPatientView(entity: LocalEntity, now = new Date()): PatientVie
     phone: s(d.phone),
     syncState: entity.rejected ? 'rejected' : entity.version === 0 ? 'pending' : 'synced',
     createdAt: hlcInstant(entity.hlc),
+    status: {
+      isProvisional: d.isProvisional === true,
+      provisionalKind: s(d.provisionalKind),
+      deceasedAt: s(d.deceasedAt),
+      sensitivity: s(d.sensitivity) ?? 'normal',
+    },
   };
 }
 
@@ -52,4 +70,16 @@ export function initialsOf(name: string): string {
     .slice(0, 2)
     .map((p) => p[0]?.toUpperCase())
     .join('');
+}
+
+/** Favourite patients among the toggles stored on the device (all are the user's own). */
+export function favoritesOf(rows: readonly LocalEntity[]): Set<string> {
+  return currentFavorites(
+    rows.map((r) => ({
+      id: r.id,
+      patientId: String(r.data.patientId ?? ''),
+      active: r.data.active === true,
+      at: String(r.data.at ?? ''),
+    })),
+  );
 }

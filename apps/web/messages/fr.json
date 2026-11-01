@@ -436,7 +436,121 @@
       "required": "Ce champ est obligatoire.",
       "phoneInvalid": "Numéro de téléphone invalide.",
       "deviceMissing": "Ce poste n'est pas activé : impossible de numéroter le dossier."
-    }
+    },
+    "duplicates": {
+      "title": "{count, plural, one {Un patient semblable est déjà enregistré} other {# patients semblables sont déjà enregistrés}}",
+      "text": "Vérifiez qu'il ne s'agit pas de la même personne avant d'ouvrir un nouveau dossier.",
+      "age": "{age} ans",
+      "open": "Ouvrir ce dossier",
+      "confirmHint": "S'il s'agit d'une autre personne, enregistrez quand même : un doublon éventuel sera de toute façon signalé au serveur.",
+      "createAnyway": "Ce n'est aucun d'eux : enregistrer",
+      "reasons": {
+        "phonetic": "nom à la prononciation identique",
+        "name_similar": "nom très proche",
+        "birth_date": "même date de naissance",
+        "birth_year": "même année de naissance",
+        "phone": "même téléphone",
+        "parent": "même père ou même mère",
+        "sex_differs": "sexe différent",
+        "manual": "Signalé par un utilisateur"
+      }
+    },
+    "queue": {
+      "link": "Doublons",
+      "title": "Doublons et conflits",
+      "subtitle": "Dossiers semblables et modifications concurrentes à arbitrer.",
+      "intro": "Comparez les deux dossiers. S'il s'agit de la même personne, fusionnez-les en choisissant le dossier conservé et les valeurs à garder ; sinon, écartez la paire avec un motif.",
+      "empty": "Aucun doublon possible à examiner.",
+      "offline": "Écran disponible en ligne seulement : les doublons sont calculés par le serveur.",
+      "denied": "Vous n'avez pas la permission de traiter les doublons.",
+      "network": "Le serveur est injoignable. Vérifiez la connexion.",
+      "error": "L'opération n'a pas abouti : la paire a peut-être déjà été traitée.",
+      "score": "Ressemblance {score}",
+      "recordA": "Dossier 1",
+      "recordB": "Dossier 2",
+      "estimatedYear": "{year} (estimée)",
+      "fields": {
+        "name": "Nom",
+        "sex": "Sexe",
+        "birthDate": "Naissance",
+        "phone": "Téléphone",
+        "mrn": "Numéro de dossier",
+        "createdAt": "Enregistré le"
+      },
+      "dismiss": "Pas la même personne",
+      "reason": "Motif (consigné dans le journal)",
+      "reasonPlaceholder": "Exemple : homonymes, parents différents",
+      "dismissConfirm": "Écarter cette paire",
+      "cancel": "Annuler",
+      "merge": "Fusionner",
+      "merged": "Dossiers fusionnés. Les postes recevront la fusion à leur prochaine synchronisation.",
+      "unmerged": "{kept, plural, =0 {Fusion annulée : les deux dossiers sont de nouveau séparés.} one {Fusion annulée. Une valeur modifiée depuis la fusion a été conservée.} other {Fusion annulée. # valeurs modifiées depuis la fusion ont été conservées.}}",
+      "errors": {
+        "PAT_ALREADY_MERGED": "L'un des deux dossiers a déjà été fusionné.",
+        "PAT_MERGE_UNDONE": "Cette fusion a déjà été annulée.",
+        "PERMISSION_DENIED": "Vous n'avez pas la permission de fusionner des dossiers."
+      }
+    },
+    "merge": {
+      "survivor": "Dossier à conserver",
+      "values": "Valeurs à garder",
+      "identical": "Les informations des deux dossiers sont identiques.",
+      "empty": "vide",
+      "effect": "L'autre dossier n'est pas effacé : il renvoie vers le dossier conservé, ses constantes et actes y restent rattachés, et la fusion peut être annulée.",
+      "reasonPlaceholder": "Exemple : même téléphone, date de naissance confirmée par le patient",
+      "confirm": "Fusionner les dossiers",
+      "recentTitle": "Fusions récentes",
+      "undo": "Annuler la fusion",
+      "undoConfirm": "Séparer à nouveau les dossiers",
+      "status": {
+        "active": "Fusionnés",
+        "undone": "Annulée"
+      },
+      "fields": {
+        "familyName": "Nom",
+        "middleName": "Postnom",
+        "givenName": "Prénom",
+        "sex": "Sexe",
+        "birthDate": "Naissance",
+        "phone": "Téléphone"
+      }
+    },
+    "conflicts": {
+      "title": "{count, plural, one {Un conflit de modification à revoir} other {# conflits de modification à revoir}}",
+      "intro": "Deux postes ont modifié hors connexion la même information sensible. La valeur en vigueur a été gardée ; choisissez celle qui est juste.",
+      "inForce": "Valeur en vigueur",
+      "fromDevice": "Envoyée par le poste {code}",
+      "fromOther": "Valeur envoyée",
+      "reason": "Motif (consigné dans le journal)",
+      "reasonPlaceholder": "Exemple : vérifié sur la carte d’identité",
+      "keep": "Garder la valeur en vigueur",
+      "apply": "Appliquer la valeur envoyée",
+      "error": "La décision n'a pas pu être enregistrée : le conflit a peut-être déjà été traité.",
+      "network": "Le serveur est injoignable. Vérifiez la connexion."
+    },
+    "server": {
+      "title": "Sur le serveur",
+      "hint": "Patients de la structure absents de ce poste.",
+      "badge": "Hors de ce poste",
+      "open": "Ouvrir sur ce poste",
+      "error": "Le dossier n'a pas pu être téléchargé. Vérifiez la connexion."
+    },
+    "provisional": {
+      "mode": "Type d'enregistrement",
+      "modes": {
+        "known": "Identité connue",
+        "unknown": "Inconnu",
+        "newborn": "Nouveau-né"
+      },
+      "hints": {
+        "unknown": "Patient non identifié (urgence) : indiquez le sexe et l'âge apparent. Le dossier sera complété ou fusionné dès que l'identité sera connue.",
+        "newborn": "Le nouveau-né reçoit un dossier provisoire au nom de sa mère, complété dès que son nom est donné."
+      },
+      "motherName": "Nom de la mère",
+      "unknownName": "{sex, select, F {Inconnue femme} M {Inconnu homme} other {Inconnu}}{age, select, none {} other { {age} ans environ}}, {sex, select, F {arrivée} other {arrivé}} le {arrived}",
+      "newbornName": "Nouveau-né de {mother}"
+    },
+    "favorites": "Mes favoris"
   },
   "patient": {
     "back": "Retour aux patients",
@@ -472,10 +586,128 @@
         "glucose": "Glycémie",
         "pain": "Douleur",
         "diuresis": "Diurèse"
-      }
+      },
+      "deceasedReadOnly": "Patient décédé : aucune nouvelle constante datée après le décès. Une mesure antérieure peut encore être corrigée."
     },
     "history": "Historique",
-    "trend": "Évolution de la température"
+    "trend": "Évolution de la température",
+    "mergedRedirect": "Ce dossier a été fusionné : ouverture du dossier conservé...",
+    "mergedFrom": "Le dossier demandé a été fusionné dans celui-ci.",
+    "mergedCount": "{count, plural, one {Un dossier fusionné est rattaché à celui-ci : ses constantes apparaissent ici.} other {# dossiers fusionnés sont rattachés à celui-ci : leurs constantes apparaissent ici.}}",
+    "identityCard": {
+      "title": "Identité",
+      "edit": "Compléter ou corriger",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "none": "Non renseigné",
+      "saved": "Identité enregistrée. Elle sera envoyée au serveur à la prochaine synchronisation.",
+      "offlineHint": "Fonctionne hors connexion : seuls les champs modifiés sont envoyés. Si un autre poste a modifié la même date de naissance, le même nom ou le même sexe, la valeur en vigueur est gardée et le changement est soumis à un superviseur.",
+      "estimatedYear": "{year} (estimée)",
+      "fields": {
+        "familyName": "Nom",
+        "middleName": "Postnom",
+        "givenName": "Prénom",
+        "sex": "Sexe",
+        "birthDate": "Naissance",
+        "birthDateEstimated": "Date estimée",
+        "phone": "Téléphone",
+        "address": "Adresse",
+        "occupation": "Profession",
+        "maritalStatus": "État civil",
+        "nationality": "Nationalité",
+        "language": "Langue parlée",
+        "fatherName": "Nom du père",
+        "motherName": "Nom de la mère",
+        "contact": "Personne à contacter",
+        "sensitivity": "Sensibilité",
+        "mergedIntoId": "Fusion",
+        "cardToken": "Carte patient",
+        "isProvisional": "Provisoire",
+        "deceasedAt": "Décès"
+      },
+      "address": {
+        "province": "Province",
+        "city": "Ville ou territoire",
+        "commune": "Commune",
+        "quarter": "Quartier",
+        "street": "Avenue et numéro"
+      },
+      "contact": {
+        "name": "Nom",
+        "relation": "Lien",
+        "phone": "Téléphone"
+      },
+      "marital": {
+        "single": "Célibataire",
+        "married": "Marié ou mariée",
+        "cohabiting": "En union libre",
+        "divorced": "Divorcé ou divorcée",
+        "separated": "Séparé ou séparée",
+        "widowed": "Veuf ou veuve"
+      },
+      "historyTitle": "Historique des modifications",
+      "historyShow": "Afficher l'historique",
+      "historyHint": "Chaque changement d'identité, champ par champ, avec son auteur et son poste. La consultation est tracée.",
+      "historyOffline": "Disponible en ligne seulement.",
+      "historyEmpty": "Aucune modification depuis la création du dossier.",
+      "historyNotSynced": "Ce dossier n'est pas encore sur le serveur : synchronisez le poste.",
+      "historyError": "L'historique n'a pas pu être chargé.",
+      "device": "poste {code}",
+      "sources": {
+        "merge": "fusion",
+        "unmerge": "fusion annulée",
+        "review": "revue"
+      },
+      "identify": "Identifier le patient",
+      "identifiedConfirm": "Identité confirmée : le dossier n'est plus provisoire.",
+      "yes": "Oui",
+      "no": "Non"
+    },
+    "card": {
+      "print": "Imprimer la carte",
+      "replace": "Carte perdue",
+      "replaceConfirm": "Une nouvelle carte sera imprimée avec un nouveau code : l'ancienne carte ne permettra plus de retrouver ce patient.",
+      "replaceAction": "Imprimer une nouvelle carte",
+      "cancel": "Annuler",
+      "born": "né(e) {date}",
+      "note": "Présentez cette carte à chaque visite. Le code QR ne contient aucune information personnelle.",
+      "error": "La carte n'a pas pu être préparée. Réessayez."
+    },
+    "status": {
+      "provisional": "Provisoire",
+      "newborn": "Nouveau-né, provisoire",
+      "deceased": "Décédé le {date}",
+      "provisionalTitle": "Dossier provisoire",
+      "provisionalText": "Complétez l'identité dès qu'elle est connue (carte Identité, « Identifier le patient »). Si cette personne a déjà un dossier, retrouvez-le et signalez-le : un utilisateur habilité fusionnera les deux dossiers depuis la file des doublons.",
+      "knownSearch": "Rechercher le dossier existant",
+      "search": "Rechercher",
+      "noResult": "Aucun dossier correspondant sur ce poste.",
+      "report": "C'est la même personne",
+      "reported": "Signalement enregistré : la paire attend dans la file des doublons.",
+      "reportOffline": "Le signalement demande une connexion.",
+      "declare": "Déclarer le décès",
+      "declareText": "Après la déclaration, le dossier n'accepte plus de nouveaux actes cliniques datés après le décès.",
+      "declareAt": "Date et heure du décès",
+      "declareAction": "Confirmer le décès",
+      "withdraw": "Annuler la déclaration de décès",
+      "withdrawText": "Le décès déclaré le {date} sera retiré. La déclaration reste visible dans l'historique.",
+      "withdrawReason": "Motif de l'annulation",
+      "withdrawAction": "Retirer la déclaration",
+      "cancel": "Annuler",
+      "sensitivity": {
+        "normal": "Normal",
+        "staff": "Membre du personnel",
+        "vip": "Personnalité",
+        "restricted": "Accès restreint"
+      },
+      "sensitivityAction": "Sensibilité du dossier",
+      "sensitivityText": "Un dossier sensible n'est ouvert qu'aux rôles dont le niveau le permet ; les autres postes le retirent à la prochaine synchronisation.",
+      "sensitivityLevel": "Niveau",
+      "sensitivityReason": "Motif",
+      "sensitivitySave": "Enregistrer le niveau",
+      "favoriteOn": "Favori",
+      "favoriteOff": "Ajouter aux favoris"
+    }
   },
   "diagnostic": {
     "title": "Diagnostic du poste",
@@ -539,7 +771,13 @@
     "VALIDATION_FAILED": "Certaines informations sont invalides.",
     "DPI_VITAL_IMPLAUSIBLE": "Valeur hors des limites plausibles : un motif est requis.",
     "NOT_FOUND": "Élément introuvable.",
-    "UNKNOWN": "Une erreur inattendue est survenue."
+    "UNKNOWN": "Une erreur inattendue est survenue.",
+    "PAT_DECEASED": "Patient décédé : un acte daté après le décès ne peut pas être enregistré.",
+    "PAT_DEATH_REASON_REQUIRED": "Indiquez le motif de l'annulation.",
+    "PAT_PROVISIONAL_KIND": "Précisez le type de dossier provisoire.",
+    "PAT_NOT_FOUND": "Ce patient est introuvable sur le serveur.",
+    "PAT_ALREADY_MERGED": "L'un des deux dossiers a déjà été fusionné.",
+    "PAT_SENSITIVE": "Ce dossier est protégé : votre rôle ne permet pas de l'ouvrir."
   },
   "account": {
     "title": "Mon compte",
@@ -822,7 +1060,8 @@
         "days": "jours",
         "minutes": "minutes",
         "attempts": "essais",
-        "characters": "caractères"
+        "characters": "caractères",
+        "points": "points"
       },
       "keys": {
         "offline_token_days": {
@@ -844,6 +1083,16 @@
         "password_min_length": {
           "title": "Longueur minimale des mots de passe",
           "text": "Nombre minimal de caractères (10 à 64). Aucune règle de composition n'est imposée : une phrase de plusieurs mots est recommandée."
+        },
+        "patient": {
+          "duplicate_alert_score": {
+            "title": "Alerte de doublon à la saisie",
+            "text": "Score de ressemblance à partir duquel le poste montre les patients semblables avant d'en créer un nouveau (30 à 100)."
+          },
+          "duplicate_candidate_score": {
+            "title": "Candidat de fusion",
+            "text": "Score à partir duquel le serveur propose deux dossiers dans la file des doublons (30 à 120)."
+          }
         }
       }
     },
@@ -931,7 +1180,8 @@
         "code": "Code",
         "description": "Description",
         "requiresMfa": "Double authentification obligatoire",
-        "copyFrom": "Partir de"
+        "copyFrom": "Partir de",
+        "sensitivityMax": "Dossiers sensibles accessibles"
       },
       "codeHint": "Lettres minuscules, chiffres et _ ; ne pourra plus changer.",
       "emptyRole": "Un rôle vide",
@@ -1065,7 +1315,17 @@
         "simulate": "Simuler"
       },
       "copyCodeSuffix": "copie",
-      "copyName": "{name} (copie)"
+      "copyName": "{name} (copie)",
+      "sensitivity": {
+        "default": "Règle par défaut",
+        "hint": "Par défaut, un rôle n'ouvre que les dossiers normaux, sauf s'il peut lui-même marquer la sensibilité : il les ouvre alors tous. Chaque niveau inclut les précédents.",
+        "levels": {
+          "normal": "Dossiers normaux seulement",
+          "staff": "Jusqu'aux membres du personnel",
+          "vip": "Jusqu'aux personnalités",
+          "restricted": "Tous, y compris l'accès restreint"
+        }
+      }
     },
     "reference": {
       "title": "Référentiels",
@@ -1164,6 +1424,23 @@
         "messages": "Aucun SMS ni courriel réel n'en part : les envois sont simulés.",
         "reset": "Réinitialiser repart de la configuration du jour ; l'ancienne base est archivée, jamais supprimée."
       }
+    },
+    "scope": {
+      "title": "Patients gardés sur les postes",
+      "subtitle": "Périmètre de synchronisation : quels dossiers chaque poste télécharge et garde hors connexion.",
+      "hint": "« Toute la structure » convient aux petites structures. « Périmètre » garde sur le poste les patients qui y ont été enregistrés, les favoris de l'utilisateur, les patients ouverts depuis une recherche sur le serveur et ceux qui ont eu une activité récente ; les autres restent accessibles par la recherche en ligne. La règle d'un rôle prime sur la règle de la structure ; si plusieurs rôles ont une règle, la plus large s'applique.",
+      "default": "Règle de la structure",
+      "inherit": "Règle de la structure",
+      "builtIn": "Par défaut ({rule})",
+      "mode": "Règle",
+      "recentDays": "Activité récente (jours)",
+      "days": "jours",
+      "modes": {
+        "all": "Toute la structure",
+        "scoped": "Périmètre"
+      },
+      "save": "Enregistrer",
+      "saved": "Règle enregistrée : les postes l'appliquent à leur prochaine synchronisation."
     }
   }
 }

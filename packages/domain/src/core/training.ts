@@ -103,6 +103,7 @@ export function fictitiousPatients(
       birthDateEstimated: estimated,
       phone: null,
       sensitivity: 'normal',
+      isProvisional: false,
     };
   });
 }

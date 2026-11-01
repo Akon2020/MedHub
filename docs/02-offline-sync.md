@@ -150,6 +150,8 @@ Règles par défaut (table `sync_scope_rule`, modifiables par structure et par r
 
 Un patient trouvé par recherche en ligne peut être « épinglé » : il entre dans le périmètre de l'appareil.
 
+Mise en œuvre (S6) : une règle `{ mode: 'all' | 'scoped', recentDays }` par structure (`role_id` nul) et par rôle, la plus large des règles des rôles de l'utilisateur l'emportant ; « toute la structure » par défaut. La table `device_patient` retient les patients détenus par chaque appareil et les épinglés. À chaque pull, un patient qui sort du périmètre (ou dépasse le niveau de sensibilité de l'utilisateur) est transmis sans données avec `evict: true` : l'appareil le retire avec ses lignes ; un patient qui y entre est transmis avec son dossier complet. Tant que visites, rendez-vous et hospitalisations n'existent pas, l'activité récente se mesure par la dernière modification du patient ou la dernière constante.
+
 ## 9. Appareils, sessions hors connexion et licence
 
 - **Enregistrement** : paire de clés Ed25519 générée dans le navigateur (clé privée chiffrée par la DEK). Le serveur garde la clé publique. Chaque opération est signée.

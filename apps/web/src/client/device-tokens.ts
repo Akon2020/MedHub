@@ -14,7 +14,7 @@ export type DeviceTokensResponse = {
   licenseToken: string;
   signingKeys: Record<string, string>;
   serverTime: number;
-  config: { autoLockMinutes: number; pinMaxAttempts: number };
+  config: { autoLockMinutes: number; pinMaxAttempts: number; duplicateAlertScore?: number };
   supportKey?: string | null;
 };
 

@@ -57,6 +57,48 @@
       "when": 1793441979029,
       "tag": "0007_s5_training",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793444610835,
+      "tag": "0008_s6_duplicates",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793472894012,
+      "tag": "0009_s6_merge",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793513599052,
+      "tag": "0010_s6_demographics",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793524149829,
+      "tag": "0011_s6_card",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793552383365,
+      "tag": "0012_s6_lifecycle",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793554174900,
+      "tag": "0013_s6_scope",
+      "breakpoints": true
     }
   ]
 }

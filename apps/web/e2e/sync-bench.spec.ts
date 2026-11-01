@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { activateDevice, unlock, withServer } from './support';
 
@@ -54,8 +55,13 @@ async function openDevice(
   // Lost acknowledgement: the request reaches the server and is committed, the answer never arrives.
   await page.route('**/api/v1/sync/push', async (route) => {
     if (!device.loseResponses) return route.continue();
-    await route.fetch();
-    device.stats.lost += 1;
+    try {
+      await route.fetch();
+      device.stats.lost += 1;
+    } catch {
+      // The forwarded request itself was cut (keep-alive socket closed): for the
+      // device it is one more failed push, which the bench is about anyway.
+    }
     await route.abort('failed');
   });
   await activateDevice(page, username);
@@ -85,6 +91,22 @@ async function setNetwork(device: Device, random: () => number): Promise<void> {
   device.offline = random() < 0.35;
   device.loseResponses = !device.offline && random() < 0.4;
   await device.context.setOffline(device.offline);
+}
+
+/**
+ * The failed offline navigation of the form may still be running (Next.js
+ * retries it as a full page load): a goto interrupted by it is simply retried.
+ */
+async function gotoSettled(page: Page, url: string): Promise<void> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      await page.goto(url);
+      return;
+    } catch (error) {
+      if (attempt >= 2 || !String(error).includes('ERR_ABORTED')) throw error;
+      await page.waitForTimeout(500);
+    }
+  }
 }
 
 async function sync(device: Device): Promise<void> {
@@ -279,7 +301,7 @@ test('front desk registers a patient offline from the screen, then it syncs', as
   // offline: the patient must survive that failed navigation and a full reload,
   // then reach the server.
   await context.setOffline(false);
-  await page.goto('/app');
+  await gotoSettled(page, '/app');
   await unlock(page);
   await expect
     .poll(() => page.evaluate(() => window.__medhubTest!.sync()), { timeout: 20_000 })
@@ -294,5 +316,184 @@ test('front desk registers a patient offline from the screen, then it syncs', as
     return Number(rows[0]?.n ?? 0);
   });
   expect(stored).toBe(1);
+
+  // Registering the same person again shows the existing record before creating anything.
+  await page.goto('/app/patients?new=1');
+  await unlock(page);
+  await page.getByLabel('Nom', { exact: true }).fill('Kabwela');
+  await page.getByLabel('Prénom').fill('Espoir');
+  await page.getByLabel('ou âge estimé (ans)').fill('41');
+  await page.getByRole('button', { name: 'Enregistrer le patient' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Un patient semblable est déjà enregistré' }),
+  ).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.getByRole('link', { name: 'Ouvrir ce dossier' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: "Ce n'est aucun d'eux : enregistrer" }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => window.__medhubTest!.pending())).toBe(0);
+
+  // The record is completed offline, then the changes reach the server with their history.
+  const patientId = await withServer(async (client) => {
+    const { rows } = await client.query<{ id: string }>(
+      "select id from patient where device_id = $1 and family_name = 'Kabwela' and given_name = 'Espoir'",
+      [deviceId],
+    );
+    return rows[0]?.id ?? '';
+  });
+  await page.goto(`/app/patients/fiche?id=${patientId}`);
+  await unlock(page);
+  await context.setOffline(true);
+  await page.getByRole('button', { name: 'Compléter ou corriger' }).click();
+  await page.getByLabel('Profession').fill('Enseignante');
+  await page.getByLabel('Nom de la mère').fill('Mwamba Thérèse');
+  await page.getByLabel('Commune').fill('Lemba');
+  await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+  await expect(page.getByText(/Identité enregistrée/)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText('Enseignante')).toBeVisible();
+  await context.setOffline(false);
+  await expect
+    .poll(() => page.evaluate(() => window.__medhubTest!.sync()), { timeout: 20_000 })
+    .toBeNull();
+  const completed = await withServer(async (client) => {
+    const row = await client.query<{ occupation: string; mother: string; commune: string }>(
+      "select occupation, mother_name as mother, address->>'commune' as commune from patient where id = $1",
+      [patientId],
+    );
+    const fields = await client.query<{ field: string }>(
+      'select field from patient_field_history where patient_id = $1 order by field',
+      [patientId],
+    );
+    return { ...row.rows[0], fields: fields.rows.map((r) => r.field) };
+  });
+  expect(completed).toEqual({
+    occupation: 'Enseignante',
+    mother: 'Mwamba Thérèse',
+    commune: 'Lemba',
+    fields: ['address', 'motherName', 'occupation'],
+  });
+
+  // Patient card: a PDF with an opaque QR token, then the token found again as a scanner types it.
+  const downloading = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Imprimer la carte' }).click();
+  const card = await downloading;
+  expect(card.suggestedFilename()).toMatch(/^carte-.+\.pdf$/);
+  expect(
+    readFileSync(await card.path())
+      .subarray(0, 5)
+      .toString(),
+  ).toBe('%PDF-');
+  await expect
+    .poll(() => page.evaluate(() => window.__medhubTest!.sync()), { timeout: 20_000 })
+    .toBeNull();
+  const token = await withServer(async (client) => {
+    const { rows } = await client.query<{ token: string | null }>(
+      'select card_token as token from patient where id = $1',
+      [patientId],
+    );
+    return rows[0]?.token ?? '';
+  });
+  expect(token).toMatch(/^MHC1-[A-Z0-9]{20}$/);
+  await page.goto('/app/patients');
+  await unlock(page);
+  await page.getByPlaceholder('Nom, téléphone ou numéro de dossier').fill(token);
+  await page.waitForURL((u) => u.searchParams.get('id') === patientId, { timeout: 20_000 });
   await context.close();
+});
+
+test('an unknown patient is registered offline, identified, then the physician records the death', async ({
+  browser,
+}) => {
+  test.setTimeout(3 * 60_000);
+  const desk = await openDevice(browser, 'accueil');
+  const deskDevice = await desk.page.evaluate(() => window.__medhubTest!.deviceId);
+  await desk.page.goto('/app/patients?new=1');
+  await unlock(desk.page);
+
+  await desk.context.setOffline(true);
+  await desk.page.getByRole('button', { name: 'Inconnu', exact: true }).click();
+  await desk.page.getByRole('button', { name: 'Homme', exact: true }).click();
+  await desk.page.getByLabel('ou âge estimé (ans)').fill('30');
+  const committed = desk.page.waitForRequest((r) => r.url().includes('/app/patients/fiche'), {
+    timeout: 15_000,
+  });
+  await desk.page.getByRole('button', { name: 'Enregistrer le patient' }).click();
+  await committed;
+  await desk.context.setOffline(false);
+  await gotoSettled(desk.page, '/app');
+  await unlock(desk.page);
+  await expect
+    .poll(() => desk.page.evaluate(() => window.__medhubTest!.sync()), { timeout: 20_000 })
+    .toBeNull();
+  const unknown = await withServer(async (client) => {
+    const { rows } = await client.query<{ id: string; name: string; kind: string }>(
+      "select id, family_name as name, provisional_kind as kind from patient where device_id = $1 and is_provisional and family_name like 'Inconnu homme 30 ans environ%'",
+      [deskDevice],
+    );
+    return rows[0];
+  });
+  expect(unknown?.kind).toBe('unknown');
+  const patientId = unknown?.id ?? '';
+
+  // Offline again: the desk marks a favourite and identifies the patient.
+  await desk.page.goto(`/app/patients/fiche?id=${patientId}`);
+  await unlock(desk.page);
+  await expect(desk.page.getByText('Dossier provisoire')).toBeVisible();
+  await desk.context.setOffline(true);
+  await desk.page.getByRole('button', { name: 'Ajouter aux favoris' }).click();
+  await expect(desk.page.getByRole('button', { name: 'Favori', exact: true })).toBeVisible();
+  await desk.page.getByRole('button', { name: 'Identifier le patient' }).click();
+  await desk.page.locator('#identity-familyName').fill('Lufuluabo');
+  await desk.page.locator('#identity-givenName').fill('Pascal');
+  await desk.page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+  await expect(desk.page.getByText(/Identité enregistrée/)).toBeVisible({ timeout: 20_000 });
+  await expect(desk.page.getByText('Dossier provisoire')).toBeHidden();
+  await desk.context.setOffline(false);
+  await expect
+    .poll(() => desk.page.evaluate(() => window.__medhubTest!.sync()), { timeout: 20_000 })
+    .toBeNull();
+  const identified = await withServer(async (client) => {
+    const patient = await client.query<{ name: string; provisional: boolean }>(
+      'select family_name as name, is_provisional as provisional from patient where id = $1',
+      [patientId],
+    );
+    const favorite = await client.query<{ active: boolean }>(
+      'select active from patient_favorite where patient_id = $1',
+      [patientId],
+    );
+    return { ...patient.rows[0], favorites: favorite.rows.map((r) => r.active) };
+  });
+  expect(identified).toEqual({ name: 'Lufuluabo', provisional: false, favorites: [true] });
+  await desk.context.close();
+
+  // The physician, offline, records the death: no new vital sign can follow.
+  const doctor = await openDevice(browser, 'medecin');
+  await expect
+    .poll(() => doctor.page.evaluate(() => window.__medhubTest!.sync()), { timeout: 20_000 })
+    .toBeNull();
+  await doctor.page.goto(`/app/patients/fiche?id=${patientId}`);
+  await unlock(doctor.page);
+  await expect(
+    doctor.page.getByRole('button', { name: 'Enregistrer une constante' }),
+  ).toBeVisible();
+  await doctor.context.setOffline(true);
+  await doctor.page.getByRole('button', { name: 'Déclarer le décès' }).click();
+  await doctor.page.getByRole('button', { name: 'Confirmer le décès' }).click();
+  await expect(doctor.page.getByText(/^Décédé le/)).toBeVisible({ timeout: 20_000 });
+  await expect(doctor.page.getByRole('button', { name: 'Enregistrer une constante' })).toBeHidden();
+  await doctor.context.setOffline(false);
+  await expect
+    .poll(() => doctor.page.evaluate(() => window.__medhubTest!.sync()), { timeout: 20_000 })
+    .toBeNull();
+  const deceased = await withServer(async (client) => {
+    const { rows } = await client.query<{ at: Date | null }>(
+      'select deceased_at as at from patient where id = $1',
+      [patientId],
+    );
+    return rows[0]?.at ?? null;
+  });
+  expect(deceased).not.toBeNull();
+  await doctor.context.close();
 });

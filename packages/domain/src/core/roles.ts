@@ -1,5 +1,6 @@
 import {
   ALL_PERMISSION_KEYS,
+  PATIENT_SENSITIVITIES,
   PERMISSION_SCOPES_ALL,
   PRIVILEGED_PERMISSIONS,
   ROLE_TEMPLATES,
@@ -47,6 +48,11 @@ export const roleUpdateSchema = z.object({
   description: optionalText(300),
   requiresMfa: z.boolean(),
   grants: grantsSchema,
+  /**
+   * Most protected patient records the role opens (`sensitivity_max` of its
+   * patient:read grant); null keeps the default rule of `roleSensitivityMax`.
+   */
+  sensitivityMax: z.enum(PATIENT_SENSITIVITIES).nullish(),
 });
 export type RoleUpdateInput = z.infer<typeof roleUpdateSchema>;
 

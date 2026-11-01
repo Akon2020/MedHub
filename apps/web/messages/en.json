@@ -139,7 +139,12 @@
         "tab": "Laboratory",
         "title": "Laboratory",
         "text": "Orders, specimen collection, result entry and validation, critical values flagged immediately.",
-        "points": ["Labels and specimens", "Two-level validation", "Reference ranges", "Reports"]
+        "points": [
+          "Labels and specimens",
+          "Two-level validation",
+          "Reference ranges",
+          "Reports"
+        ]
       }
     },
     "why": {
@@ -431,7 +436,121 @@
       "required": "This field is required.",
       "phoneInvalid": "Invalid phone number.",
       "deviceMissing": "This workstation is not activated: the record cannot be numbered."
-    }
+    },
+    "duplicates": {
+      "title": "{count, plural, one {A similar patient is already registered} other {# similar patients are already registered}}",
+      "text": "Check that this is not the same person before opening a new record.",
+      "age": "{age} years",
+      "open": "Open this record",
+      "confirmHint": "If this is someone else, register anyway: a possible duplicate will be reported by the server in any case.",
+      "createAnyway": "None of them: register",
+      "reasons": {
+        "phonetic": "name sounds the same",
+        "name_similar": "very close name",
+        "birth_date": "same birth date",
+        "birth_year": "same birth year",
+        "phone": "same phone",
+        "parent": "same father or mother",
+        "sex_differs": "different sex",
+        "manual": "Reported by a user"
+      }
+    },
+    "queue": {
+      "link": "Duplicates",
+      "title": "Duplicates and conflicts",
+      "subtitle": "Similar records and concurrent changes to settle.",
+      "intro": "Compare both records. If they are the same person, merge them by choosing the record to keep and the values to keep; otherwise, dismiss the pair with a reason.",
+      "empty": "No possible duplicate to review.",
+      "offline": "Screen available online only: duplicates are computed by the server.",
+      "denied": "You are not allowed to handle duplicates.",
+      "network": "The server cannot be reached. Check the connection.",
+      "error": "The operation failed: the pair may already have been handled.",
+      "score": "Similarity {score}",
+      "recordA": "Record 1",
+      "recordB": "Record 2",
+      "estimatedYear": "{year} (estimated)",
+      "fields": {
+        "name": "Name",
+        "sex": "Sex",
+        "birthDate": "Birth",
+        "phone": "Phone",
+        "mrn": "Record number",
+        "createdAt": "Registered on"
+      },
+      "dismiss": "Not the same person",
+      "reason": "Reason (written to the audit log)",
+      "reasonPlaceholder": "Example: namesakes, different parents",
+      "dismissConfirm": "Dismiss this pair",
+      "cancel": "Cancel",
+      "merge": "Merge",
+      "merged": "Records merged. Devices will receive the merge at their next sync.",
+      "unmerged": "{kept, plural, =0 {Merge undone: both records are separate again.} one {Merge undone. One value changed since the merge was kept.} other {Merge undone. # values changed since the merge were kept.}}",
+      "errors": {
+        "PAT_ALREADY_MERGED": "One of the two records was already merged.",
+        "PAT_MERGE_UNDONE": "This merge was already undone.",
+        "PERMISSION_DENIED": "You are not allowed to merge records."
+      }
+    },
+    "merge": {
+      "survivor": "Record to keep",
+      "values": "Values to keep",
+      "identical": "Both records hold the same information.",
+      "empty": "empty",
+      "effect": "The other record is not erased: it points to the kept record, its vital signs and acts stay attached to it, and the merge can be undone.",
+      "reasonPlaceholder": "Example: same phone, birth date confirmed by the patient",
+      "confirm": "Merge the records",
+      "recentTitle": "Recent merges",
+      "undo": "Undo the merge",
+      "undoConfirm": "Separate the records again",
+      "status": {
+        "active": "Merged",
+        "undone": "Undone"
+      },
+      "fields": {
+        "familyName": "Family name",
+        "middleName": "Middle name",
+        "givenName": "Given name",
+        "sex": "Sex",
+        "birthDate": "Birth",
+        "phone": "Phone"
+      }
+    },
+    "conflicts": {
+      "title": "{count, plural, one {One conflicting change to review} other {# conflicting changes to review}}",
+      "intro": "Two devices changed the same sensitive information offline. The value in force was kept; choose the right one.",
+      "inForce": "Value in force",
+      "fromDevice": "Sent by device {code}",
+      "fromOther": "Value sent",
+      "reason": "Reason (written to the audit log)",
+      "reasonPlaceholder": "Example: checked on the identity card",
+      "keep": "Keep the value in force",
+      "apply": "Apply the value sent",
+      "error": "The decision could not be saved: the conflict may already have been handled.",
+      "network": "The server cannot be reached. Check the connection."
+    },
+    "server": {
+      "title": "On the server",
+      "hint": "Patients of the facility not on this device.",
+      "badge": "Not on this device",
+      "open": "Open on this device",
+      "error": "The record could not be downloaded. Check the connection."
+    },
+    "provisional": {
+      "mode": "Registration type",
+      "modes": {
+        "known": "Known identity",
+        "unknown": "Unknown",
+        "newborn": "Newborn"
+      },
+      "hints": {
+        "unknown": "Unidentified patient (emergency): enter the sex and apparent age. The record is completed or merged as soon as the identity is known.",
+        "newborn": "The newborn gets a provisional record under the mother's name, completed once the baby is named."
+      },
+      "motherName": "Mother's name",
+      "unknownName": "Unknown {sex, select, F {woman} M {man} other {person}}{age, select, none {} other {, about {age}}}, arrived {arrived}",
+      "newbornName": "Newborn of {mother}"
+    },
+    "favorites": "My favourites"
   },
   "patient": {
     "back": "Back to patients",
@@ -467,10 +586,128 @@
         "glucose": "Blood glucose",
         "pain": "Pain",
         "diuresis": "Diuresis"
-      }
+      },
+      "deceasedReadOnly": "Patient deceased: no new vital sign dated after the death. An earlier measurement can still be corrected."
     },
     "history": "History",
-    "trend": "Temperature trend"
+    "trend": "Temperature trend",
+    "mergedRedirect": "This record was merged: opening the record that was kept...",
+    "mergedFrom": "The requested record was merged into this one.",
+    "mergedCount": "{count, plural, one {One merged record is attached to this one: its vital signs appear here.} other {# merged records are attached to this one: their vital signs appear here.}}",
+    "identityCard": {
+      "title": "Identity",
+      "edit": "Complete or correct",
+      "save": "Save",
+      "cancel": "Cancel",
+      "none": "Not given",
+      "saved": "Identity saved. It will be sent to the server at the next sync.",
+      "offlineHint": "Works offline: only changed fields are sent. If another device changed the same birth date, family name or sex, the value in force is kept and the change goes to a supervisor.",
+      "estimatedYear": "{year} (estimated)",
+      "fields": {
+        "familyName": "Family name",
+        "middleName": "Middle name",
+        "givenName": "Given name",
+        "sex": "Sex",
+        "birthDate": "Birth",
+        "birthDateEstimated": "Estimated date",
+        "phone": "Phone",
+        "address": "Address",
+        "occupation": "Occupation",
+        "maritalStatus": "Marital status",
+        "nationality": "Nationality",
+        "language": "Spoken language",
+        "fatherName": "Father's name",
+        "motherName": "Mother's name",
+        "contact": "Person to contact",
+        "sensitivity": "Sensitivity",
+        "mergedIntoId": "Merge",
+        "cardToken": "Patient card",
+        "isProvisional": "Provisional",
+        "deceasedAt": "Death"
+      },
+      "address": {
+        "province": "Province",
+        "city": "City or territory",
+        "commune": "Commune",
+        "quarter": "Quarter",
+        "street": "Street and number"
+      },
+      "contact": {
+        "name": "Name",
+        "relation": "Relationship",
+        "phone": "Phone"
+      },
+      "marital": {
+        "single": "Single",
+        "married": "Married",
+        "cohabiting": "Cohabiting",
+        "divorced": "Divorced",
+        "separated": "Separated",
+        "widowed": "Widowed"
+      },
+      "historyTitle": "Change history",
+      "historyShow": "Show the history",
+      "historyHint": "Every identity change, field by field, with its author and device. Viewing it is logged.",
+      "historyOffline": "Available online only.",
+      "historyEmpty": "No change since the record was created.",
+      "historyNotSynced": "This record is not on the server yet: sync the device.",
+      "historyError": "The history could not be loaded.",
+      "device": "device {code}",
+      "sources": {
+        "merge": "merge",
+        "unmerge": "merge undone",
+        "review": "review"
+      },
+      "identify": "Identify the patient",
+      "identifiedConfirm": "Identity confirmed: the record is no longer provisional.",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "card": {
+      "print": "Print the card",
+      "replace": "Lost card",
+      "replaceConfirm": "A new card will be printed with a new code: the old card will no longer find this patient.",
+      "replaceAction": "Print a new card",
+      "cancel": "Cancel",
+      "born": "born {date}",
+      "note": "Show this card at every visit. The QR code holds no personal information.",
+      "error": "The card could not be prepared. Try again."
+    },
+    "status": {
+      "provisional": "Provisional",
+      "newborn": "Newborn, provisional",
+      "deceased": "Died on {date}",
+      "provisionalTitle": "Provisional record",
+      "provisionalText": "Complete the identity as soon as it is known (Identity card, \"Identify the patient\"). If this person already has a record, find it and report it: an authorised user will merge both records from the duplicates queue.",
+      "knownSearch": "Search for the existing record",
+      "search": "Search",
+      "noResult": "No matching record on this device.",
+      "report": "Same person",
+      "reported": "Report saved: the pair is waiting in the duplicates queue.",
+      "reportOffline": "Reporting needs a connection.",
+      "declare": "Record the death",
+      "declareText": "Once recorded, the record no longer accepts new clinical acts dated after the death.",
+      "declareAt": "Date and time of death",
+      "declareAction": "Confirm the death",
+      "withdraw": "Withdraw the death record",
+      "withdrawText": "The death recorded on {date} will be withdrawn. The record stays visible in the history.",
+      "withdrawReason": "Reason for withdrawal",
+      "withdrawAction": "Withdraw",
+      "cancel": "Cancel",
+      "sensitivity": {
+        "normal": "Normal",
+        "staff": "Staff member",
+        "vip": "Public figure",
+        "restricted": "Restricted access"
+      },
+      "sensitivityAction": "Record sensitivity",
+      "sensitivityText": "A sensitive record only opens for roles whose level allows it; other devices drop it at their next synchronisation.",
+      "sensitivityLevel": "Level",
+      "sensitivityReason": "Reason",
+      "sensitivitySave": "Save the level",
+      "favoriteOn": "Favourite",
+      "favoriteOff": "Add to favourites"
+    }
   },
   "diagnostic": {
     "title": "Workstation diagnostics",
@@ -534,7 +771,13 @@
     "VALIDATION_FAILED": "Some information is invalid.",
     "DPI_VITAL_IMPLAUSIBLE": "Value outside plausible limits: a reason is required.",
     "NOT_FOUND": "Item not found.",
-    "UNKNOWN": "An unexpected error occurred."
+    "UNKNOWN": "An unexpected error occurred.",
+    "PAT_DECEASED": "Patient deceased: an act dated after the death cannot be recorded.",
+    "PAT_DEATH_REASON_REQUIRED": "Give the reason for the withdrawal.",
+    "PAT_PROVISIONAL_KIND": "Specify the kind of provisional record.",
+    "PAT_NOT_FOUND": "This patient cannot be found on the server.",
+    "PAT_ALREADY_MERGED": "One of the two records was already merged.",
+    "PAT_SENSITIVE": "This record is protected: your role cannot open it."
   },
   "account": {
     "title": "My account",
@@ -817,7 +1060,8 @@
         "days": "days",
         "minutes": "minutes",
         "attempts": "attempts",
-        "characters": "characters"
+        "characters": "characters",
+        "points": "points"
       },
       "keys": {
         "offline_token_days": {
@@ -839,6 +1083,16 @@
         "password_min_length": {
           "title": "Minimum password length",
           "text": "Minimum number of characters (10 to 64). No composition rule is imposed: a phrase of several words is recommended."
+        },
+        "patient": {
+          "duplicate_alert_score": {
+            "title": "Duplicate alert at registration",
+            "text": "Similarity score from which the device shows similar patients before creating a new one (30 to 100)."
+          },
+          "duplicate_candidate_score": {
+            "title": "Merge candidate",
+            "text": "Score from which the server lists two records in the duplicates queue (30 to 120)."
+          }
         }
       }
     },
@@ -926,7 +1180,8 @@
         "code": "Code",
         "description": "Description",
         "requiresMfa": "Two-factor authentication required",
-        "copyFrom": "Start from"
+        "copyFrom": "Start from",
+        "sensitivityMax": "Sensitive records accessible"
       },
       "codeHint": "Lower-case letters, digits and _; cannot change later.",
       "emptyRole": "An empty role",
@@ -1060,7 +1315,17 @@
         "simulate": "Simulate"
       },
       "copyCodeSuffix": "copy",
-      "copyName": "{name} (copy)"
+      "copyName": "{name} (copy)",
+      "sensitivity": {
+        "default": "Default rule",
+        "hint": "By default a role only opens normal records, unless it may mark sensitivity itself: it then opens all of them. Each level includes the previous ones.",
+        "levels": {
+          "normal": "Normal records only",
+          "staff": "Up to staff members",
+          "vip": "Up to public figures",
+          "restricted": "All, including restricted access"
+        }
+      }
     },
     "reference": {
       "title": "Reference data",
@@ -1159,6 +1424,23 @@
         "messages": "No real SMS or email leaves it: sending is simulated.",
         "reset": "Resetting starts again from today's configuration; the previous base is archived, never deleted."
       }
+    },
+    "scope": {
+      "title": "Patients kept on workstations",
+      "subtitle": "Synchronisation scope: which records each workstation downloads and keeps offline.",
+      "hint": "\"Whole structure\" suits small structures. \"Scope\" keeps on the device the patients registered there, the user's favourites, patients opened from a server search and those with recent activity; the others remain reachable through the online search. A role's rule prevails over the structure's rule; when several roles have one, the widest applies.",
+      "default": "Structure rule",
+      "inherit": "Structure rule",
+      "builtIn": "Default ({rule})",
+      "mode": "Rule",
+      "recentDays": "Recent activity (days)",
+      "days": "days",
+      "modes": {
+        "all": "Whole structure",
+        "scoped": "Scope"
+      },
+      "save": "Save",
+      "saved": "Rule saved: workstations apply it at their next synchronisation."
     }
   }
 }
