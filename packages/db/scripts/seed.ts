@@ -6,9 +6,12 @@ import { createDb } from '../src/client';
 import { withSystem, withTenant } from '../src/context';
 import { hashPassword } from '../src/password';
 import {
+  appointmentType,
   department,
+  queue,
   role,
   rolePermission,
+  scheduleTemplate,
   site,
   tenant,
   userAccount,
@@ -55,6 +58,11 @@ const DEMO_DEPARTMENTS = [
   { code: 'LAB', name: 'Laboratoire', kind: 'laboratory' },
   { code: 'PHAR', name: 'Pharmacie', kind: 'pharmacy' },
   { code: 'CAIS', name: 'Caisse', kind: 'cashier' },
+];
+
+const DEMO_QUEUES = [
+  { code: 'ACC', name: 'Accueil', ticketPrefix: 'A', department: 'ACC' },
+  { code: 'CONS', name: 'Consultations externes', ticketPrefix: 'C', department: 'CONS' },
 ];
 
 export async function seedDemo(
@@ -156,6 +164,60 @@ export async function seedDemo(
             .where(and(eq(userRole.userId, userId), eq(userRole.roleId, roleId)));
           if (!link)
             await tx.insert(userRole).values({ id: uuidv7(), tenantId, userId, roleId, siteId });
+        }
+      }
+
+      // Reception setup (S7): two queues, one appointment type, the physician's agenda.
+      const departments = await tx.select().from(department).where(eq(department.siteId, siteId));
+      const departmentId = (code: string) => departments.find((d) => d.code === code)?.id ?? null;
+      for (const q of DEMO_QUEUES) {
+        await tx
+          .insert(queue)
+          .values({
+            id: uuidv7(),
+            tenantId,
+            siteId,
+            departmentId: departmentId(q.department),
+            code: q.code,
+            name: q.name,
+            ticketPrefix: q.ticketPrefix,
+          })
+          .onConflictDoNothing();
+      }
+      await tx
+        .insert(appointmentType)
+        .values({
+          id: uuidv7(),
+          tenantId,
+          code: 'CONS',
+          name: 'Consultation',
+          durationMin: 15,
+          departmentId: departmentId('CONS'),
+        })
+        .onConflictDoNothing();
+      const [physician] = await tx
+        .select({ id: userAccount.id })
+        .from(userAccount)
+        .where(eq(userAccount.username, 'medecin'));
+      if (physician) {
+        const existing = await tx
+          .select({ id: scheduleTemplate.id })
+          .from(scheduleTemplate)
+          .where(eq(scheduleTemplate.resourceId, physician.id));
+        if (existing.length === 0) {
+          await tx.insert(scheduleTemplate).values(
+            [1, 2, 3, 4, 5].map((weekday) => ({
+              id: uuidv7(),
+              tenantId,
+              resourceKind: 'practitioner',
+              resourceId: physician.id,
+              weekday,
+              startTime: '08:00',
+              endTime: '12:00',
+              slotMin: 15,
+              overbookMax: 1,
+            })),
+          );
         }
       }
     });

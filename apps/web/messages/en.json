@@ -878,6 +878,10 @@
       "training": {
         "title": "Training base",
         "text": "Copy of the facility with fictitious patients, to learn without risk"
+      },
+      "rdv": {
+        "title": "Reception, queues and agendas",
+        "text": "Waiting queues and ticket prefixes, appointment types, opening hours and absences."
       }
     },
     "organization": {
@@ -1004,7 +1008,8 @@
       "REF_LIST_CODE_TAKEN": "This list code already exists in the facility.",
       "TRAINING_NOT_ALLOWED": "A training base cannot have a training base of its own.",
       "TRAINING_ALREADY_EXISTS": "The training base already exists: use \"Reset\".",
-      "TRAINING_CODE_TAKEN": "The training base code is already used by another facility: contact MedHub support."
+      "TRAINING_CODE_TAKEN": "The training base code is already used by another facility: contact MedHub support.",
+      "RDV_CODE_TAKEN": "This code is already used."
     },
     "devices": {
       "title": "Devices",
@@ -1441,6 +1446,70 @@
       },
       "save": "Save",
       "saved": "Rule saved: workstations apply it at their next synchronisation."
+    },
+    "rdv": {
+      "title": "Reception, queues and agendas",
+      "subtitle": "Configuration shared by every workstation: devices receive it with their catalogs at their next connection.",
+      "saved": "Saved. Workstations receive the new configuration at their next synchronisation.",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "none": "None",
+      "inactive": "Inactive",
+      "fields": {
+        "name": "Name",
+        "code": "Code",
+        "prefix": "Ticket prefix",
+        "site": "Site",
+        "department": "Department",
+        "active": "Active",
+        "duration": "Duration (minutes)",
+        "color": "Colour",
+        "weekday": "Day",
+        "start": "Start",
+        "end": "End",
+        "slotMin": "Slot (min)",
+        "overbook": "Overbooking",
+        "date": "Date",
+        "kind": "Kind",
+        "reason": "Reason"
+      },
+      "queues": {
+        "title": "Waiting queues",
+        "subtitle": "One queue per step (reception, triage, consultation...). Tickets carry the queue prefix, the workstation code and a number of the day.",
+        "empty": "No queue yet.",
+        "newTitle": "New queue",
+        "editTitle": "Edit the queue"
+      },
+      "types": {
+        "title": "Appointment types",
+        "subtitle": "Each type sets the duration offered when booking.",
+        "empty": "No type yet.",
+        "newTitle": "New type",
+        "editTitle": "Edit the type",
+        "minutes": "{count, plural, one {# minute} other {# minutes}}"
+      },
+      "agenda": {
+        "title": "Agendas",
+        "subtitle": "Weekly hours cut into slots, per practitioner or department, and exceptions (leave, closures, extra hours).",
+        "resource": "Agenda of",
+        "practitioners": "Practitioners",
+        "departments": "Departments",
+        "weekly": "Weekly hours",
+        "noSlot": "No hours: no slot will be offered.",
+        "addSlot": "Add hours",
+        "removeSlot": "Remove these hours",
+        "saveWeekly": "Save the hours",
+        "exceptions": "Upcoming exceptions",
+        "noException": "No upcoming exception.",
+        "addException": "Add",
+        "removeException": "Remove the exception",
+        "hours": "from {start} to {end}",
+        "kinds": {
+          "closed": "Closed",
+          "extra": "Extra hours"
+        }
+      }
     }
   }
 }

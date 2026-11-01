@@ -2,6 +2,7 @@
 
 import {
   Building2,
+  CalendarClock,
   ChevronRight,
   Database,
   GraduationCap,
@@ -45,6 +46,12 @@ const ENTRIES: Entry[] = [
     key: 'workstations',
     icon: MonitorCog,
     href: '/app/parametres/synchronisation',
+    permission: 'configuration:read',
+  },
+  {
+    key: 'rdv',
+    icon: CalendarClock,
+    href: '/app/parametres/accueil',
     permission: 'configuration:read',
   },
   { key: 'users', icon: Users, href: '/app/parametres/utilisateurs', permission: 'user:read' },

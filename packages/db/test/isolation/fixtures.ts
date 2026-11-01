@@ -2,6 +2,7 @@ import { uuidv7 } from '@medhub/shared';
 import type { Tx } from '../../src/client';
 import { appendAudit } from '../../src/audit';
 import {
+  appointmentType,
   changeLog,
   choiceItem,
   choiceList,
@@ -18,8 +19,11 @@ import {
   patientFavorite,
   patientFieldHistory,
   patientMerge,
+  queue,
   role,
   rolePermission,
+  scheduleException,
+  scheduleTemplate,
   session,
   site,
   stockMovement,
@@ -116,6 +120,47 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       tenantId,
       entity: 'patient',
       rule: { mode: 'scoped', recentDays: 30 },
+    });
+  },
+  queue: async (tx, tenantId) => {
+    await tx.insert(queue).values({
+      id: uuidv7(),
+      tenantId,
+      siteId: uuidv7(),
+      code: 'CONS',
+      name: 'Consultations',
+      ticketPrefix: 'C',
+    });
+  },
+  appointment_type: async (tx, tenantId) => {
+    await tx.insert(appointmentType).values({
+      id: uuidv7(),
+      tenantId,
+      code: 'CONS',
+      name: 'Consultation',
+      durationMin: 15,
+    });
+  },
+  schedule_template: async (tx, tenantId) => {
+    await tx.insert(scheduleTemplate).values({
+      id: uuidv7(),
+      tenantId,
+      resourceKind: 'practitioner',
+      resourceId: uuidv7(),
+      weekday: 1,
+      startTime: '08:00',
+      endTime: '12:00',
+      slotMin: 15,
+    });
+  },
+  schedule_exception: async (tx, tenantId) => {
+    await tx.insert(scheduleException).values({
+      id: uuidv7(),
+      tenantId,
+      resourceKind: 'practitioner',
+      resourceId: uuidv7(),
+      date: '2026-12-25',
+      kind: 'closed',
     });
   },
   patient_field_history: async (tx, tenantId) => {

@@ -54,3 +54,4 @@ export {
 } from './reference-routes';
 export { trainingBuildRoute, trainingRoute } from './training-routes';
 export type { Profile } from './service';
+export { requireRecentStepUp } from './configuration';

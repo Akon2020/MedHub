@@ -878,6 +878,10 @@
       "training": {
         "title": "Base de formation",
         "text": "Copie de la structure avec des patients fictifs, pour apprendre sans risque"
+      },
+      "rdv": {
+        "title": "Accueil, files et agendas",
+        "text": "Files d'attente et préfixes des tickets, types de rendez-vous, horaires et absences."
       }
     },
     "organization": {
@@ -1004,7 +1008,8 @@
       "REF_LIST_CODE_TAKEN": "Ce code de liste existe déjà dans la structure.",
       "TRAINING_NOT_ALLOWED": "Une base de formation ne peut pas avoir sa propre base de formation.",
       "TRAINING_ALREADY_EXISTS": "La base de formation existe déjà : utilisez « Réinitialiser ».",
-      "TRAINING_CODE_TAKEN": "Le code de la base de formation est déjà pris par une autre structure : contactez le support MedHub."
+      "TRAINING_CODE_TAKEN": "Le code de la base de formation est déjà pris par une autre structure : contactez le support MedHub.",
+      "RDV_CODE_TAKEN": "Ce code est déjà utilisé."
     },
     "devices": {
       "title": "Appareils",
@@ -1441,6 +1446,70 @@
       },
       "save": "Enregistrer",
       "saved": "Règle enregistrée : les postes l'appliquent à leur prochaine synchronisation."
+    },
+    "rdv": {
+      "title": "Accueil, files et agendas",
+      "subtitle": "Configuration partagée par tous les postes : ils la reçoivent avec leurs catalogues à la prochaine connexion.",
+      "saved": "Enregistré. Les postes reçoivent la nouvelle configuration à leur prochaine synchronisation.",
+      "edit": "Modifier",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "none": "Aucun",
+      "inactive": "Inactif",
+      "fields": {
+        "name": "Nom",
+        "code": "Code",
+        "prefix": "Préfixe des tickets",
+        "site": "Site",
+        "department": "Service",
+        "active": "Active",
+        "duration": "Durée (minutes)",
+        "color": "Couleur",
+        "weekday": "Jour",
+        "start": "Début",
+        "end": "Fin",
+        "slotMin": "Créneau (min)",
+        "overbook": "Surréservation",
+        "date": "Date",
+        "kind": "Type",
+        "reason": "Motif"
+      },
+      "queues": {
+        "title": "Files d'attente",
+        "subtitle": "Une file par point de passage (accueil, triage, consultation...). Les tickets portent le préfixe de la file, le code du poste et un numéro du jour.",
+        "empty": "Aucune file pour l'instant.",
+        "newTitle": "Nouvelle file",
+        "editTitle": "Modifier la file"
+      },
+      "types": {
+        "title": "Types de rendez-vous",
+        "subtitle": "Chaque type fixe la durée proposée à la prise de rendez-vous.",
+        "empty": "Aucun type pour l'instant.",
+        "newTitle": "Nouveau type",
+        "editTitle": "Modifier le type",
+        "minutes": "{count, plural, one {# minute} other {# minutes}}"
+      },
+      "agenda": {
+        "title": "Agendas",
+        "subtitle": "Horaires hebdomadaires découpés en créneaux, par soignant ou par service, et exceptions (congés, fermetures, plages supplémentaires).",
+        "resource": "Agenda de",
+        "practitioners": "Soignants",
+        "departments": "Services",
+        "weekly": "Horaires de la semaine",
+        "noSlot": "Aucun horaire : aucun créneau ne sera proposé.",
+        "addSlot": "Ajouter une plage",
+        "removeSlot": "Retirer la plage",
+        "saveWeekly": "Enregistrer les horaires",
+        "exceptions": "Exceptions à venir",
+        "noException": "Aucune exception à venir.",
+        "addException": "Ajouter",
+        "removeException": "Retirer l'exception",
+        "hours": "de {start} à {end}",
+        "kinds": {
+          "closed": "Fermé",
+          "extra": "Plage supplémentaire"
+        }
+      }
     }
   }
 }
