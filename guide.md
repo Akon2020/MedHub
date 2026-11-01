@@ -15,7 +15,7 @@ Le jalon **J0 Fondations** est construit :
 - thème clair, sombre ou automatique (selon le système) sur toute l'application ;
 - début de J1 (S4) : double authentification TOTP avec codes de secours, limitation de débit en base, règles d'IP, politique CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes, organisation de la structure ;
 - S5 (en cours) : appareils et effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs, éditeur de rôles, référentiels, traduction anglaise complète, diagnostic et base de formation (S5 terminée) ;
-- S6 (en cours) : détection des doublons de patients (alerte à la saisie, file des doublons), fusion supervisée et réversible.
+- S6 (en cours) : détection des doublons de patients (alerte à la saisie, file des doublons), fusion supervisée et réversible, identité complète avec historique et revue des conflits.
 
 Le journal complet de tout ce qui a été fait se trouve dans `walkthrough.md`.
 
@@ -381,6 +381,12 @@ Menu **Paramètres** (permission `configuration:read`, administrateur de structu
 - Pour s'exercer, chacun se connecte avec ce code au lieu du code habituel. Le bandeau « Base de formation » reste affiché.
 - **Réinitialiser** : la base actuelle est archivée (rien n'est supprimé), ses postes effacent leurs données de formation à leur prochain contact, et une nouvelle base est créée sous le même code avec la configuration du jour.
 - Aucun SMS ni courriel réel ne doit partir d'une base de formation : règle à appliquer par le module de notifications quand il arrivera (aucun envoi n'existe aujourd'hui).
+
+### Identité complète et historique (S6)
+
+- Sur la fiche patient, **Compléter ou corriger** (même hors connexion) : noms, sexe, naissance (date ou estimée), téléphone, adresse (province choisie dans la liste), profession, état civil, nationalité, langue parlée, noms du père et de la mère, personne à contacter. Seuls les champs modifiés partent au serveur, fusionnés champ par champ : deux postes qui changent des champs différents gardent tous les deux leur modification (scénario P2).
+- Si deux postes changent hors connexion la même date de naissance, le même nom ou le même sexe, la valeur arrivée la première est gardée et l'autre devient un **conflit à revoir**, en tête de **Patients, Doublons et conflits** (`patient:merge`) : « Garder la valeur en vigueur » ou « Appliquer la valeur envoyée », avec motif.
+- **Historique des modifications** (en ligne, sur la fiche) : chaque changement d'identité, champ par champ, avec l'ancienne et la nouvelle valeur, l'auteur, le poste et l'origine (synchronisation, fusion, revue). Chaque consultation est tracée.
 
 ### Doublons de patients (S6)
 
