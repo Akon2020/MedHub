@@ -604,8 +604,13 @@ export function OrganizationSettings() {
     void refresh();
   }, [online, refresh]);
 
-  async function send(path: string, method: 'POST' | 'PATCH', body: unknown) {
+  /**
+   * The editor closes as soon as the server accepted the change, before the list
+   * reloads: a click on another row during the reload is never undone.
+   */
+  async function send(path: string, method: 'POST' | 'PATCH', body: unknown, done?: () => void) {
     await guard(() => apiFetch(path, { method, body: JSON.stringify(body) }));
+    done?.();
     await refresh();
   }
 
@@ -682,16 +687,21 @@ export function OrganizationSettings() {
               }
               onCancel={() => setSiteEditor(null)}
               onSubmit={async (draft) => {
-                if (siteEditor === 'new') await send('/api/v1/sites', 'POST', draft);
+                const close = () => setSiteEditor(null);
+                if (siteEditor === 'new') await send('/api/v1/sites', 'POST', draft, close);
                 else
-                  await send('/api/v1/sites', 'PATCH', {
-                    id: siteEditor.id,
-                    name: draft.name,
-                    timezone: draft.timezone,
-                    phone: draft.phone,
-                    address: draft.address,
-                  });
-                setSiteEditor(null);
+                  await send(
+                    '/api/v1/sites',
+                    'PATCH',
+                    {
+                      id: siteEditor.id,
+                      name: draft.name,
+                      timezone: draft.timezone,
+                      phone: draft.phone,
+                      address: draft.address,
+                    },
+                    close,
+                  );
               }}
             />
           )}
@@ -779,15 +789,20 @@ export function OrganizationSettings() {
               }
               onCancel={() => setDepEditor(null)}
               onSubmit={async (draft) => {
-                if (depEditor === 'new') await send('/api/v1/departments', 'POST', draft);
+                const close = () => setDepEditor(null);
+                if (depEditor === 'new') await send('/api/v1/departments', 'POST', draft, close);
                 else
-                  await send('/api/v1/departments', 'PATCH', {
-                    id: depEditor.id,
-                    name: draft.name,
-                    kind: draft.kind,
-                    costCenterCode: draft.costCenterCode,
-                  });
-                setDepEditor(null);
+                  await send(
+                    '/api/v1/departments',
+                    'PATCH',
+                    {
+                      id: depEditor.id,
+                      name: draft.name,
+                      kind: draft.kind,
+                      costCenterCode: draft.costCenterCode,
+                    },
+                    close,
+                  );
               }}
             />
           )}

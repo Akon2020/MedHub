@@ -7,7 +7,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { useLocalQuery, useRuntime } from '@/client/runtime';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { initialsOf, toPatientView } from '@/features/patients/patient-helpers';
+import { initialsOf, isMerged, toPatientView } from '@/features/patients/patient-helpers';
 import { SyncBadge } from '@/features/patients/sync-badge';
 
 const TrendChart = dynamic(() => import('@/features/charts/trend-chart'), { ssr: false });
@@ -24,7 +24,9 @@ export default function DashboardPage() {
   const { data } = useLocalQuery(async (store) => {
     const now = new Date();
     const today = dayKey(now);
-    const patients = (await store.readEntities('patient')).map((p) => toPatientView(p, now));
+    const patients = (await store.readEntities('patient'))
+      .filter((p) => !isMerged(p))
+      .map((p) => toPatientView(p, now));
     const vitals = await store.readEntities('vital_sign');
     const days = Array.from({ length: 7 }, (_, i) => {
       const d = new Date(now);

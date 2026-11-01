@@ -14,6 +14,7 @@ import {
   numberSeries,
   opLog,
   patient,
+  patientMerge,
   role,
   rolePermission,
   session,
@@ -85,6 +86,18 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       name: 'Poste test',
       kind: 'desktop',
       publicKey: 'test',
+    });
+  },
+  patient_merge: async (tx, tenantId) => {
+    await tx.insert(patientMerge).values({
+      id: uuidv7(),
+      tenantId,
+      survivorId: uuidv7(),
+      mergedId: uuidv7(),
+      survivorBefore: {},
+      mergedBefore: {},
+      reason: 'Doublon de test',
+      mergedBy: uuidv7(),
     });
   },
   role: async (tx, tenantId) => {

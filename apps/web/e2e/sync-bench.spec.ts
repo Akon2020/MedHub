@@ -54,8 +54,13 @@ async function openDevice(
   // Lost acknowledgement: the request reaches the server and is committed, the answer never arrives.
   await page.route('**/api/v1/sync/push', async (route) => {
     if (!device.loseResponses) return route.continue();
-    await route.fetch();
-    device.stats.lost += 1;
+    try {
+      await route.fetch();
+      device.stats.lost += 1;
+    } catch {
+      // The forwarded request itself was cut (keep-alive socket closed): for the
+      // device it is one more failed push, which the bench is about anyway.
+    }
     await route.abort('failed');
   });
   await activateDevice(page, username);

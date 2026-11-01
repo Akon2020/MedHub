@@ -1,15 +1,16 @@
 'use client';
 
 import type { VitalSignCode } from '@medhub/shared';
-import { ArrowLeft, Phone, UserRound } from 'lucide-react';
+import { ArrowLeft, GitMerge, Phone, UserRound } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useFormatter, useTranslations } from 'next-intl';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useLocalQuery } from '@/client/runtime';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { initialsOf, toPatientView } from '@/features/patients/patient-helpers';
+import { initialsOf, isMerged, toPatientView } from '@/features/patients/patient-helpers';
+import { mergeClosure, mergeTarget } from '@medhub/domain';
 import { SyncBadge } from '@/features/patients/sync-badge';
 import { VitalsPanel, type VitalView } from '@/features/patients/vitals-panel';
 
@@ -26,7 +27,20 @@ function PatientRecord() {
     async (store) => {
       const entity = id ? await store.readEntity('patient', id) : null;
       if (!entity || entity.rejected) return null;
-      const vitals = (await store.readEntitiesByPatient('vital_sign', id))
+      const records = (await store.readEntities('patient')).map((p) => ({
+        id: p.id,
+        mergedIntoId: typeof p.data.mergedIntoId === 'string' ? p.data.mergedIntoId : null,
+      }));
+      if (isMerged(entity)) {
+        const into = new Map(records.map((r) => [r.id, r.mergedIntoId]));
+        return { redirect: mergeTarget(id, (r) => into.get(r)) } as const;
+      }
+      // Records merged into this one keep their own rows: their vitals are shown here too.
+      const ids = mergeClosure(id, records);
+      const rows = (
+        await Promise.all(ids.map((pid) => store.readEntitiesByPatient('vital_sign', pid)))
+      ).flat();
+      const vitals = rows
         .map<VitalView>((v) => ({
           id: v.id,
           code: v.data.code as VitalSignCode,
@@ -41,13 +55,25 @@ function PatientRecord() {
               : null,
         }))
         .sort((a, b) => b.measuredAt.localeCompare(a.measuredAt));
-      return { patient: toPatientView(entity), vitals };
+      return { patient: toPatientView(entity), vitals, mergedCount: ids.length - 1 };
     },
     [id],
   );
 
+  const router = useRouter();
+  const redirect = data && 'redirect' in data ? data.redirect : null;
+  useEffect(() => {
+    if (redirect && redirect !== id) {
+      router.replace(`/app/patients/fiche?id=${redirect}&merged=${id}`);
+    }
+  }, [redirect, id, router]);
+  const mergedFrom = useSearchParams().get('merged');
+
   if (loading && !data) return <p className="text-sm text-muted-foreground">{tc('loading')}</p>;
-  if (!data) {
+  if (!data || 'redirect' in data) {
+    if (data && 'redirect' in data) {
+      return <p className="text-sm text-muted-foreground">{t('mergedRedirect')}</p>;
+    }
     return (
       <div className="mx-auto max-w-xl py-16 text-center">
         <p className="text-muted-foreground">{t('notFound')}</p>
@@ -58,7 +84,7 @@ function PatientRecord() {
     );
   }
 
-  const { patient, vitals } = data;
+  const { patient, vitals, mergedCount } = data;
   const temperature = vitals
     .filter((v) => v.code === 'temp' && v.status === 'active')
     .slice(0, 12)
@@ -109,6 +135,18 @@ function PatientRecord() {
         <SyncBadge state={patient.syncState} />
       </section>
 
+      {(mergedFrom || mergedCount > 0) && (
+        <p
+          role="status"
+          className="mb-6 flex items-start gap-2 rounded-xl bg-info-soft px-4 py-3 text-sm text-info"
+        >
+          <GitMerge className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>
+            {mergedFrom ? `${t('mergedFrom')} ` : ''}
+            {mergedCount > 0 ? t('mergedCount', { count: mergedCount }) : ''}
+          </span>
+        </p>
+      )}
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <VitalsPanel patientId={patient.id} vitals={vitals} />
         <div className="grid content-start gap-6">

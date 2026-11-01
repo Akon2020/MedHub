@@ -458,7 +458,7 @@
       "link": "Doublons",
       "title": "Doublons possibles",
       "subtitle": "Dossiers que le serveur juge semblables après la synchronisation.",
-      "intro": "Comparez les deux dossiers. S'il s'agit de deux personnes différentes, écartez la paire avec un motif ; la fusion arrive dans la prochaine version.",
+      "intro": "Comparez les deux dossiers. S'il s'agit de la même personne, fusionnez-les en choisissant le dossier conservé et les valeurs à garder ; sinon, écartez la paire avec un motif.",
       "empty": "Aucun doublon possible à examiner.",
       "offline": "Écran disponible en ligne seulement : les doublons sont calculés par le serveur.",
       "denied": "Vous n'avez pas la permission de traiter les doublons.",
@@ -482,7 +482,37 @@
       "dismissConfirm": "Écarter cette paire",
       "cancel": "Annuler",
       "merge": "Fusionner",
-      "mergeSoon": "La fusion arrive dans la prochaine version."
+      "merged": "Dossiers fusionnés. Les postes recevront la fusion à leur prochaine synchronisation.",
+      "unmerged": "{kept, plural, =0 {Fusion annulée : les deux dossiers sont de nouveau séparés.} one {Fusion annulée. Une valeur modifiée depuis la fusion a été conservée.} other {Fusion annulée. # valeurs modifiées depuis la fusion ont été conservées.}}",
+      "errors": {
+        "PAT_ALREADY_MERGED": "L'un des deux dossiers a déjà été fusionné.",
+        "PAT_MERGE_UNDONE": "Cette fusion a déjà été annulée.",
+        "PERMISSION_DENIED": "Vous n'avez pas la permission de fusionner des dossiers."
+      }
+    },
+    "merge": {
+      "survivor": "Dossier à conserver",
+      "values": "Valeurs à garder",
+      "identical": "Les informations des deux dossiers sont identiques.",
+      "empty": "vide",
+      "effect": "L'autre dossier n'est pas effacé : il renvoie vers le dossier conservé, ses constantes et actes y restent rattachés, et la fusion peut être annulée.",
+      "reasonPlaceholder": "Exemple : même téléphone, date de naissance confirmée par le patient",
+      "confirm": "Fusionner les dossiers",
+      "recentTitle": "Fusions récentes",
+      "undo": "Annuler la fusion",
+      "undoConfirm": "Séparer à nouveau les dossiers",
+      "status": {
+        "active": "Fusionnés",
+        "undone": "Annulée"
+      },
+      "fields": {
+        "familyName": "Nom",
+        "middleName": "Postnom",
+        "givenName": "Prénom",
+        "sex": "Sexe",
+        "birthDate": "Naissance",
+        "phone": "Téléphone"
+      }
     }
   },
   "patient": {
@@ -522,7 +552,10 @@
       }
     },
     "history": "Historique",
-    "trend": "Évolution de la température"
+    "trend": "Évolution de la température",
+    "mergedRedirect": "Ce dossier a été fusionné : ouverture du dossier conservé...",
+    "mergedFrom": "Le dossier demandé a été fusionné dans celui-ci.",
+    "mergedCount": "{count, plural, one {Un dossier fusionné est rattaché à celui-ci : ses constantes apparaissent ici.} other {# dossiers fusionnés sont rattachés à celui-ci : leurs constantes apparaissent ici.}}"
   },
   "diagnostic": {
     "title": "Diagnostic du poste",

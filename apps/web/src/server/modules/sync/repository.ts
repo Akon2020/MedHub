@@ -3,7 +3,13 @@ import { appendAudit, enqueue, schema, withTenant, type Db, type Tx } from '@med
 import { ENTITIES, getCommand, type EntityName, type PatientRegisterPayload } from '@medhub/domain';
 import type { StockMovementKind } from '@medhub/shared';
 import { formatHlc, uuidv7 } from '@medhub/shared';
-import { createState, type EntityState, type OpResult, type Operation } from '@medhub/sync';
+import {
+  createState,
+  deriveData,
+  type EntityState,
+  type OpResult,
+  type Operation,
+} from '@medhub/sync';
 import {
   DuplicateOperationError,
   type ChangeEntry,
@@ -45,6 +51,7 @@ const mappers = {
           sensitivity: row.sensitivity,
           searchText: row.searchText,
           phoneticKey: row.phoneticKey,
+          mergedIntoId: row.mergedIntoId,
         }),
         fieldMeta: row.fieldMeta,
         hlc: row.hlc ?? '',
@@ -70,6 +77,7 @@ const mappers = {
         sensitivity: str(d.sensitivity) ?? 'normal',
         searchText: String(d.searchText ?? ''),
         phoneticKey: String(d.phoneticKey ?? ''),
+        mergedIntoId: str(d.mergedIntoId),
         fieldMeta: state.fieldMeta,
         hlc: state.hlc,
         opId: state.opId || null,
@@ -484,4 +492,53 @@ export async function insertServerPatients(
     });
   }
   return payloads.length;
+}
+
+/**
+ * A change made by the server itself (merge, undo of a merge): a new version
+ * with per-field metadata and a change log entry, exactly like a synchronised
+ * update, so that every device receives it with its next pull.
+ */
+export async function updateServerPatient(
+  tx: Tx,
+  ctx: { tenantId: string; userId: string },
+  patientId: string,
+  patch: Record<string, unknown>,
+): Promise<EntityState> {
+  const [row] = await tx
+    .select()
+    .from(schema.patient)
+    .where(eq(schema.patient.id, patientId))
+    .limit(1);
+  if (!row) throw new Error('patient not found');
+  const current = mappers.patient.toState(row);
+  const version = current.version + 1;
+  const hlc = formatHlc({ physical: Date.now(), counter: 0, node: 'server' });
+  const opId = uuidv7();
+  const fieldMeta = { ...current.fieldMeta };
+  for (const key of Object.keys(patch)) fieldMeta[key] = { hlc, v: version };
+  const state: EntityState = {
+    ...current,
+    version,
+    hlc,
+    opId,
+    fieldMeta,
+    data: deriveData('patient', { ...current.data, ...patch }),
+  };
+  const {
+    id: _id,
+    tenantId: _t,
+    createdBy: _c,
+    ...values
+  } = mappers.patient.toRow(state, { ...ctx, deviceId: null });
+  await tx.update(schema.patient).set(values).where(eq(schema.patient.id, patientId));
+  await tx.insert(schema.changeLog).values({
+    tenantId: ctx.tenantId,
+    entity: 'patient',
+    entityId: patientId,
+    version,
+    opId,
+    scopeKeys: ENTITIES.patient.scopeKeys(state.data, patientId),
+  });
+  return state;
 }

@@ -1,1 +1,7 @@
-export { duplicateDismissRoute, duplicatesRoute } from './routes';
+export {
+  duplicateDismissRoute,
+  duplicatesRoute,
+  mergeRoute,
+  mergesRoute,
+  unmergeRoute,
+} from './routes';

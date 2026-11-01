@@ -5,7 +5,7 @@ import {
   type DuplicateSubject,
 } from '@medhub/domain';
 import type { EncryptedClientStore } from '@medhub/local-db';
-import { toPatientView, type PatientView } from './patient-helpers';
+import { isMerged, toPatientView, type PatientView } from './patient-helpers';
 
 export type SimilarPatient = { patient: PatientView; score: number; reasons: DuplicateReason[] };
 
@@ -28,7 +28,7 @@ export async function findSimilar(
   const seen = new Map<string, SimilarPatient>();
   for (const query of queries) {
     for (const entity of await store.searchPatients(query, 30)) {
-      if (seen.has(entity.id)) continue;
+      if (seen.has(entity.id) || isMerged(entity)) continue;
       const d = entity.data;
       const { score, reasons } = duplicateScore(subject, {
         familyName: s(d.familyName) ?? '',

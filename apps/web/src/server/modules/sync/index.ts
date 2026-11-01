@@ -1,2 +1,2 @@
 export { pullRoute, pushRoute, statusRoute } from './routes';
-export { insertServerPatients, pgSyncStore } from './repository';
+export { insertServerPatients, pgSyncStore, updateServerPatient } from './repository';

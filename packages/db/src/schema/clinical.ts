@@ -103,3 +103,32 @@ export const duplicateCandidate = pgTable(
     check('duplicate_candidate_order_check', sql`${t.patientAId} < ${t.patientBId}`),
   ],
 );
+
+/**
+ * A supervised merge: the merged record points to the survivor, the snapshot
+ * of both records before the merge allows it to be undone. Never deleted.
+ */
+export const patientMerge = pgTable(
+  'patient_merge',
+  {
+    ...tenantColumns(),
+    survivorId: uuid('survivor_id').notNull(),
+    mergedId: uuid('merged_id').notNull(),
+    candidateId: uuid('candidate_id'),
+    keep: jsonb('keep').$type<Record<string, string>>().notNull().default({}),
+    survivorBefore: jsonb('survivor_before').$type<Record<string, unknown>>().notNull(),
+    mergedBefore: jsonb('merged_before').$type<Record<string, unknown>>().notNull(),
+    appliedPatch: jsonb('applied_patch').$type<Record<string, unknown>>().notNull().default({}),
+    reason: text('reason').notNull(),
+    mergedBy: uuid('merged_by').notNull(),
+    status: text('status').notNull().default('active'),
+    undoneBy: uuid('undone_by'),
+    undoneAt: timestamp('undone_at', { withTimezone: true }),
+    undoReason: text('undo_reason'),
+  },
+  (t) => [
+    index('patient_merge_survivor_idx').on(t.tenantId, t.survivorId),
+    index('patient_merge_merged_idx').on(t.tenantId, t.mergedId),
+    check('patient_merge_status_check', sql`${t.status} in ('active','undone')`),
+  ],
+);

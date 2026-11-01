@@ -453,7 +453,7 @@
       "link": "Duplicates",
       "title": "Possible duplicates",
       "subtitle": "Records the server finds similar after synchronisation.",
-      "intro": "Compare both records. If they are two different people, dismiss the pair with a reason; merging comes in the next version.",
+      "intro": "Compare both records. If they are the same person, merge them by choosing the record to keep and the values to keep; otherwise, dismiss the pair with a reason.",
       "empty": "No possible duplicate to review.",
       "offline": "Screen available online only: duplicates are computed by the server.",
       "denied": "You are not allowed to handle duplicates.",
@@ -477,7 +477,37 @@
       "dismissConfirm": "Dismiss this pair",
       "cancel": "Cancel",
       "merge": "Merge",
-      "mergeSoon": "Merging comes in the next version."
+      "merged": "Records merged. Devices will receive the merge at their next sync.",
+      "unmerged": "{kept, plural, =0 {Merge undone: both records are separate again.} one {Merge undone. One value changed since the merge was kept.} other {Merge undone. # values changed since the merge were kept.}}",
+      "errors": {
+        "PAT_ALREADY_MERGED": "One of the two records was already merged.",
+        "PAT_MERGE_UNDONE": "This merge was already undone.",
+        "PERMISSION_DENIED": "You are not allowed to merge records."
+      }
+    },
+    "merge": {
+      "survivor": "Record to keep",
+      "values": "Values to keep",
+      "identical": "Both records hold the same information.",
+      "empty": "empty",
+      "effect": "The other record is not erased: it points to the kept record, its vital signs and acts stay attached to it, and the merge can be undone.",
+      "reasonPlaceholder": "Example: same phone, birth date confirmed by the patient",
+      "confirm": "Merge the records",
+      "recentTitle": "Recent merges",
+      "undo": "Undo the merge",
+      "undoConfirm": "Separate the records again",
+      "status": {
+        "active": "Merged",
+        "undone": "Undone"
+      },
+      "fields": {
+        "familyName": "Family name",
+        "middleName": "Middle name",
+        "givenName": "Given name",
+        "sex": "Sex",
+        "birthDate": "Birth",
+        "phone": "Phone"
+      }
     }
   },
   "patient": {
@@ -517,7 +547,10 @@
       }
     },
     "history": "History",
-    "trend": "Temperature trend"
+    "trend": "Temperature trend",
+    "mergedRedirect": "This record was merged: opening the record that was kept...",
+    "mergedFrom": "The requested record was merged into this one.",
+    "mergedCount": "{count, plural, one {One merged record is attached to this one: its vital signs appear here.} other {# merged records are attached to this one: their vital signs appear here.}}"
   },
   "diagnostic": {
     "title": "Workstation diagnostics",

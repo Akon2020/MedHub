@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { MergePanel, RecentMerges } from './merge-panel';
 
 type Patient = {
   id: string;
@@ -37,13 +38,22 @@ type Pair = {
 const FIELDS = ['name', 'sex', 'birthDate', 'phone', 'mrn', 'createdAt'] as const;
 type Field = (typeof FIELDS)[number];
 
-function PairCard({ pair, onDismissed }: { pair: Pair; onDismissed: () => Promise<void> }) {
+function PairCard({
+  pair,
+  onDismissed,
+  run,
+}: {
+  pair: Pair;
+  onDismissed: () => Promise<void>;
+  run: (path: string, body: unknown) => Promise<boolean>;
+}) {
   const t = useTranslations('patients.queue');
   const tp = useTranslations('patients');
   const format = useFormatter();
   const online = useOnline();
   const [reason, setReason] = useState('');
   const [open, setOpen] = useState(false);
+  const [merging, setMerging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -139,7 +149,15 @@ function PairCard({ pair, onDismissed }: { pair: Pair; onDismissed: () => Promis
             </tbody>
           </table>
         </div>
-        {open ? (
+        {merging ? (
+          <MergePanel
+            a={pair.a}
+            b={pair.b}
+            candidateId={pair.id}
+            run={run}
+            onCancel={() => setMerging(false)}
+          />
+        ) : open ? (
           <div className="grid gap-2 rounded-xl p-3 ring-1 ring-border">
             <Label htmlFor={`reason-${pair.id}`}>{t('reason')}</Label>
             <Input
@@ -168,7 +186,7 @@ function PairCard({ pair, onDismissed }: { pair: Pair; onDismissed: () => Promis
               <XCircle />
               {t('dismiss')}
             </Button>
-            <Button size="sm" variant="secondary" disabled title={t('mergeSoon')}>
+            <Button size="sm" disabled={!online} onClick={() => setMerging(true)}>
               <GitMerge />
               {t('merge')}
             </Button>
@@ -190,6 +208,8 @@ export function DuplicatesQueue() {
   const online = useOnline();
   const [pairs, setPairs] = useState<Pair[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [version, setVersion] = useState(0);
 
   const refresh = useCallback(async () => {
     try {
@@ -201,6 +221,38 @@ export function DuplicatesQueue() {
       );
     }
   }, [t]);
+
+  const run = useCallback(
+    async (path: string, body: unknown): Promise<boolean> => {
+      setError(null);
+      setNotice(null);
+      try {
+        const result = await apiFetch<{ kept?: string[] }>(path, {
+          method: 'POST',
+          body: JSON.stringify(body),
+        });
+        setNotice(
+          path.endsWith('/unmerge')
+            ? t('unmerged', { kept: result.kept?.length ?? 0 })
+            : t('merged'),
+        );
+        setVersion((v) => v + 1);
+        await refresh();
+        return true;
+      } catch (err) {
+        const known = ['PAT_ALREADY_MERGED', 'PAT_MERGE_UNDONE', 'PERMISSION_DENIED'];
+        setError(
+          err instanceof ApiError && known.includes(err.code)
+            ? t(`errors.${err.code}`)
+            : err instanceof ApiError
+              ? t('error')
+              : t('network'),
+        );
+        return false;
+      }
+    },
+    [refresh, t],
+  );
 
   useEffect(() => {
     if (!online) return;
@@ -229,6 +281,16 @@ export function DuplicatesQueue() {
   return (
     <div className="grid gap-4">
       <p className="text-sm text-muted-foreground">{t('intro')}</p>
+      {notice && (
+        <p role="status" className="rounded-lg bg-success-soft px-3.5 py-2.5 text-sm text-success">
+          {notice}
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="rounded-lg bg-danger-soft px-3.5 py-2.5 text-sm text-danger">
+          {error}
+        </p>
+      )}
       {pairs.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
@@ -236,8 +298,9 @@ export function DuplicatesQueue() {
           </CardContent>
         </Card>
       ) : (
-        pairs.map((pair) => <PairCard key={pair.id} pair={pair} onDismissed={refresh} />)
+        pairs.map((pair) => <PairCard key={pair.id} pair={pair} onDismissed={refresh} run={run} />)
       )}
+      <RecentMerges version={version} run={run} />
     </div>
   );
 }

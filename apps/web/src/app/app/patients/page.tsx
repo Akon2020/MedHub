@@ -8,7 +8,7 @@ import { Suspense, useDeferredValue, useState } from 'react';
 import { useLocalQuery, useRuntime } from '@/client/runtime';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { initialsOf, toPatientView } from '@/features/patients/patient-helpers';
+import { initialsOf, isMerged, toPatientView } from '@/features/patients/patient-helpers';
 import { RegisterForm } from '@/features/patients/register-form';
 import { SyncBadge } from '@/features/patients/sync-badge';
 import { PageHeader } from '@/features/shell/page-header';
@@ -32,9 +32,9 @@ function PatientsScreen() {
 
   const { data, loading } = useLocalQuery(
     async (store) => {
-      const entities = deferred
-        ? await store.searchPatients(deferred, 50)
-        : await store.readEntities('patient');
+      const entities = (
+        deferred ? await store.searchPatients(deferred, 50) : await store.readEntities('patient')
+      ).filter((e) => !isMerged(e));
       const views = entities.map((e) => toPatientView(e));
       if (!deferred) views.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
       return views.slice(0, 100);

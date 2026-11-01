@@ -23,6 +23,11 @@ function hlcInstant(hlc: string): string | null {
   return Number.isFinite(ms) && ms > 0 ? new Date(ms).toISOString() : null;
 }
 
+/** A record merged into another one: hidden from lists, its page leads to the survivor. */
+export function isMerged(entity: LocalEntity): boolean {
+  return typeof entity.data.mergedIntoId === 'string' && entity.data.mergedIntoId !== '';
+}
+
 export function toPatientView(entity: LocalEntity, now = new Date()): PatientView {
   const d = entity.data;
   const birthDate = s(d.birthDate);
