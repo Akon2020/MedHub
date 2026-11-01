@@ -38,6 +38,8 @@ export async function findSimilar(
         birthDate: s(d.birthDate),
         birthDateEstimated: d.birthDateEstimated === true,
         phone: s(d.phone),
+        motherName: s(d.motherName),
+        fatherName: s(d.fatherName),
       });
       if (score >= threshold)
         seen.set(entity.id, { patient: toPatientView(entity), score, reasons });

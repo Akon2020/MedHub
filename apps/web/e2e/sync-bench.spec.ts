@@ -317,5 +317,45 @@ test('front desk registers a patient offline from the screen, then it syncs', as
     page.getByRole('button', { name: "Ce n'est aucun d'eux : enregistrer" }),
   ).toBeVisible();
   expect(await page.evaluate(() => window.__medhubTest!.pending())).toBe(0);
+
+  // The record is completed offline, then the changes reach the server with their history.
+  const patientId = await withServer(async (client) => {
+    const { rows } = await client.query<{ id: string }>(
+      "select id from patient where device_id = $1 and family_name = 'Kabwela' and given_name = 'Espoir'",
+      [deviceId],
+    );
+    return rows[0]?.id ?? '';
+  });
+  await page.goto(`/app/patients/fiche?id=${patientId}`);
+  await unlock(page);
+  await context.setOffline(true);
+  await page.getByRole('button', { name: 'Compléter ou corriger' }).click();
+  await page.getByLabel('Profession').fill('Enseignante');
+  await page.getByLabel('Nom de la mère').fill('Mwamba Thérèse');
+  await page.getByLabel('Commune').fill('Lemba');
+  await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+  await expect(page.getByText(/Identité enregistrée/)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText('Enseignante')).toBeVisible();
+  await context.setOffline(false);
+  await expect
+    .poll(() => page.evaluate(() => window.__medhubTest!.sync()), { timeout: 20_000 })
+    .toBeNull();
+  const completed = await withServer(async (client) => {
+    const row = await client.query<{ occupation: string; mother: string; commune: string }>(
+      "select occupation, mother_name as mother, address->>'commune' as commune from patient where id = $1",
+      [patientId],
+    );
+    const fields = await client.query<{ field: string }>(
+      'select field from patient_field_history where patient_id = $1 order by field',
+      [patientId],
+    );
+    return { ...row.rows[0], fields: fields.rows.map((r) => r.field) };
+  });
+  expect(completed).toEqual({
+    occupation: 'Enseignante',
+    mother: 'Mwamba Thérèse',
+    commune: 'Lemba',
+    fields: ['address', 'motherName', 'occupation'],
+  });
   await context.close();
 });

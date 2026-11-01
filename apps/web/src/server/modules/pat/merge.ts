@@ -146,8 +146,9 @@ export async function unmergePatients(
       demographics(survivor),
     );
     const who = { tenantId: ctx.tenantId, userId: ctx.userId };
-    if (Object.keys(patch).length > 0) await updateServerPatient(tx, who, survivor.id, patch);
-    await updateServerPatient(tx, who, merge.mergedId, { mergedIntoId: null });
+    if (Object.keys(patch).length > 0)
+      await updateServerPatient(tx, who, survivor.id, patch, 'unmerge');
+    await updateServerPatient(tx, who, merge.mergedId, { mergedIntoId: null }, 'unmerge');
     const now = new Date();
     await tx
       .update(schema.patientMerge)

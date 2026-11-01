@@ -14,6 +14,7 @@ import {
   numberSeries,
   opLog,
   patient,
+  patientFieldHistory,
   patientMerge,
   role,
   rolePermission,
@@ -86,6 +87,17 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       name: 'Poste test',
       kind: 'desktop',
       publicKey: 'test',
+    });
+  },
+  patient_field_history: async (tx, tenantId) => {
+    await tx.insert(patientFieldHistory).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      field: 'phone',
+      oldValue: null,
+      newValue: '0991234567',
+      source: 'sync',
     });
   },
   patient_merge: async (tx, tenantId) => {

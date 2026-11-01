@@ -30,6 +30,64 @@ function compact(data: Record<string, unknown>): Record<string, unknown> {
 }
 
 const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
+const record = (v: unknown): Record<string, string | null> | null =>
+  v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, string | null>) : null;
+
+/** Civil status fields traced one by one in patient_field_history. */
+const TRACKED_FIELDS = [
+  'familyName',
+  'middleName',
+  'givenName',
+  'sex',
+  'birthDate',
+  'birthDateEstimated',
+  'phone',
+  'sensitivity',
+  'address',
+  'occupation',
+  'maritalStatus',
+  'nationality',
+  'language',
+  'fatherName',
+  'motherName',
+  'contact',
+  'mergedIntoId',
+] as const;
+
+const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+/** One history row per field whose value really changed. */
+async function recordFieldHistory(
+  tx: Tx,
+  input: {
+    tenantId: string;
+    patientId: string;
+    before: Record<string, unknown>;
+    after: Record<string, unknown>;
+    source: 'sync' | 'merge' | 'unmerge' | 'review';
+    opId: string | null;
+    hlc: string | null;
+    deviceId: string | null;
+    changedBy: string | null;
+  },
+): Promise<void> {
+  const rows = TRACKED_FIELDS.filter((f) => !same(input.before[f], input.after[f])).map(
+    (field) => ({
+      id: uuidv7(),
+      tenantId: input.tenantId,
+      patientId: input.patientId,
+      field,
+      oldValue: input.before[field] ?? null,
+      newValue: input.after[field] ?? null,
+      source: input.source,
+      opId: input.opId,
+      hlc: input.hlc,
+      deviceId: input.deviceId,
+      changedBy: input.changedBy,
+    }),
+  );
+  if (rows.length > 0) await tx.insert(schema.patientFieldHistory).values(rows);
+}
 
 /** Mapping between the domain entity state and the PostgreSQL rows, one per entity. */
 const mappers = {
@@ -52,6 +110,14 @@ const mappers = {
           searchText: row.searchText,
           phoneticKey: row.phoneticKey,
           mergedIntoId: row.mergedIntoId,
+          address: row.address,
+          occupation: row.occupation,
+          maritalStatus: row.maritalStatus,
+          nationality: row.nationality,
+          language: row.language,
+          fatherName: row.fatherName,
+          motherName: row.motherName,
+          contact: row.contact,
         }),
         fieldMeta: row.fieldMeta,
         hlc: row.hlc ?? '',
@@ -78,6 +144,14 @@ const mappers = {
         searchText: String(d.searchText ?? ''),
         phoneticKey: String(d.phoneticKey ?? ''),
         mergedIntoId: str(d.mergedIntoId),
+        address: record(d.address),
+        occupation: str(d.occupation),
+        maritalStatus: str(d.maritalStatus),
+        nationality: str(d.nationality),
+        language: str(d.language),
+        fatherName: str(d.fatherName),
+        motherName: str(d.motherName),
+        contact: record(d.contact),
         fieldMeta: state.fieldMeta,
         hlc: state.hlc,
         opId: state.opId || null,
@@ -317,6 +391,7 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
     async updateEntity(entity, state) {
       switch (entity) {
         case 'patient': {
+          const before = await getEntity(tx, 'patient', state.id);
           const {
             id: _id,
             tenantId: _t,
@@ -324,6 +399,17 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
             ...row
           } = mappers.patient.toRow(state, ctx);
           await tx.update(schema.patient).set(row).where(eq(schema.patient.id, state.id));
+          await recordFieldHistory(tx, {
+            tenantId: ctx.tenantId,
+            patientId: state.id,
+            before: before?.data ?? {},
+            after: state.data,
+            source: 'sync',
+            opId: state.opId || null,
+            hlc: state.hlc || null,
+            deviceId: ctx.deviceId,
+            changedBy: ctx.userId,
+          });
           return;
         }
         case 'vital_sign':
@@ -504,6 +590,7 @@ export async function updateServerPatient(
   ctx: { tenantId: string; userId: string },
   patientId: string,
   patch: Record<string, unknown>,
+  source: 'merge' | 'unmerge' | 'review' = 'merge',
 ): Promise<EntityState> {
   const [row] = await tx
     .select()
@@ -532,6 +619,17 @@ export async function updateServerPatient(
     ...values
   } = mappers.patient.toRow(state, { ...ctx, deviceId: null });
   await tx.update(schema.patient).set(values).where(eq(schema.patient.id, patientId));
+  await recordFieldHistory(tx, {
+    tenantId: ctx.tenantId,
+    patientId,
+    before: current.data,
+    after: state.data,
+    source,
+    opId,
+    hlc,
+    deviceId: null,
+    changedBy: ctx.userId,
+  });
   await tx.insert(schema.changeLog).values({
     tenantId: ctx.tenantId,
     entity: 'patient',

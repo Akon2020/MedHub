@@ -30,6 +30,16 @@ export const patient = pgTable(
     birthDateEstimated: boolean('birth_date_estimated').notNull().default(false),
     ageAtRegistration: integer('age_at_registration'),
     phone: text('phone'),
+    /** Structured address: province, city or territory, commune, quarter, street. */
+    address: jsonb('address').$type<Record<string, string | null>>(),
+    occupation: text('occupation'),
+    maritalStatus: text('marital_status'),
+    nationality: text('nationality'),
+    language: text('language'),
+    fatherName: text('father_name'),
+    motherName: text('mother_name'),
+    /** Person to contact: name, relation, phone. */
+    contact: jsonb('contact').$type<Record<string, string | null>>(),
     sensitivity: text('sensitivity').notNull().default('normal'),
     searchText: text('search_text').notNull(),
     phoneticKey: text('phonetic_key').notNull(),
@@ -130,5 +140,35 @@ export const patientMerge = pgTable(
     index('patient_merge_survivor_idx').on(t.tenantId, t.survivorId),
     index('patient_merge_merged_idx').on(t.tenantId, t.mergedId),
     check('patient_merge_status_check', sql`${t.status} in ('active','undone')`),
+  ],
+);
+
+/**
+ * Every change of a patient's civil status, field by field (docs/modules/pat.md):
+ * written by the server when a synchronised update or a merge is applied.
+ * Append-only, like the audit trail.
+ */
+export const patientFieldHistory = pgTable(
+  'patient_field_history',
+  {
+    id: uuid('id').primaryKey(),
+    tenantId: uuid('tenant_id').notNull(),
+    patientId: uuid('patient_id').notNull(),
+    field: text('field').notNull(),
+    oldValue: jsonb('old_value'),
+    newValue: jsonb('new_value'),
+    source: text('source').notNull(),
+    opId: uuid('op_id'),
+    hlc: text('hlc'),
+    deviceId: uuid('device_id'),
+    changedBy: uuid('changed_by'),
+    changedAt: timestamp('changed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('patient_field_history_patient_idx').on(t.tenantId, t.patientId, t.changedAt),
+    check(
+      'patient_field_history_source_check',
+      sql`${t.source} in ('sync','merge','unmerge','review')`,
+    ),
   ],
 );

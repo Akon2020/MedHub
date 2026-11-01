@@ -451,8 +451,8 @@
     },
     "queue": {
       "link": "Duplicates",
-      "title": "Possible duplicates",
-      "subtitle": "Records the server finds similar after synchronisation.",
+      "title": "Duplicates and conflicts",
+      "subtitle": "Similar records and concurrent changes to settle.",
       "intro": "Compare both records. If they are the same person, merge them by choosing the record to keep and the values to keep; otherwise, dismiss the pair with a reason.",
       "empty": "No possible duplicate to review.",
       "offline": "Screen available online only: duplicates are computed by the server.",
@@ -508,6 +508,19 @@
         "birthDate": "Birth",
         "phone": "Phone"
       }
+    },
+    "conflicts": {
+      "title": "{count, plural, one {One conflicting change to review} other {# conflicting changes to review}}",
+      "intro": "Two devices changed the same sensitive information offline. The value in force was kept; choose the right one.",
+      "inForce": "Value in force",
+      "fromDevice": "Sent by device {code}",
+      "fromOther": "Value sent",
+      "reason": "Reason (written to the audit log)",
+      "reasonPlaceholder": "Example: checked on the identity card",
+      "keep": "Keep the value in force",
+      "apply": "Apply the value sent",
+      "error": "The decision could not be saved: the conflict may already have been handled.",
+      "network": "The server cannot be reached. Check the connection."
     }
   },
   "patient": {
@@ -550,7 +563,69 @@
     "trend": "Temperature trend",
     "mergedRedirect": "This record was merged: opening the record that was kept...",
     "mergedFrom": "The requested record was merged into this one.",
-    "mergedCount": "{count, plural, one {One merged record is attached to this one: its vital signs appear here.} other {# merged records are attached to this one: their vital signs appear here.}}"
+    "mergedCount": "{count, plural, one {One merged record is attached to this one: its vital signs appear here.} other {# merged records are attached to this one: their vital signs appear here.}}",
+    "identityCard": {
+      "title": "Identity",
+      "edit": "Complete or correct",
+      "save": "Save",
+      "cancel": "Cancel",
+      "none": "Not given",
+      "saved": "Identity saved. It will be sent to the server at the next sync.",
+      "offlineHint": "Works offline: only changed fields are sent. If another device changed the same birth date, family name or sex, the value in force is kept and the change goes to a supervisor.",
+      "estimatedYear": "{year} (estimated)",
+      "fields": {
+        "familyName": "Family name",
+        "middleName": "Middle name",
+        "givenName": "Given name",
+        "sex": "Sex",
+        "birthDate": "Birth",
+        "birthDateEstimated": "Estimated date",
+        "phone": "Phone",
+        "address": "Address",
+        "occupation": "Occupation",
+        "maritalStatus": "Marital status",
+        "nationality": "Nationality",
+        "language": "Spoken language",
+        "fatherName": "Father's name",
+        "motherName": "Mother's name",
+        "contact": "Person to contact",
+        "sensitivity": "Sensitivity",
+        "mergedIntoId": "Merge"
+      },
+      "address": {
+        "province": "Province",
+        "city": "City or territory",
+        "commune": "Commune",
+        "quarter": "Quarter",
+        "street": "Street and number"
+      },
+      "contact": {
+        "name": "Name",
+        "relation": "Relationship",
+        "phone": "Phone"
+      },
+      "marital": {
+        "single": "Single",
+        "married": "Married",
+        "cohabiting": "Cohabiting",
+        "divorced": "Divorced",
+        "separated": "Separated",
+        "widowed": "Widowed"
+      },
+      "historyTitle": "Change history",
+      "historyShow": "Show the history",
+      "historyHint": "Every identity change, field by field, with its author and device. Viewing it is logged.",
+      "historyOffline": "Available online only.",
+      "historyEmpty": "No change since the record was created.",
+      "historyNotSynced": "This record is not on the server yet: sync the device.",
+      "historyError": "The history could not be loaded.",
+      "device": "device {code}",
+      "sources": {
+        "merge": "merge",
+        "unmerge": "merge undone",
+        "review": "review"
+      }
+    }
   },
   "diagnostic": {
     "title": "Workstation diagnostics",

@@ -456,8 +456,8 @@
     },
     "queue": {
       "link": "Doublons",
-      "title": "Doublons possibles",
-      "subtitle": "Dossiers que le serveur juge semblables après la synchronisation.",
+      "title": "Doublons et conflits",
+      "subtitle": "Dossiers semblables et modifications concurrentes à arbitrer.",
       "intro": "Comparez les deux dossiers. S'il s'agit de la même personne, fusionnez-les en choisissant le dossier conservé et les valeurs à garder ; sinon, écartez la paire avec un motif.",
       "empty": "Aucun doublon possible à examiner.",
       "offline": "Écran disponible en ligne seulement : les doublons sont calculés par le serveur.",
@@ -513,6 +513,19 @@
         "birthDate": "Naissance",
         "phone": "Téléphone"
       }
+    },
+    "conflicts": {
+      "title": "{count, plural, one {Un conflit de modification à revoir} other {# conflits de modification à revoir}}",
+      "intro": "Deux postes ont modifié hors connexion la même information sensible. La valeur en vigueur a été gardée ; choisissez celle qui est juste.",
+      "inForce": "Valeur en vigueur",
+      "fromDevice": "Envoyée par le poste {code}",
+      "fromOther": "Valeur envoyée",
+      "reason": "Motif (consigné dans le journal)",
+      "reasonPlaceholder": "Exemple : vérifié sur la carte d’identité",
+      "keep": "Garder la valeur en vigueur",
+      "apply": "Appliquer la valeur envoyée",
+      "error": "La décision n'a pas pu être enregistrée : le conflit a peut-être déjà été traité.",
+      "network": "Le serveur est injoignable. Vérifiez la connexion."
     }
   },
   "patient": {
@@ -555,7 +568,69 @@
     "trend": "Évolution de la température",
     "mergedRedirect": "Ce dossier a été fusionné : ouverture du dossier conservé...",
     "mergedFrom": "Le dossier demandé a été fusionné dans celui-ci.",
-    "mergedCount": "{count, plural, one {Un dossier fusionné est rattaché à celui-ci : ses constantes apparaissent ici.} other {# dossiers fusionnés sont rattachés à celui-ci : leurs constantes apparaissent ici.}}"
+    "mergedCount": "{count, plural, one {Un dossier fusionné est rattaché à celui-ci : ses constantes apparaissent ici.} other {# dossiers fusionnés sont rattachés à celui-ci : leurs constantes apparaissent ici.}}",
+    "identityCard": {
+      "title": "Identité",
+      "edit": "Compléter ou corriger",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "none": "Non renseigné",
+      "saved": "Identité enregistrée. Elle sera envoyée au serveur à la prochaine synchronisation.",
+      "offlineHint": "Fonctionne hors connexion : seuls les champs modifiés sont envoyés. Si un autre poste a modifié la même date de naissance, le même nom ou le même sexe, la valeur en vigueur est gardée et le changement est soumis à un superviseur.",
+      "estimatedYear": "{year} (estimée)",
+      "fields": {
+        "familyName": "Nom",
+        "middleName": "Postnom",
+        "givenName": "Prénom",
+        "sex": "Sexe",
+        "birthDate": "Naissance",
+        "birthDateEstimated": "Date estimée",
+        "phone": "Téléphone",
+        "address": "Adresse",
+        "occupation": "Profession",
+        "maritalStatus": "État civil",
+        "nationality": "Nationalité",
+        "language": "Langue parlée",
+        "fatherName": "Nom du père",
+        "motherName": "Nom de la mère",
+        "contact": "Personne à contacter",
+        "sensitivity": "Sensibilité",
+        "mergedIntoId": "Fusion"
+      },
+      "address": {
+        "province": "Province",
+        "city": "Ville ou territoire",
+        "commune": "Commune",
+        "quarter": "Quartier",
+        "street": "Avenue et numéro"
+      },
+      "contact": {
+        "name": "Nom",
+        "relation": "Lien",
+        "phone": "Téléphone"
+      },
+      "marital": {
+        "single": "Célibataire",
+        "married": "Marié ou mariée",
+        "cohabiting": "En union libre",
+        "divorced": "Divorcé ou divorcée",
+        "separated": "Séparé ou séparée",
+        "widowed": "Veuf ou veuve"
+      },
+      "historyTitle": "Historique des modifications",
+      "historyShow": "Afficher l'historique",
+      "historyHint": "Chaque changement d'identité, champ par champ, avec son auteur et son poste. La consultation est tracée.",
+      "historyOffline": "Disponible en ligne seulement.",
+      "historyEmpty": "Aucune modification depuis la création du dossier.",
+      "historyNotSynced": "Ce dossier n'est pas encore sur le serveur : synchronisez le poste.",
+      "historyError": "L'historique n'a pas pu être chargé.",
+      "device": "poste {code}",
+      "sources": {
+        "merge": "fusion",
+        "unmerge": "fusion annulée",
+        "review": "revue"
+      }
+    }
   },
   "diagnostic": {
     "title": "Diagnostic du poste",

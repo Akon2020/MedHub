@@ -1,7 +1,7 @@
 'use client';
 
 import type { VitalSignCode } from '@medhub/shared';
-import { ArrowLeft, GitMerge, Phone, UserRound } from 'lucide-react';
+import { ArrowLeft, GitMerge, Phone } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -9,6 +9,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { Suspense, useEffect } from 'react';
 import { useLocalQuery } from '@/client/runtime';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FieldHistory, IdentityCard } from '@/features/patients/identity-card';
 import { initialsOf, isMerged, toPatientView } from '@/features/patients/patient-helpers';
 import { mergeClosure, mergeTarget } from '@medhub/domain';
 import { SyncBadge } from '@/features/patients/sync-badge';
@@ -55,7 +56,12 @@ function PatientRecord() {
               : null,
         }))
         .sort((a, b) => b.measuredAt.localeCompare(a.measuredAt));
-      return { patient: toPatientView(entity), vitals, mergedCount: ids.length - 1 };
+      return {
+        patient: toPatientView(entity),
+        raw: entity.data,
+        vitals,
+        mergedCount: ids.length - 1,
+      };
     },
     [id],
   );
@@ -84,7 +90,7 @@ function PatientRecord() {
     );
   }
 
-  const { patient, vitals, mergedCount } = data;
+  const { patient, raw, vitals, mergedCount } = data;
   const temperature = vitals
     .filter((v) => v.code === 'temp' && v.status === 'active')
     .slice(0, 12)
@@ -164,31 +170,8 @@ function PatientRecord() {
               )}
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserRound className="size-4 text-primary" aria-hidden />
-                {t('identity')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                <dt className="text-muted-foreground">{t('mrn')}</dt>
-                <dd className="font-mono text-xs">{patient.mrn}</dd>
-                <dt className="text-muted-foreground">{tp('form.birthDate')}</dt>
-                <dd>
-                  {patient.birthDate
-                    ? format.dateTime(new Date(`${patient.birthDate}T00:00:00Z`), {
-                        dateStyle: 'long',
-                        timeZone: 'UTC',
-                      })
-                    : ''}
-                </dd>
-                <dt className="text-muted-foreground">{tp('columns.phone')}</dt>
-                <dd>{patient.phone ?? ''}</dd>
-              </dl>
-            </CardContent>
-          </Card>
+          <IdentityCard key={patient.id} patientId={patient.id} data={raw} />
+          <FieldHistory patientId={patient.id} />
         </div>
       </div>
     </div>

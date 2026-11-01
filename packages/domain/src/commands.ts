@@ -25,7 +25,14 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
     name: 'patient',
     strategy: 'field_merge',
     derive: (data) =>
-      patientSearchFields(data as PatientNameParts & { phone?: string; mrn?: string }),
+      patientSearchFields(
+        data as PatientNameParts & {
+          phone?: string;
+          mrn?: string;
+          fatherName?: string;
+          motherName?: string;
+        },
+      ),
     scopeKeys: (_data, id) => [`patient:${id}`],
   },
   vital_sign: {

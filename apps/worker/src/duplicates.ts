@@ -9,7 +9,6 @@ type PatientRow = typeof schema.patient.$inferSelect;
 const NEIGHBOUR_LIMIT = 200;
 
 function subject(p: PatientRow): DuplicateSubject {
-  const extra = p.extra as { motherName?: unknown; fatherName?: unknown };
   return {
     familyName: p.familyName,
     middleName: p.middleName,
@@ -18,8 +17,8 @@ function subject(p: PatientRow): DuplicateSubject {
     birthDate: p.birthDate,
     birthDateEstimated: p.birthDateEstimated,
     phone: p.phone,
-    motherName: typeof extra.motherName === 'string' ? extra.motherName : null,
-    fatherName: typeof extra.fatherName === 'string' ? extra.fatherName : null,
+    motherName: p.motherName,
+    fatherName: p.fatherName,
   };
 }
 
