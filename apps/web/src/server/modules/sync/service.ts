@@ -1,19 +1,27 @@
 import 'server-only';
 import { withTenant } from '@medhub/db';
-import { AppError } from '@medhub/shared';
+import { ENTITIES, sensitivityAllowed, type EntityName } from '@medhub/domain';
+import { AppError, type PatientSensitivity } from '@medhub/shared';
 import {
   MAX_PUSH_BYTES,
   SUPPORTED_SCHEMA_VERSIONS,
   SYNC_SCHEMA_VERSION,
+  type ChangeRecord,
   type PullResponse,
   type PushResponse,
   type SyncStatusResponse,
 } from '@medhub/sync';
 import { processPull, processPush } from '@medhub/sync/server';
 import { database } from '../../platform/db';
-import { loadPermissions } from '../../platform/permissions';
+import { loadPermissions, loadSensitivityMax } from '../../platform/permissions';
 import type { RequestContext } from '../../platform/tenant';
-import { endDeviceSessions, loadDevice, pgSyncStore, touchDevice } from './repository';
+import {
+  endDeviceSessions,
+  loadDevice,
+  patientSensitivities,
+  pgSyncStore,
+  touchDevice,
+} from './repository';
 
 /** Entities a user may receive on pull, by read permission. */
 const READ_PERMISSION: Record<string, readonly string[]> = {
@@ -22,10 +30,43 @@ const READ_PERMISSION: Record<string, readonly string[]> = {
   stock_movement: ['stock:read'],
 };
 
-async function permissionsOf(ctx: RequestContext): Promise<Set<string>> {
-  return withTenant(database().db, { tenantId: ctx.tenantId, userId: ctx.userId }, (tx) =>
-    loadPermissions(tx, ctx.userId),
-  );
+async function accessOf(
+  ctx: RequestContext,
+): Promise<{ permissions: Set<string>; sensitivityMax: PatientSensitivity }> {
+  return withTenant(database().db, { tenantId: ctx.tenantId, userId: ctx.userId }, async (tx) => ({
+    permissions: await loadPermissions(tx, ctx.userId),
+    sensitivityMax: await loadSensitivityMax(tx, ctx.userId),
+  }));
+}
+
+const ownerOf = (change: ChangeRecord): string | null =>
+  ENTITIES[change.entity as EntityName]?.patientIdOf?.(change.data ?? {}, change.entityId) ?? null;
+
+/**
+ * A patient above the user's level never reaches the device: a change to such
+ * a record tells the device to drop it (it may hold an older copy, from before
+ * the record was marked), and the rows attached to it are not sent.
+ */
+async function applySensitivity(
+  ctx: RequestContext & { deviceId: string },
+  changes: ChangeRecord[],
+  max: PatientSensitivity,
+): Promise<ChangeRecord[]> {
+  if (max === 'restricted') return changes;
+  const owners = changes
+    .filter((c) => c.entity !== 'patient')
+    .map(ownerOf)
+    .filter((id): id is string => id !== null);
+  const levels = await patientSensitivities(database().db, ctx, [...new Set(owners)]);
+  return changes.flatMap((change): ChangeRecord[] => {
+    if (change.entity === 'patient') {
+      if (!change.data || sensitivityAllowed(change.data.sensitivity, max)) return [change];
+      return [{ ...change, data: null, evict: true }];
+    }
+    const owner = ownerOf(change);
+    const level = owner ? levels.get(owner) : undefined;
+    return level === undefined || sensitivityAllowed(level, max) ? [change] : [];
+  });
 }
 
 /**
@@ -52,7 +93,7 @@ export async function push(
     throw new AppError('SYNC_SCHEMA_UNSUPPORTED', 426);
   }
   const device = await activeDevice(ctx, request.deviceId, 'push');
-  const permissions = await permissionsOf(ctx);
+  const { permissions } = await accessOf(ctx);
   const store = pgSyncStore(database().db, { ...ctx, deviceId: device.id });
   const response = await processPush(
     store,
@@ -75,7 +116,7 @@ export async function pull(
   input: { deviceId: string; cursor: number; limit: number; lookback: boolean },
 ): Promise<PullResponse> {
   const device = await activeDevice(ctx, input.deviceId, 'pull');
-  const permissions = await permissionsOf(ctx);
+  const { permissions, sensitivityMax } = await accessOf(ctx);
   const store = pgSyncStore(database().db, { ...ctx, deviceId: device.id });
   const now = Date.now();
   const response = await processPull(store, {
@@ -86,8 +127,12 @@ export async function pull(
     serverTime: new Date(now).toISOString(),
   });
   // A change the user may not read still advances the cursor, but its data is never sent.
-  response.changes = response.changes.filter((change) =>
-    (READ_PERMISSION[change.entity] ?? []).some((key) => permissions.has(key)),
+  response.changes = await applySensitivity(
+    { ...ctx, deviceId: device.id },
+    response.changes.filter((change) =>
+      (READ_PERMISSION[change.entity] ?? []).some((key) => permissions.has(key)),
+    ),
+    sensitivityMax,
   );
   await touchDevice(database().db, ctx, device.id, true);
   return response;

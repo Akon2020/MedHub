@@ -1,11 +1,16 @@
 import 'server-only';
 import { schema, type Tx, withTenant } from '@medhub/db';
-import { parsePatientQuery } from '@medhub/domain';
+import { allowedSensitivities, parsePatientQuery } from '@medhub/domain';
 import { AppError } from '@medhub/shared';
-import { and, asc, isNull, sql, type SQL } from 'drizzle-orm';
+import { and, asc, inArray, isNull, sql, type SQL } from 'drizzle-orm';
 import { database } from '../../platform/db';
 import { env } from '../../platform/env';
-import { loadPermissions, requirePermission } from '../../platform/permissions';
+import {
+  loadPermissions,
+  loadSensitivityMax,
+  requirePermission,
+  requireSensitivity,
+} from '../../platform/permissions';
 import type { RequestContext } from '../../platform/tenant';
 import { patientState } from '../sync';
 
@@ -52,7 +57,9 @@ export async function searchPatients(
   return withTenant(database().db, { tenantId: ctx.tenantId, userId: ctx.userId }, async (tx) => {
     requirePermission(await loadPermissions(tx, ctx.userId), 'patient:read');
     const p = schema.patient;
-    const where: SQL[] = [];
+    // A record above the user's level is not even shown as a hit.
+    const levels = allowedSensitivities(await loadSensitivityMax(tx, ctx.userId));
+    const where: SQL[] = [inArray(p.sensitivity, levels)];
     let rank: SQL | null = null;
     if (query.cardToken) where.push(sql`${p.cardToken} = ${query.cardToken}`);
     if (query.mrn) {
@@ -123,6 +130,7 @@ export async function fetchPatient(
     requirePermission(await loadPermissions(tx, ctx.userId), 'patient:read');
     const state = await patientState(tx, id);
     if (!state) throw new AppError('NOT_FOUND', 404);
+    requireSensitivity(state.data.sensitivity, await loadSensitivityMax(tx, ctx.userId));
     return { id: state.id, version: state.version, data: state.data };
   });
 }

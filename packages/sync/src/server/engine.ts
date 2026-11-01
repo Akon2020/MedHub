@@ -2,6 +2,7 @@ import {
   COMMANDS,
   ENTITIES,
   deathRefusal,
+  mergeablePayload,
   PATIENT_SENSITIVE_FIELDS,
   getCommand,
   stockBalance,
@@ -189,7 +190,7 @@ async function applyOperation(
     case 'create':
       return applyCreate(tx, op, entity, payload);
     case 'update':
-      return applyUpdate(tx, op, entity, payload);
+      return applyUpdate(tx, op, entity, mergeablePayload(command, payload));
     case 'append': {
       if (command.patientAct) {
         const { patientId } = command.patientAct(payload as never);

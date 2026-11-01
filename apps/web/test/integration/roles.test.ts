@@ -174,10 +174,13 @@ describe.skipIf(!url)('role editor against PostgreSQL', () => {
           { key: 'patient:create', scope: 'site' },
           { key: 'appointment:read', scope: 'department' },
         ],
+        sensitivityMax: 'vip',
       },
       client,
     );
     const role = await view(clerkRole);
+    expect(role.sensitivityMax).toBe('vip');
+    expect(await tx((t) => permissions.loadSensitivityMax(t, clerkId))).toBe('vip');
     expect(role).toMatchObject({ name: 'Accueil et rendez-vous', version: 2, requiresMfa: false });
     expect(role.grants).toEqual([
       { key: 'appointment:read', scope: 'department' },
@@ -202,7 +205,12 @@ describe.skipIf(!url)('role editor against PostgreSQL', () => {
       },
       client,
     );
-    expect(await view(clerkRole)).toMatchObject({ isPrivileged: true, requiresMfa: true });
+    // Omitted, the level of sensitive records stays as it was.
+    expect(await view(clerkRole)).toMatchObject({
+      isPrivileged: true,
+      requiresMfa: true,
+      sensitivityMax: 'vip',
+    });
     const events = await withSystem(handle.db, (t) =>
       t
         .select({ kind: schema.securityEvent.kind })
@@ -226,6 +234,7 @@ describe.skipIf(!url)('role editor against PostgreSQL', () => {
     const copy = await view(roleId);
     expect(copy.templateCode).toBeNull();
     expect(copy.grants).toEqual((await view(clerkRole)).grants);
+    expect(copy.sensitivityMax).toBe('vip');
     expect(copy.isPrivileged).toBe(true);
     await expectCode(
       roles.createRole(

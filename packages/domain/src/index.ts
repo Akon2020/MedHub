@@ -12,6 +12,7 @@ export * from './core/config-schemas';
 export * from './core/password-policy';
 export * from './core/users';
 export * from './core/roles';
+export * from './core/access';
 export * from './core/reference';
 export * from './core/training';
 export * from './pat/duplicate-score';

@@ -1,4 +1,4 @@
-import type { EntityName } from '@medhub/domain';
+import { ENTITIES, type EntityName } from '@medhub/domain';
 import type { StockMovementKind } from '@medhub/shared';
 import type {
   ClientSyncStore,
@@ -174,6 +174,12 @@ export class MemoryClientStore implements ClientSyncStore {
       },
       addConflict: async (conflict) => {
         draft.conflicts.push(conflict);
+      },
+      evictPatient: async (patientId) => {
+        for (const [key, row] of draft.entities) {
+          const owner = ENTITIES[row.entity].patientIdOf?.(row.data, row.id);
+          if (owner === patientId) draft.entities.delete(key);
+        }
       },
     };
     const result = await fn(tx);

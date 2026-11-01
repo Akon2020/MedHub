@@ -73,6 +73,11 @@ export type ChangeRecord = {
   entityId: string;
   version: number;
   data: Record<string, unknown> | null;
+  /**
+   * The device must drop this patient and every row attached to it: the record
+   * became sensitive beyond the user's access, or left the device's scope.
+   */
+  evict?: boolean;
 };
 
 export type PullResponse = {

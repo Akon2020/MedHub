@@ -1,5 +1,6 @@
-import { uuidv7 } from '@medhub/shared';
+import { ManualClock, uuidv7 } from '@medhub/shared';
 import { describe, expect, it } from 'vitest';
+import { SyncClient } from '../src/client/engine';
 import type { Operation } from '../src/protocol';
 import { createWorld } from './harness';
 
@@ -216,5 +217,66 @@ describe('server engine', () => {
     );
     await a.client.sync();
     expect(server.entitiesOf('patient')[0]?.data.deceasedAt).toBeNull();
+  });
+
+  it('marks sensitivity with its own permission, the reason staying in the log', async () => {
+    const { a, server } = setup();
+    const { entityId } = await a.client.dispatch('patient.register', registration);
+    await a.client.dispatch(
+      'patient.set_sensitivity',
+      { sensitivity: 'staff', sensitivityReason: 'Agent de la structure' },
+      { entityId },
+    );
+    // A plain identity update cannot carry the level.
+    await a.client.dispatch(
+      'patient.update',
+      { phone: '+243 81 4444444', sensitivity: 'normal' } as never,
+      { entityId },
+    );
+    await a.client.sync();
+    const [patient] = server.entitiesOf('patient');
+    expect(patient?.data).toMatchObject({ sensitivity: 'staff', phone: '+243 81 4444444' });
+    expect(patient?.data).not.toHaveProperty('sensitivityReason');
+  });
+
+  it('drops a patient and its rows when the server says it left the device', async () => {
+    const { a } = setup();
+    const { entityId: patientId } = await a.client.dispatch('patient.register', registration);
+    await a.client.dispatch('vital_sign.record', {
+      patientId,
+      code: 'temp',
+      value: 37,
+      unit: '°C',
+      measuredAt: '2026-10-29T08:00:00.000Z',
+    });
+    await a.client.sync();
+    const evicting = new SyncClient({
+      store: a.store,
+      transport: {
+        push: async () => ({ results: [], serverTime: '2026-10-29T09:00:00.000Z' }),
+        pull: async () => ({
+          changes: [
+            {
+              seq: 99,
+              entity: 'patient',
+              entityId: patientId,
+              version: 2,
+              data: null,
+              evict: true,
+            },
+          ],
+          nextCursor: 99,
+          hasMore: false,
+          serverTime: '2026-10-29T09:00:00.000Z',
+        }),
+      },
+      clock: new ManualClock(Date.UTC(2026, 9, 29, 9)),
+      identity: { tenantId: uuidv7(), siteId: null, userId: uuidv7(), deviceId: a.id },
+      sign: (op) => ({ ...op, signature: '' }),
+      permissions: new Set<string>(),
+    });
+    await evicting.pull();
+    expect(a.store.entitiesOf('patient')).toEqual([]);
+    expect(a.store.entitiesOf('vital_sign')).toEqual([]);
   });
 });

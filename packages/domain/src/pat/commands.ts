@@ -70,7 +70,8 @@ export const patientRegisterPayload = z
     birthDate: dateSchema.nullish(),
     birthDateEstimated: z.boolean().default(false),
     phone: phoneSchema,
-    sensitivity: z.enum(PATIENT_SENSITIVITIES).default('normal'),
+    /** Marking a record sensitive is a separate command with its own permission. */
+    sensitivity: z.literal('normal').default('normal'),
     isProvisional: z.boolean().default(false),
     provisionalKind: z.enum(PROVISIONAL_KINDS).nullish(),
     ...demographicFields,
@@ -121,13 +122,19 @@ export const patientUpdatePayload = z
     birthDate: dateSchema.nullish(),
     birthDateEstimated: z.boolean().optional(),
     phone: phoneSchema,
-    sensitivity: z.enum(PATIENT_SENSITIVITIES).optional(),
     /** Identification of a provisional record; a known patient never becomes provisional. */
     isProvisional: z.literal(false).optional(),
     ...demographicFields,
   })
   .refine((p) => Object.values(p).some((v) => v !== undefined), 'PAT_UPDATE_EMPTY');
 export type PatientUpdatePayload = z.infer<typeof patientUpdatePayload>;
+
+/** Restricting access to a record (staff member, VIP...), with the reason on record. */
+export const patientSensitivityPayload = z.object({
+  sensitivity: z.enum(PATIENT_SENSITIVITIES),
+  sensitivityReason: z.string().trim().min(3).max(300),
+});
+export type PatientSensitivityPayload = z.infer<typeof patientSensitivityPayload>;
 
 export type PatientNameParts = {
   familyName: string;

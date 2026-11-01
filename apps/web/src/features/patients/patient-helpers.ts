@@ -14,7 +14,12 @@ export type PatientView = {
   syncState: 'synced' | 'pending' | 'rejected';
   createdAt: string | null;
   /** Provisional and death markers, in the shape the status badges read. */
-  status: { isProvisional: boolean; provisionalKind: string | null; deceasedAt: string | null };
+  status: {
+    isProvisional: boolean;
+    provisionalKind: string | null;
+    deceasedAt: string | null;
+    sensitivity: string;
+  };
 };
 
 const s = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 ? v : null);
@@ -53,6 +58,7 @@ export function toPatientView(entity: LocalEntity, now = new Date()): PatientVie
       isProvisional: d.isProvisional === true,
       provisionalKind: s(d.provisionalKind),
       deceasedAt: s(d.deceasedAt),
+      sensitivity: s(d.sensitivity) ?? 'normal',
     },
   };
 }

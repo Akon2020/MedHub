@@ -1,8 +1,8 @@
 'use client';
 
 import type { PatientDeathPayload } from '@medhub/domain';
-import { AppError } from '@medhub/shared';
-import { Flag, HeartOff, Loader2, Search, Undo2 } from 'lucide-react';
+import { AppError, PATIENT_SENSITIVITIES, type PatientSensitivity } from '@medhub/shared';
+import { Flag, HeartOff, Loader2, Lock, Search, Undo2 } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useState, type FormEvent } from 'react';
 import { ApiError, apiFetch } from '@/client/api';
@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/select';
 import { isMerged, toPatientView, type PatientView } from './patient-helpers';
 
 type Data = Record<string, unknown>;
@@ -35,6 +36,12 @@ export function PatientStatusBadges({ data }: { data: Data }) {
       {data.isProvisional === true && (
         <Badge variant="warning">
           {t(data.provisionalKind === 'newborn' ? 'newborn' : 'provisional')}
+        </Badge>
+      )}
+      {typeof data.sensitivity === 'string' && data.sensitivity !== 'normal' && (
+        <Badge variant="danger">
+          <Lock className="size-3" aria-hidden />
+          {t(`sensitivity.${data.sensitivity}`)}
         </Badge>
       )}
       {deceasedAt && (
@@ -246,6 +253,110 @@ export function DeathPanel({ patientId, data }: { patientId: string; data: Data 
         >
           {busy && <Loader2 className="animate-spin" />}
           {deceasedAt ? t('withdrawAction') : t('declareAction')}
+        </Button>
+        <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
+          {t('cancel')}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/**
+ * Marking a record (staff member, VIP, restricted) needs its own permission and
+ * a reason. Users whose roles do not reach the new level lose the record from
+ * their devices at the next synchronisation.
+ */
+export function SensitivityPanel({ patientId, data }: { patientId: string; data: Data }) {
+  const t = useTranslations('patient.status');
+  const tErr = useTranslations('errors');
+  const { dispatch, identity } = useRuntime();
+  const current = (
+    typeof data.sensitivity === 'string' ? data.sensitivity : 'normal'
+  ) as PatientSensitivity;
+  const [open, setOpen] = useState(false);
+  const [level, setLevel] = useState<PatientSensitivity>(current);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!identity?.permissions.includes('patient:mark_sensitive')) return null;
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await dispatch(
+        'patient.set_sensitivity',
+        { sensitivity: level, sensitivityReason: reason.trim() },
+        { entityId: patientId },
+      );
+      setOpen(false);
+      setReason('');
+    } catch (err) {
+      const code = err instanceof AppError ? err.code : 'UNKNOWN';
+      setError(tErr.has(code) ? tErr(code) : tErr('UNKNOWN'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => {
+          setLevel(current);
+          setOpen(true);
+        }}
+      >
+        <Lock />
+        {t('sensitivityAction')}
+      </Button>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      className="grid max-w-sm gap-2 rounded-xl p-3 text-sm ring-1 ring-border"
+      noValidate
+    >
+      <p>{t('sensitivityText')}</p>
+      <Label htmlFor="sensitivity-level">{t('sensitivityLevel')}</Label>
+      <NativeSelect
+        id="sensitivity-level"
+        value={level}
+        onChange={(e) => setLevel(e.target.value as PatientSensitivity)}
+      >
+        {PATIENT_SENSITIVITIES.map((value) => (
+          <option key={value} value={value}>
+            {t(`sensitivity.${value}`)}
+          </option>
+        ))}
+      </NativeSelect>
+      <Label htmlFor="sensitivity-reason">{t('sensitivityReason')}</Label>
+      <Input
+        id="sensitivity-reason"
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        autoComplete="off"
+      />
+      {error && (
+        <p role="alert" className="text-danger">
+          {error}
+        </p>
+      )}
+      <div className="flex gap-2">
+        <Button
+          type="submit"
+          size="sm"
+          disabled={busy || level === current || reason.trim().length < 3}
+        >
+          {busy && <Loader2 className="animate-spin" />}
+          {t('sensitivitySave')}
         </Button>
         <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
           {t('cancel')}

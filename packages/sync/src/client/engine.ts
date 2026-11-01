@@ -1,6 +1,7 @@
 import {
   deathRefusal,
   getCommand,
+  mergeablePayload,
   type CommandName,
   type CommandPayload,
   type EntityName,
@@ -62,6 +63,8 @@ export interface ClientSyncTx {
   getSyncState(): Promise<SyncStateRecord>;
   setSyncState(patch: Partial<SyncStateRecord>): Promise<void>;
   addConflict(conflict: LocalConflict): Promise<void>;
+  /** Removes a patient and the rows attached to it from the device (not from the server). */
+  evictPatient(patientId: string): Promise<void>;
 }
 
 export interface ClientSyncStore {
@@ -285,6 +288,10 @@ export class SyncClient {
 
       await this.opts.store.transaction(async (tx) => {
         for (const change of response.changes) {
+          if (change.evict) {
+            if (change.entity === 'patient') await tx.evictPatient(change.entityId);
+            continue;
+          }
           await applyRemote(
             tx,
             change.entity as EntityName,
@@ -324,7 +331,7 @@ export async function applyLocal(tx: ClientSyncTx, op: Operation): Promise<void>
   const command = getCommand(op.command);
   if (!command) throw new AppError('SYNC_UNKNOWN_COMMAND');
   const entity = command.entity;
-  const payload = op.payload as Record<string, unknown>;
+  const payload = mergeablePayload(command, op.payload as Record<string, unknown>);
   const existing = await tx.getEntity(entity, op.entityId);
 
   if (command.kind === 'update' || (command.kind === 'create' && existing)) {

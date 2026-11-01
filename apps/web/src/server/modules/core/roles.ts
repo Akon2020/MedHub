@@ -4,11 +4,18 @@ import {
   changedFields,
   grantChanges,
   isPrivilegedRole,
+  isSensitivity,
   type RoleCreateInput,
   type RoleGrant,
   type RoleUpdateInput,
 } from '@medhub/domain';
-import { AppError, PRIVILEGED_PERMISSIONS, uuidv7, type PermissionScope } from '@medhub/shared';
+import {
+  AppError,
+  PRIVILEGED_PERMISSIONS,
+  uuidv7,
+  type PatientSensitivity,
+  type PermissionScope,
+} from '@medhub/shared';
 import { and, asc, eq, gt, isNull, or } from 'drizzle-orm';
 import { database } from '../../platform/db';
 import { loadPermissions, requirePermission } from '../../platform/permissions';
@@ -29,6 +36,8 @@ export type RoleView = {
   version: number;
   members: number;
   grants: RoleGrant[];
+  /** Explicit `sensitivity_max` of the patient:read grant, null for the default rule. */
+  sensitivityMax: PatientSensitivity | null;
 };
 
 export type RolesOverview = { roles: RoleView[]; canManage: boolean };
@@ -47,18 +56,43 @@ async function grantsOf(tx: Tx, roleId: string): Promise<RoleGrant[]> {
   return rows.map((r) => ({ key: r.key, scope: r.scope as PermissionScope }));
 }
 
+const sensitivityOf = (conditions: Record<string, unknown>): PatientSensitivity | null =>
+  isSensitivity(conditions.sensitivity_max) ? conditions.sensitivity_max : null;
+
+async function sensitivityMaxOf(tx: Tx, roleId: string): Promise<PatientSensitivity | null> {
+  const [row] = await tx
+    .select({ conditions: schema.rolePermission.conditions })
+    .from(schema.rolePermission)
+    .where(
+      and(
+        eq(schema.rolePermission.roleId, roleId),
+        eq(schema.rolePermission.permissionKey, 'patient:read'),
+      ),
+    )
+    .limit(1);
+  return row ? sensitivityOf(row.conditions) : null;
+}
+
 async function writeGrants(
   tx: Tx,
   tenantId: string,
   roleId: string,
   grants: readonly RoleGrant[],
+  sensitivityMax: PatientSensitivity | null,
 ): Promise<void> {
   // Configuration rows: the audit trail keeps every change (added, removed, rescoped).
   await tx.delete(schema.rolePermission).where(eq(schema.rolePermission.roleId, roleId));
   if (grants.length === 0) return;
-  await tx
-    .insert(schema.rolePermission)
-    .values(grants.map((g) => ({ tenantId, roleId, permissionKey: g.key, scope: g.scope })));
+  await tx.insert(schema.rolePermission).values(
+    grants.map((g) => ({
+      tenantId,
+      roleId,
+      permissionKey: g.key,
+      scope: g.scope,
+      conditions:
+        g.key === 'patient:read' && sensitivityMax ? { sensitivity_max: sensitivityMax } : {},
+    })),
+  );
 }
 
 async function manage<T>(ctx: RequestContext, fn: (tx: Tx) => Promise<T>): Promise<T> {
@@ -80,6 +114,7 @@ export async function listRoles(ctx: RequestContext): Promise<RolesOverview> {
         roleId: schema.rolePermission.roleId,
         key: schema.rolePermission.permissionKey,
         scope: schema.rolePermission.scope,
+        conditions: schema.rolePermission.conditions,
       })
       .from(schema.rolePermission)
       .orderBy(asc(schema.rolePermission.permissionKey));
@@ -108,6 +143,9 @@ export async function listRoles(ctx: RequestContext): Promise<RolesOverview> {
         grants: grants
           .filter((g) => g.roleId === r.id)
           .map((g) => ({ key: g.key, scope: g.scope as PermissionScope })),
+        sensitivityMax: sensitivityOf(
+          grants.find((g) => g.roleId === r.id && g.key === 'patient:read')?.conditions ?? {},
+        ),
       })),
     };
   });
@@ -122,6 +160,7 @@ export async function createRole(
   try {
     return await manage(ctx, async (tx) => {
       let grants: RoleGrant[] = [];
+      let sensitivityMax: PatientSensitivity | null = null;
       if (input.copyFromRoleId) {
         const [source] = await tx
           .select({ id: schema.role.id })
@@ -130,6 +169,7 @@ export async function createRole(
           .limit(1);
         if (!source) throw new AppError('NOT_FOUND', 404);
         grants = await grantsOf(tx, source.id);
+        sensitivityMax = await sensitivityMaxOf(tx, source.id);
       }
       const privileged = isPrivilegedRole(
         null,
@@ -145,7 +185,7 @@ export async function createRole(
         isPrivileged: privileged,
         requiresMfa: privileged || input.requiresMfa,
       });
-      await writeGrants(tx, ctx.tenantId, roleId, grants);
+      await writeGrants(tx, ctx.tenantId, roleId, grants, sensitivityMax);
       await appendAudit(tx, {
         tenantId: ctx.tenantId,
         userId: ctx.userId,
@@ -188,6 +228,10 @@ export async function updateRole(
     if (!role) throw new AppError('NOT_FOUND', 404);
     const before = await grantsOf(tx, role.id);
     const changes = grantChanges(before, input.grants);
+    const sensitivityBefore = await sensitivityMaxOf(tx, role.id);
+    const sensitivityAfter =
+      input.sensitivityMax === undefined ? sensitivityBefore : input.sensitivityMax;
+    const sensitivityChanged = sensitivityAfter !== sensitivityBefore;
     const privileged = isPrivilegedRole(
       role.templateCode,
       input.grants.map((g) => g.key),
@@ -208,14 +252,17 @@ export async function updateRole(
       fields,
     );
     const grantsChanged =
-      changes.added.length + changes.removed.length + changes.rescoped.length > 0;
+      changes.added.length + changes.removed.length + changes.rescoped.length > 0 ||
+      sensitivityChanged;
     if (!grantsChanged && changedProfile.length === 0) return;
 
     await tx
       .update(schema.role)
       .set({ ...fields, version: role.version + 1, updatedAt: new Date() })
       .where(eq(schema.role.id, role.id));
-    if (grantsChanged) await writeGrants(tx, ctx.tenantId, role.id, input.grants);
+    if (grantsChanged) {
+      await writeGrants(tx, ctx.tenantId, role.id, input.grants, sensitivityAfter);
+    }
     if (changes.removed.length > 0) await keepOneAdministrator(tx);
 
     await appendAudit(tx, {
@@ -226,7 +273,14 @@ export async function updateRole(
       action: 'role_update',
       entity: 'role',
       entityId: role.id,
-      diff: { fields: changedProfile, ...changes, version: role.version + 1 },
+      diff: {
+        fields: changedProfile,
+        ...changes,
+        ...(sensitivityChanged
+          ? { sensitivityMax: { from: sensitivityBefore, to: sensitivityAfter } }
+          : {}),
+        version: role.version + 1,
+      },
     });
     const sensitive = [...changes.added, ...changes.removed].filter((k) =>
       PRIVILEGED_PERMISSIONS.has(k),

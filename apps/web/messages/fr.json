@@ -692,7 +692,18 @@
       "withdrawText": "Le décès déclaré le {date} sera retiré. La déclaration reste visible dans l'historique.",
       "withdrawReason": "Motif de l'annulation",
       "withdrawAction": "Retirer la déclaration",
-      "cancel": "Annuler"
+      "cancel": "Annuler",
+      "sensitivity": {
+        "normal": "Normal",
+        "staff": "Membre du personnel",
+        "vip": "Personnalité",
+        "restricted": "Accès restreint"
+      },
+      "sensitivityAction": "Sensibilité du dossier",
+      "sensitivityText": "Un dossier sensible n'est ouvert qu'aux rôles dont le niveau le permet ; les autres postes le retirent à la prochaine synchronisation.",
+      "sensitivityLevel": "Niveau",
+      "sensitivityReason": "Motif",
+      "sensitivitySave": "Enregistrer le niveau"
     }
   },
   "diagnostic": {
@@ -762,7 +773,8 @@
     "PAT_DEATH_REASON_REQUIRED": "Indiquez le motif de l'annulation.",
     "PAT_PROVISIONAL_KIND": "Précisez le type de dossier provisoire.",
     "PAT_NOT_FOUND": "Ce patient est introuvable sur le serveur.",
-    "PAT_ALREADY_MERGED": "L'un des deux dossiers a déjà été fusionné."
+    "PAT_ALREADY_MERGED": "L'un des deux dossiers a déjà été fusionné.",
+    "PAT_SENSITIVE": "Ce dossier est protégé : votre rôle ne permet pas de l'ouvrir."
   },
   "account": {
     "title": "Mon compte",
@@ -1165,7 +1177,8 @@
         "code": "Code",
         "description": "Description",
         "requiresMfa": "Double authentification obligatoire",
-        "copyFrom": "Partir de"
+        "copyFrom": "Partir de",
+        "sensitivityMax": "Dossiers sensibles accessibles"
       },
       "codeHint": "Lettres minuscules, chiffres et _ ; ne pourra plus changer.",
       "emptyRole": "Un rôle vide",
@@ -1299,7 +1312,17 @@
         "simulate": "Simuler"
       },
       "copyCodeSuffix": "copie",
-      "copyName": "{name} (copie)"
+      "copyName": "{name} (copie)",
+      "sensitivity": {
+        "default": "Règle par défaut",
+        "hint": "Par défaut, un rôle n'ouvre que les dossiers normaux, sauf s'il peut lui-même marquer la sensibilité : il les ouvre alors tous. Chaque niveau inclut les précédents.",
+        "levels": {
+          "normal": "Dossiers normaux seulement",
+          "staff": "Jusqu'aux membres du personnel",
+          "vip": "Jusqu'aux personnalités",
+          "restricted": "Tous, y compris l'accès restreint"
+        }
+      }
     },
     "reference": {
       "title": "Référentiels",

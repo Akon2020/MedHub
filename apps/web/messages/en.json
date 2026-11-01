@@ -692,7 +692,18 @@
       "withdrawText": "The death recorded on {date} will be withdrawn. The record stays visible in the history.",
       "withdrawReason": "Reason for withdrawal",
       "withdrawAction": "Withdraw",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "sensitivity": {
+        "normal": "Normal",
+        "staff": "Staff member",
+        "vip": "Public figure",
+        "restricted": "Restricted access"
+      },
+      "sensitivityAction": "Record sensitivity",
+      "sensitivityText": "A sensitive record only opens for roles whose level allows it; other devices drop it at their next synchronisation.",
+      "sensitivityLevel": "Level",
+      "sensitivityReason": "Reason",
+      "sensitivitySave": "Save the level"
     }
   },
   "diagnostic": {
@@ -762,7 +773,8 @@
     "PAT_DEATH_REASON_REQUIRED": "Give the reason for the withdrawal.",
     "PAT_PROVISIONAL_KIND": "Specify the kind of provisional record.",
     "PAT_NOT_FOUND": "This patient cannot be found on the server.",
-    "PAT_ALREADY_MERGED": "One of the two records was already merged."
+    "PAT_ALREADY_MERGED": "One of the two records was already merged.",
+    "PAT_SENSITIVE": "This record is protected: your role cannot open it."
   },
   "account": {
     "title": "My account",
@@ -1165,7 +1177,8 @@
         "code": "Code",
         "description": "Description",
         "requiresMfa": "Two-factor authentication required",
-        "copyFrom": "Start from"
+        "copyFrom": "Start from",
+        "sensitivityMax": "Sensitive records accessible"
       },
       "codeHint": "Lower-case letters, digits and _; cannot change later.",
       "emptyRole": "An empty role",
@@ -1299,7 +1312,17 @@
         "simulate": "Simulate"
       },
       "copyCodeSuffix": "copy",
-      "copyName": "{name} (copy)"
+      "copyName": "{name} (copy)",
+      "sensitivity": {
+        "default": "Default rule",
+        "hint": "By default a role only opens normal records, unless it may mark sensitivity itself: it then opens all of them. Each level includes the previous ones.",
+        "levels": {
+          "normal": "Normal records only",
+          "staff": "Up to staff members",
+          "vip": "Up to public figures",
+          "restricted": "All, including restricted access"
+        }
+      }
     },
     "reference": {
       "title": "Reference data",

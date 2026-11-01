@@ -15,6 +15,7 @@ import {
   DeathPanel,
   PatientStatusBadges,
   ProvisionalPanel,
+  SensitivityPanel,
   deceasedAtOf,
 } from '@/features/patients/patient-status';
 import { initialsOf, isMerged, toPatientView } from '@/features/patients/patient-helpers';
@@ -154,6 +155,7 @@ function PatientRecord() {
             patient={patient}
             cardToken={typeof raw.cardToken === 'string' ? raw.cardToken : null}
           />
+          <SensitivityPanel patientId={patient.id} data={raw} />
           <DeathPanel patientId={patient.id} data={raw} />
         </div>
       </section>

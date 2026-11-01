@@ -30,6 +30,7 @@ export const DEVICE_STATUSES = ['active', 'revoked', 'lost'] as const;
 export const SEXES = ['M', 'F', 'U'] as const;
 export type Sex = (typeof SEXES)[number];
 export const PATIENT_SENSITIVITIES = ['normal', 'staff', 'vip', 'restricted'] as const;
+export type PatientSensitivity = (typeof PATIENT_SENSITIVITIES)[number];
 export const CLINICAL_STATUSES = ['active', 'superseded', 'entered_in_error'] as const;
 export type ClinicalStatus = (typeof CLINICAL_STATUSES)[number];
 

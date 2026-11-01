@@ -1,5 +1,5 @@
 import type { EntityName } from '@medhub/domain';
-import { phoneticKey, trigrams } from '@medhub/domain';
+import { ENTITIES, phoneticKey, trigrams } from '@medhub/domain';
 import type {
   ClientSyncStore,
   ClientSyncTx,
@@ -11,6 +11,11 @@ import type {
 } from '@medhub/sync/client';
 import { decryptJson, encryptJson, hmacToken, type LocalKeys } from './crypto';
 import type { EntityRecord, MedHubLocalDb, OutboxRecord, SearchToken } from './database';
+
+/** Entities whose rows belong to a patient and leave the device with it. */
+const PATIENT_ROW_ENTITIES = (Object.keys(ENTITIES) as EntityName[]).filter(
+  (name) => name !== 'patient' && ENTITIES[name].patientIdOf,
+);
 
 const DEFAULT_STATE: SyncStateRecord = {
   cursor: 0,
@@ -50,6 +55,7 @@ export class EncryptedClientStore implements ClientSyncStore {
     const outboxPut = new Map<string, OutboxItem>();
     const outboxDelete = new Set<string>();
     const conflicts: LocalConflict[] = [];
+    const evicted = new Set<string>();
     let statePatch: Partial<SyncStateRecord> = {};
 
     const loadOutbox = async (opId: string): Promise<OutboxItem | null> => {
@@ -64,10 +70,19 @@ export class EncryptedClientStore implements ClientSyncStore {
       getEntity: async (entity, id) => {
         const staged = entities.get(`${entity}:${id}`);
         if (staged) return structuredClone(staged.state);
+        if (entity === 'patient' && evicted.has(id)) return null;
         return this.readEntity(entity, id);
       },
       putEntity: async (entity, state) => {
+        if (entity === 'patient') evicted.delete(state.id);
         entities.set(`${entity}:${state.id}`, { entity, state: structuredClone(state) });
+      },
+      evictPatient: async (patientId) => {
+        evicted.add(patientId);
+        for (const [key, staged] of entities) {
+          const owner = ENTITIES[staged.entity].patientIdOf?.(staged.state.data, staged.state.id);
+          if (owner === patientId) entities.delete(key);
+        }
       },
       addOutbox: async (item) => {
         outboxDelete.delete(item.opId);
@@ -124,6 +139,13 @@ export class EncryptedClientStore implements ClientSyncStore {
       'rw',
       [this.db.entities, this.db.outbox, this.db.syncState, this.db.conflicts, this.db.searchIndex],
       async () => {
+        for (const patientId of evicted) {
+          await this.db.entities.delete(`patient:${patientId}`);
+          for (const name of PATIENT_ROW_ENTITIES) {
+            await this.db.entities.where('[entity+patientId]').equals([name, patientId]).delete();
+          }
+          await this.db.searchIndex.where('entityId').equals(patientId).delete();
+        }
         if (entityRecords.length) await this.db.entities.bulkPut(entityRecords);
         for (const t of tokens) {
           await this.db.searchIndex.where('entityId').equals(t.entityId).delete();

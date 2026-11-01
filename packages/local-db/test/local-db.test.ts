@@ -125,6 +125,34 @@ describe('encrypted local database', () => {
     expect(second?.data.familyName).toBe('Kabwe');
   });
 
+  it('drops an evicted patient with its rows and its search tokens', async () => {
+    const ids = identity();
+    const { unlocked } = await initializeLocal(openLocalDb(ids), '482913', ITERATIONS);
+    const client = clientFor(unlocked, new MemoryServerStore(), ids);
+    const kept = await client.dispatch('patient.register', {
+      mrn: 'KIN-AB-26-00010',
+      familyName: 'Kabwe',
+      sex: 'M',
+    });
+    const { entityId } = await client.dispatch('patient.register', {
+      mrn: 'KIN-AB-26-00011',
+      familyName: 'Mbuyi',
+      sex: 'F',
+    });
+    await client.dispatch('vital_sign.record', {
+      patientId: entityId,
+      code: 'pulse',
+      value: 72,
+      unit: '/min',
+      measuredAt: '2026-10-29T08:00:00.000Z',
+    });
+    await unlocked.store.transaction((tx) => tx.evictPatient(entityId));
+    expect(await unlocked.store.readEntity('patient', entityId)).toBeNull();
+    expect(await unlocked.store.readEntitiesByPatient('vital_sign', entityId)).toEqual([]);
+    expect(await unlocked.store.searchPatients('Mbuyi')).toEqual([]);
+    expect(await unlocked.store.readEntity('patient', kept.entityId)).not.toBeNull();
+  });
+
   it('refuses a wrong PIN and keeps unsent work when blocked', async () => {
     const ids = identity();
     const db = openLocalDb(ids);

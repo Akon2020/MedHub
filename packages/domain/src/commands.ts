@@ -4,6 +4,7 @@ import { checkVitalPlausibility, vitalSignRecordPayload } from './dpi/vital-sign
 import {
   patientRegisterPayload,
   patientSearchFields,
+  patientSensitivityPayload,
   patientUpdatePayload,
   type PatientNameParts,
 } from './pat/commands';
@@ -19,6 +20,8 @@ export type EntityDefinition = {
   derive?: (data: Record<string, unknown>) => Record<string, unknown>;
   /** Keys used by the pull filter to decide which devices receive a change. */
   scopeKeys: (data: Record<string, unknown>, entityId: string) => string[];
+  /** The patient a row belongs to: it follows that patient's access rules and scope. */
+  patientIdOf?: (data: Record<string, unknown>, entityId: string) => string | null;
 };
 
 export const ENTITIES: Record<EntityName, EntityDefinition> = {
@@ -35,11 +38,13 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
         },
       ),
     scopeKeys: (_data, id) => [`patient:${id}`],
+    patientIdOf: (_data, id) => id,
   },
   vital_sign: {
     name: 'vital_sign',
     strategy: 'append_only',
     scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
   },
   stock_movement: {
     name: 'stock_movement',
@@ -59,6 +64,8 @@ export type CommandDefinition<S extends z.ZodType = z.ZodType> = {
   onlineOnly: boolean;
   /** Business rule check shared by client (before dispatch) and server (before apply). */
   check?: (payload: z.infer<S>) => string | null;
+  /** Payload keys kept in the operation log only, never merged into the entity. */
+  transientFields?: readonly string[];
   /** A clinical act on a patient: refused after the patient's recorded death. */
   patientAct?: (payload: z.infer<S>) => { patientId: string; at: string };
 };
@@ -91,6 +98,16 @@ export const COMMANDS = {
     payloadSchema: patientDeathPayload,
     permission: 'patient:mark_deceased',
     onlineOnly: false,
+    transientFields: ['correctionReason'],
+  }),
+  'patient.set_sensitivity': define({
+    name: 'patient.set_sensitivity',
+    entity: 'patient',
+    kind: 'update',
+    payloadSchema: patientSensitivityPayload,
+    permission: 'patient:mark_sensitive',
+    onlineOnly: false,
+    transientFields: ['sensitivityReason'],
   }),
   'vital_sign.record': define({
     name: 'vital_sign.record',
@@ -127,6 +144,17 @@ export function deathRefusal(
   if (!command.patientAct || !patient) return null;
   const act = command.patientAct(payload as never);
   return blockedByDeath(patient.deceasedAt, act.at) ? 'PAT_DECEASED' : null;
+}
+
+/** The part of a payload that is merged into the entity. */
+export function mergeablePayload(
+  command: CommandDefinition,
+  payload: Record<string, unknown>,
+): Record<string, unknown> {
+  if (!command.transientFields?.length) return payload;
+  const out = { ...payload };
+  for (const key of command.transientFields) delete out[key];
+  return out;
 }
 
 export function getCommand(name: string): CommandDefinition | undefined {

@@ -665,3 +665,22 @@ export async function updateServerPatient(
 export async function patientState(tx: Tx, patientId: string): Promise<EntityState | null> {
   return getEntity(tx, 'patient', patientId);
 }
+
+/** Access level of each listed patient, for the pull filter. */
+export async function patientSensitivities(
+  db: Db,
+  ctx: Ctx,
+  ids: readonly string[],
+): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map();
+  const rows = await withTenant(
+    db,
+    { tenantId: ctx.tenantId, userId: ctx.userId, deviceId: ctx.deviceId },
+    (tx) =>
+      tx
+        .select({ id: schema.patient.id, sensitivity: schema.patient.sensitivity })
+        .from(schema.patient)
+        .where(inArray(schema.patient.id, [...ids])),
+  );
+  return new Map(rows.map((r) => [r.id, r.sensitivity]));
+}
