@@ -100,6 +100,8 @@ export function IdentityCard({ patientId, data }: { patientId: string; data: Dat
   const [draft, setDraft] = useState<Draft>(() => draftOf(data));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const provisional = data.isProvisional === true;
+  const [identified, setIdentified] = useState(true);
   const current = draftOf(data);
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
@@ -109,9 +111,10 @@ export function IdentityCard({ patientId, data }: { patientId: string; data: Dat
     event.preventDefault();
     const before = normalized(current);
     const after = normalized(draft);
-    const changes = Object.fromEntries(
+    const changes: Data = Object.fromEntries(
       Object.entries(after).filter(([k, v]) => !same(before[k], v)),
     );
+    if (provisional && identified) changes.isProvisional = false;
     if (Object.keys(changes).length === 0) {
       setEditing(false);
       return;
@@ -189,11 +192,12 @@ export function IdentityCard({ patientId, data }: { patientId: string; data: Dat
             onClick={() => {
               setDraft(draftOf(data));
               setMessage(null);
+              setIdentified(true);
               setEditing(true);
             }}
           >
             <Pencil />
-            {t('edit')}
+            {provisional ? t('identify') : t('edit')}
           </Button>
         )}
       </CardHeader>
@@ -314,6 +318,17 @@ export function IdentityCard({ patientId, data }: { patientId: string; data: Dat
                 </div>
               ))}
             </fieldset>
+            {provisional && (
+              <label className="flex items-start gap-2 rounded-lg bg-warning-soft px-3 py-2">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4 accent-[var(--primary)]"
+                  checked={identified}
+                  onChange={(e) => setIdentified(e.target.checked)}
+                />
+                <span>{t('identifiedConfirm')}</span>
+              </label>
+            )}
             <div className="flex flex-wrap gap-2">
               <Button type="submit" size="sm" disabled={busy || draft.familyName.trim() === ''}>
                 {busy ? <Loader2 className="animate-spin" /> : <Check />}
@@ -351,8 +366,15 @@ type Change = {
   device: string | null;
 };
 
-function display(value: unknown): string {
+const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+
+function display(
+  value: unknown,
+  labels: { yes: string; no: string; instant: (iso: string) => string },
+): string {
   if (value === null || value === undefined || value === '') return '·';
+  if (typeof value === 'boolean') return value ? labels.yes : labels.no;
+  if (typeof value === 'string' && ISO_INSTANT.test(value)) return labels.instant(value);
   if (typeof value === 'object') {
     return (
       Object.values(value as Record<string, unknown>)
@@ -371,6 +393,12 @@ export function FieldHistory({ patientId }: { patientId: string }) {
   const [changes, setChanges] = useState<Change[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const labels = {
+    yes: t('yes'),
+    no: t('no'),
+    instant: (iso: string) =>
+      format.dateTime(new Date(iso), { dateStyle: 'medium', timeStyle: 'short' }),
+  };
 
   async function load() {
     setBusy(true);
@@ -425,9 +453,11 @@ export function FieldHistory({ patientId }: { patientId: string }) {
                   {c.source !== 'sync' && <Badge variant="muted">{t(`sources.${c.source}`)}</Badge>}
                 </span>
                 <span>
-                  <span className="text-muted-foreground line-through">{display(c.oldValue)}</span>
+                  <span className="text-muted-foreground line-through">
+                    {display(c.oldValue, labels)}
+                  </span>
                   {' → '}
-                  {display(c.newValue)}
+                  {display(c.newValue, labels)}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {format.dateTime(new Date(c.changedAt), {

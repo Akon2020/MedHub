@@ -7,6 +7,7 @@ import {
   patientUpdatePayload,
   type PatientNameParts,
 } from './pat/commands';
+import { blockedByDeath, patientDeathPayload } from './pat/lifecycle';
 import { stockMovementRecordPayload } from './phar/stock';
 
 export type EntityName = 'patient' | 'vital_sign' | 'stock_movement';
@@ -58,6 +59,8 @@ export type CommandDefinition<S extends z.ZodType = z.ZodType> = {
   onlineOnly: boolean;
   /** Business rule check shared by client (before dispatch) and server (before apply). */
   check?: (payload: z.infer<S>) => string | null;
+  /** A clinical act on a patient: refused after the patient's recorded death. */
+  patientAct?: (payload: z.infer<S>) => { patientId: string; at: string };
 };
 
 function define<S extends z.ZodType>(def: CommandDefinition<S>): CommandDefinition<S> {
@@ -81,6 +84,14 @@ export const COMMANDS = {
     permission: 'patient:update',
     onlineOnly: false,
   }),
+  'patient.mark_deceased': define({
+    name: 'patient.mark_deceased',
+    entity: 'patient',
+    kind: 'update',
+    payloadSchema: patientDeathPayload,
+    permission: 'patient:mark_deceased',
+    onlineOnly: false,
+  }),
   'vital_sign.record': define({
     name: 'vital_sign.record',
     entity: 'vital_sign',
@@ -92,6 +103,7 @@ export const COMMANDS = {
       const result = checkVitalPlausibility(p);
       return result.ok ? null : result.reason;
     },
+    patientAct: (p) => ({ patientId: p.patientId, at: p.measuredAt }),
   }),
   'stock_movement.record': define({
     name: 'stock_movement.record',
@@ -104,7 +116,18 @@ export const COMMANDS = {
 } as const;
 
 export type CommandName = keyof typeof COMMANDS;
-export type CommandPayload<N extends CommandName> = z.infer<(typeof COMMANDS)[N]['payloadSchema']>;
+export type CommandPayload<N extends CommandName> = z.input<(typeof COMMANDS)[N]['payloadSchema']>;
+
+/** Refusal code when a clinical act targets a patient already declared dead. */
+export function deathRefusal(
+  command: CommandDefinition,
+  payload: unknown,
+  patient: Record<string, unknown> | null | undefined,
+): string | null {
+  if (!command.patientAct || !patient) return null;
+  const act = command.patientAct(payload as never);
+  return blockedByDeath(patient.deceasedAt, act.at) ? 'PAT_DECEASED' : null;
+}
 
 export function getCommand(name: string): CommandDefinition | undefined {
   return (COMMANDS as Record<string, CommandDefinition>)[name];

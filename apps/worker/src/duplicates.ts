@@ -48,7 +48,8 @@ export async function detectDuplicates(
       .from(schema.patient)
       .where(eq(schema.patient.id, patientId))
       .limit(1);
-    if (!patient || patient.mergedIntoId || patient.deletedAt) return 0;
+    // A provisional name ("unknown man, about 30") says nothing about identity.
+    if (!patient || patient.mergedIntoId || patient.deletedAt || patient.isProvisional) return 0;
     const threshold = await candidateThreshold(tx);
     const firstKey = patient.phoneticKey.split(' ')[0] ?? '';
     const phoneTail = (patient.phone ?? '').replace(/\D/g, '').slice(-9);
@@ -60,6 +61,7 @@ export async function detectDuplicates(
           ne(schema.patient.id, patient.id),
           isNull(schema.patient.mergedIntoId),
           isNull(schema.patient.deletedAt),
+          eq(schema.patient.isProvisional, false),
           or(
             firstKey ? like(schema.patient.phoneticKey, `${firstKey}%`) : sql`false`,
             phoneTail.length === 9

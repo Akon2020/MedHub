@@ -139,7 +139,12 @@
         "tab": "Laboratory",
         "title": "Laboratory",
         "text": "Orders, specimen collection, result entry and validation, critical values flagged immediately.",
-        "points": ["Labels and specimens", "Two-level validation", "Reference ranges", "Reports"]
+        "points": [
+          "Labels and specimens",
+          "Two-level validation",
+          "Reference ranges",
+          "Reports"
+        ]
       }
     },
     "why": {
@@ -446,7 +451,8 @@
         "birth_year": "same birth year",
         "phone": "same phone",
         "parent": "same father or mother",
-        "sex_differs": "different sex"
+        "sex_differs": "different sex",
+        "manual": "Reported by a user"
       }
     },
     "queue": {
@@ -528,6 +534,21 @@
       "badge": "Not on this device",
       "open": "Open on this device",
       "error": "The record could not be downloaded. Check the connection."
+    },
+    "provisional": {
+      "mode": "Registration type",
+      "modes": {
+        "known": "Known identity",
+        "unknown": "Unknown",
+        "newborn": "Newborn"
+      },
+      "hints": {
+        "unknown": "Unidentified patient (emergency): enter the sex and apparent age. The record is completed or merged as soon as the identity is known.",
+        "newborn": "The newborn gets a provisional record under the mother's name, completed once the baby is named."
+      },
+      "motherName": "Mother's name",
+      "unknownName": "Unknown {sex, select, F {woman} M {man} other {person}}{age, select, none {} other {, about {age}}}, arrived {arrived}",
+      "newbornName": "Newborn of {mother}"
     }
   },
   "patient": {
@@ -564,7 +585,8 @@
         "glucose": "Blood glucose",
         "pain": "Pain",
         "diuresis": "Diuresis"
-      }
+      },
+      "deceasedReadOnly": "Patient deceased: no new vital sign dated after the death. An earlier measurement can still be corrected."
     },
     "history": "History",
     "trend": "Temperature trend",
@@ -598,7 +620,9 @@
         "contact": "Person to contact",
         "sensitivity": "Sensitivity",
         "mergedIntoId": "Merge",
-        "cardToken": "Patient card"
+        "cardToken": "Patient card",
+        "isProvisional": "Provisional",
+        "deceasedAt": "Death"
       },
       "address": {
         "province": "Province",
@@ -632,7 +656,11 @@
         "merge": "merge",
         "unmerge": "merge undone",
         "review": "review"
-      }
+      },
+      "identify": "Identify the patient",
+      "identifiedConfirm": "Identity confirmed: the record is no longer provisional.",
+      "yes": "Yes",
+      "no": "No"
     },
     "card": {
       "print": "Print the card",
@@ -643,6 +671,28 @@
       "born": "born {date}",
       "note": "Show this card at every visit. The QR code holds no personal information.",
       "error": "The card could not be prepared. Try again."
+    },
+    "status": {
+      "provisional": "Provisional",
+      "newborn": "Newborn, provisional",
+      "deceased": "Died on {date}",
+      "provisionalTitle": "Provisional record",
+      "provisionalText": "Complete the identity as soon as it is known (Identity card, \"Identify the patient\"). If this person already has a record, find it and report it: an authorised user will merge both records from the duplicates queue.",
+      "knownSearch": "Search for the existing record",
+      "search": "Search",
+      "noResult": "No matching record on this device.",
+      "report": "Same person",
+      "reported": "Report saved: the pair is waiting in the duplicates queue.",
+      "reportOffline": "Reporting needs a connection.",
+      "declare": "Record the death",
+      "declareText": "Once recorded, the record no longer accepts new clinical acts dated after the death.",
+      "declareAt": "Date and time of death",
+      "declareAction": "Confirm the death",
+      "withdraw": "Withdraw the death record",
+      "withdrawText": "The death recorded on {date} will be withdrawn. The record stays visible in the history.",
+      "withdrawReason": "Reason for withdrawal",
+      "withdrawAction": "Withdraw",
+      "cancel": "Cancel"
     }
   },
   "diagnostic": {
@@ -707,7 +757,12 @@
     "VALIDATION_FAILED": "Some information is invalid.",
     "DPI_VITAL_IMPLAUSIBLE": "Value outside plausible limits: a reason is required.",
     "NOT_FOUND": "Item not found.",
-    "UNKNOWN": "An unexpected error occurred."
+    "UNKNOWN": "An unexpected error occurred.",
+    "PAT_DECEASED": "Patient deceased: an act dated after the death cannot be recorded.",
+    "PAT_DEATH_REASON_REQUIRED": "Give the reason for the withdrawal.",
+    "PAT_PROVISIONAL_KIND": "Specify the kind of provisional record.",
+    "PAT_NOT_FOUND": "This patient cannot be found on the server.",
+    "PAT_ALREADY_MERGED": "One of the two records was already merged."
   },
   "account": {
     "title": "My account",

@@ -28,7 +28,7 @@ export async function findSimilar(
   const seen = new Map<string, SimilarPatient>();
   for (const query of queries) {
     for (const entity of await store.searchPatients(query, 30)) {
-      if (seen.has(entity.id) || isMerged(entity)) continue;
+      if (seen.has(entity.id) || isMerged(entity) || entity.data.isProvisional === true) continue;
       const d = entity.data;
       const { score, reasons } = duplicateScore(subject, {
         familyName: s(d.familyName) ?? '',

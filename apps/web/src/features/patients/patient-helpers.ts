@@ -13,6 +13,8 @@ export type PatientView = {
   phone: string | null;
   syncState: 'synced' | 'pending' | 'rejected';
   createdAt: string | null;
+  /** Provisional and death markers, in the shape the status badges read. */
+  status: { isProvisional: boolean; provisionalKind: string | null; deceasedAt: string | null };
 };
 
 const s = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 ? v : null);
@@ -47,6 +49,11 @@ export function toPatientView(entity: LocalEntity, now = new Date()): PatientVie
     phone: s(d.phone),
     syncState: entity.rejected ? 'rejected' : entity.version === 0 ? 'pending' : 'synced',
     createdAt: hlcInstant(entity.hlc),
+    status: {
+      isProvisional: d.isProvisional === true,
+      provisionalKind: s(d.provisionalKind),
+      deceasedAt: s(d.deceasedAt),
+    },
   };
 }
 

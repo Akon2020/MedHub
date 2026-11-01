@@ -28,6 +28,8 @@ type Duplicates = typeof import('@/server/modules/pat/duplicates');
 type Ctx = Parameters<Duplicates['listDuplicates']>[0];
 let duplicates: Duplicates;
 let candidateId = '';
+let knownIds: string[] = [];
+const provisionalId = uuidv7();
 
 function ctxFor(userId: string): Ctx {
   return { tenantId, userId, sessionId: uuidv7(), deviceId: null, mfaVerifiedAt: null };
@@ -70,6 +72,7 @@ describe.skipIf(!url)('duplicates queue against PostgreSQL', () => {
       await tx.insert(schema.rolePermission).values([
         { tenantId, roleId: reviewerRole, permissionKey: 'patient:merge' },
         { tenantId, roleId: clerkRole, permissionKey: 'patient:read' },
+        { tenantId, roleId: clerkRole, permissionKey: 'patient:update' },
       ]);
       await tx.insert(schema.userAccount).values([
         {
@@ -92,6 +95,18 @@ describe.skipIf(!url)('duplicates queue against PostgreSQL', () => {
         { id: uuidv7(), tenantId, userId: clerkId, roleId: clerkRole },
       ]);
       const ids = [uuidv7(), uuidv7()].sort();
+      knownIds = ids;
+      const unknown = { familyName: 'Inconnu homme 40 ans environ' };
+      await tx.insert(schema.patient).values({
+        id: provisionalId,
+        tenantId,
+        mrn: 'TST-P',
+        ...unknown,
+        sex: 'M',
+        isProvisional: true,
+        provisionalKind: 'unknown',
+        ...patientSearchFields(unknown),
+      });
       for (const [i, id] of ids.entries()) {
         const person = { familyName: 'Kabila', givenName: 'Jean', phone: '0991234567' };
         await tx.insert(schema.patient).values({
@@ -154,5 +169,33 @@ describe.skipIf(!url)('duplicates queue against PostgreSQL', () => {
       expect(audit.map((a) => a.action)).toEqual(['duplicate_dismissed']);
       expect((await verifyAuditChain(tx, tenantId)).ok).toBe(true);
     });
+  });
+
+  it('lets a user report a provisional record as a known patient, for review', async () => {
+    const [known, other] = knownIds as [string, string];
+    await expectCode(
+      duplicates.reportDuplicate(
+        ctxFor(reviewerId),
+        { patientId: provisionalId, otherId: known },
+        client,
+      ),
+      'PERMISSION_DENIED',
+    );
+    const first = await duplicates.reportDuplicate(
+      ctxFor(clerkId),
+      { patientId: provisionalId, otherId: known },
+      client,
+    );
+    const again = await duplicates.reportDuplicate(
+      ctxFor(clerkId),
+      { patientId: known, otherId: provisionalId },
+      client,
+    );
+    expect(again.candidateId).toBe(first.candidateId);
+    // A pair dismissed earlier comes back when a user insists it is one person.
+    await duplicates.reportDuplicate(ctxFor(clerkId), { patientId: known, otherId: other }, client);
+    const { pairs } = await duplicates.listDuplicates(ctxFor(reviewerId));
+    expect(pairs.map((p) => p.reasons)).toEqual([['manual'], ['manual']]);
+    expect(pairs.some((p) => p.id === candidateId)).toBe(true);
   });
 });

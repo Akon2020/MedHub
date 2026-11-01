@@ -1,6 +1,7 @@
 import {
   COMMANDS,
   ENTITIES,
+  deathRefusal,
   PATIENT_SENSITIVE_FIELDS,
   getCommand,
   stockBalance,
@@ -189,8 +190,15 @@ async function applyOperation(
       return applyCreate(tx, op, entity, payload);
     case 'update':
       return applyUpdate(tx, op, entity, payload);
-    case 'append':
+    case 'append': {
+      if (command.patientAct) {
+        const { patientId } = command.patientAct(payload as never);
+        const patient = await tx.getEntity('patient', patientId);
+        const refusal = deathRefusal(command, payload, patient?.data);
+        if (refusal) throw new Rejection(refusal);
+      }
       return applyAppend(tx, op, entity, payload);
+    }
   }
 }
 

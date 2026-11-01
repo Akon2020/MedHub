@@ -41,7 +41,15 @@ function localDateTimeValue(date: Date): string {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
 
-export function VitalsPanel({ patientId, vitals }: { patientId: string; vitals: VitalView[] }) {
+export function VitalsPanel({
+  patientId,
+  vitals,
+  deceasedAt = null,
+}: {
+  patientId: string;
+  vitals: VitalView[];
+  deceasedAt?: string | null;
+}) {
   const t = useTranslations('patient.vitals');
   const tErr = useTranslations('errors');
   const tc = useTranslations('common');
@@ -120,7 +128,7 @@ export function VitalsPanel({ patientId, vitals }: { patientId: string; vitals: 
           <Activity className="size-4 text-primary" aria-hidden />
           {t('title')}
         </CardTitle>
-        {!open && (
+        {!open && !deceasedAt && (
           <Button size="sm" onClick={() => setOpen(true)}>
             <Plus />
             {t('record')}
@@ -128,6 +136,11 @@ export function VitalsPanel({ patientId, vitals }: { patientId: string; vitals: 
         )}
       </CardHeader>
       <CardContent>
+        {deceasedAt && !open && (
+          <p className="mb-4 rounded-lg bg-muted px-3.5 py-2.5 text-sm text-muted-foreground">
+            {t('deceasedReadOnly')}
+          </p>
+        )}
         {open && (
           <form
             onSubmit={onSubmit}

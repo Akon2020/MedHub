@@ -1,5 +1,6 @@
 import { SEXES, PATIENT_SENSITIVITIES } from '@medhub/shared';
 import { z } from 'zod';
+import { PROVISIONAL_KINDS } from './lifecycle';
 import { normalizeSearchText, phoneticKey } from './search';
 
 const nameSchema = z.string().trim().min(1).max(120);
@@ -59,18 +60,22 @@ const demographicFields = {
     .nullish(),
 };
 
-export const patientRegisterPayload = z.object({
-  mrn: z.string().trim().min(1).max(40),
-  familyName: nameSchema,
-  middleName: optionalName,
-  givenName: optionalName,
-  sex: z.enum(SEXES),
-  birthDate: dateSchema.nullish(),
-  birthDateEstimated: z.boolean().default(false),
-  phone: phoneSchema,
-  sensitivity: z.enum(PATIENT_SENSITIVITIES).default('normal'),
-  ...demographicFields,
-});
+export const patientRegisterPayload = z
+  .object({
+    mrn: z.string().trim().min(1).max(40),
+    familyName: nameSchema,
+    middleName: optionalName,
+    givenName: optionalName,
+    sex: z.enum(SEXES),
+    birthDate: dateSchema.nullish(),
+    birthDateEstimated: z.boolean().default(false),
+    phone: phoneSchema,
+    sensitivity: z.enum(PATIENT_SENSITIVITIES).default('normal'),
+    isProvisional: z.boolean().default(false),
+    provisionalKind: z.enum(PROVISIONAL_KINDS).nullish(),
+    ...demographicFields,
+  })
+  .refine((p) => p.isProvisional === Boolean(p.provisionalKind), 'PAT_PROVISIONAL_KIND');
 export type PatientRegisterPayload = z.infer<typeof patientRegisterPayload>;
 
 /** Fields a `patient.update` may change, merged field by field (last HLC wins). */
@@ -92,6 +97,8 @@ export const PATIENT_MERGEABLE_FIELDS = [
   'motherName',
   'contact',
   'cardToken',
+  'isProvisional',
+  'deceasedAt',
 ] as const;
 export type PatientMergeableField = (typeof PATIENT_MERGEABLE_FIELDS)[number];
 
@@ -115,6 +122,8 @@ export const patientUpdatePayload = z
     birthDateEstimated: z.boolean().optional(),
     phone: phoneSchema,
     sensitivity: z.enum(PATIENT_SENSITIVITIES).optional(),
+    /** Identification of a provisional record; a known patient never becomes provisional. */
+    isProvisional: z.literal(false).optional(),
     ...demographicFields,
   })
   .refine((p) => Object.values(p).some((v) => v !== undefined), 'PAT_UPDATE_EMPTY');

@@ -2,6 +2,7 @@ export {
   conflictResolveRoute,
   conflictsRoute,
   duplicateDismissRoute,
+  duplicateReportRoute,
   duplicatesRoute,
   historyRoute,
   mergeRoute,

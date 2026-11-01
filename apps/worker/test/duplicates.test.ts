@@ -24,7 +24,7 @@ type Person = {
   phone: string | null;
 };
 
-async function addPatient(person: Person): Promise<string> {
+async function addPatient(person: Person, isProvisional = false): Promise<string> {
   const id = uuidv7();
   await withTenant(handle.db, { tenantId, userId: null }, (tx) =>
     tx.insert(schema.patient).values({
@@ -37,6 +37,8 @@ async function addPatient(person: Person): Promise<string> {
       birthDate: person.birthDate,
       birthDateEstimated: person.birthDateEstimated ?? false,
       phone: person.phone,
+      isProvisional,
+      provisionalKind: isProvisional ? 'unknown' : null,
       ...patientSearchFields({ ...person }),
     }),
   );
@@ -98,5 +100,19 @@ describe.skipIf(!url)('duplicate detection (scenario P3)', () => {
       status: 'open',
     });
     expect(pairs[0]?.reasons).toEqual(['phonetic', 'name_similar', 'birth_year', 'phone']);
+  });
+
+  it('never compares provisional records, whose name describes nobody', async () => {
+    const person = {
+      familyName: 'Inconnu homme 30 ans environ',
+      givenName: '',
+      sex: 'M',
+      birthDate: '1996-01-01',
+      birthDateEstimated: true,
+    };
+    const one = await addPatient({ ...person, phone: null }, true);
+    const two = await addPatient({ ...person, phone: null }, true);
+    expect(await detectDuplicates(handle.db, tenantId, one)).toBe(0);
+    expect(await detectDuplicates(handle.db, tenantId, two)).toBe(0);
   });
 });

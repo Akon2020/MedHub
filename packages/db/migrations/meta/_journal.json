@@ -85,6 +85,13 @@
       "when": 1793524149829,
       "tag": "0011_s6_card",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793552383365,
+      "tag": "0012_s6_lifecycle",
+      "breakpoints": true
     }
   ]
 }

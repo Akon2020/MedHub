@@ -3,7 +3,7 @@ import { AppError } from '@medhub/shared';
 import { z } from 'zod';
 import { clientIp, defineRoute, json } from '../../platform/http';
 import { patientMergeSchema, patientUnmergeSchema } from '@medhub/domain';
-import { dismissDuplicate, listDuplicates } from './duplicates';
+import { dismissDuplicate, listDuplicates, reportDuplicate } from './duplicates';
 import { listPatientConflicts, patientHistory, resolvePatientConflict } from './history';
 import { listMerges, mergePatients, unmergePatients } from './merge';
 import { fetchPatient, searchPatients } from './search';
@@ -20,6 +20,13 @@ export const duplicateDismissRoute = defineRoute({
     await dismissDuplicate(ctx, body, { ip: clientIp(request) });
     return json({ ok: true });
   },
+});
+
+export const duplicateReportRoute = defineRoute({
+  route: 'patients.duplicates.report',
+  schema: z.object({ patientId: z.uuid(), otherId: z.uuid() }),
+  handler: async ({ request, body, ctx }) =>
+    json(await reportDuplicate(ctx, body, { ip: clientIp(request) })),
 });
 
 export const mergeRoute = defineRoute({

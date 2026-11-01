@@ -52,6 +52,8 @@ const TRACKED_FIELDS = [
   'motherName',
   'contact',
   'cardToken',
+  'isProvisional',
+  'deceasedAt',
   'mergedIntoId',
 ] as const;
 
@@ -120,6 +122,9 @@ const mappers = {
           motherName: row.motherName,
           contact: row.contact,
           cardToken: row.cardToken,
+          isProvisional: row.isProvisional,
+          provisionalKind: row.provisionalKind,
+          deceasedAt: row.deceasedAt?.toISOString(),
         }),
         fieldMeta: row.fieldMeta,
         hlc: row.hlc ?? '',
@@ -155,6 +160,9 @@ const mappers = {
         motherName: str(d.motherName),
         contact: record(d.contact),
         cardToken: str(d.cardToken),
+        isProvisional: d.isProvisional === true,
+        provisionalKind: str(d.provisionalKind),
+        deceasedAt: str(d.deceasedAt) ? new Date(String(d.deceasedAt)) : null,
         fieldMeta: state.fieldMeta,
         hlc: state.hlc,
         opId: state.opId || null,
@@ -402,6 +410,15 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
             ...row
           } = mappers.patient.toRow(state, ctx);
           await tx.update(schema.patient).set(row).where(eq(schema.patient.id, state.id));
+          // An identified provisional record is compared with the others only now.
+          if (before?.data.isProvisional === true && state.data.isProvisional !== true) {
+            await enqueue(
+              tx,
+              'pat.detect_duplicates',
+              { patientId: state.id },
+              { tenantId: ctx.tenantId },
+            );
+          }
           await recordFieldHistory(tx, {
             tenantId: ctx.tenantId,
             patientId: state.id,

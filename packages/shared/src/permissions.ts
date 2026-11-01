@@ -4,7 +4,7 @@
  * administrators can change them freely.
  */
 export const PERMISSION_CATALOG: Record<string, readonly string[]> = {
-  patient: ['read', 'create', 'update', 'merge', 'export', 'mark_sensitive'],
+  patient: ['read', 'create', 'update', 'merge', 'export', 'mark_sensitive', 'mark_deceased'],
   encounter: ['read', 'create', 'update_status', 'close'],
   appointment: ['read', 'create', 'update', 'cancel'],
   queue: ['read', 'call', 'manage'],
@@ -151,6 +151,7 @@ export const ROLE_TEMPLATES: readonly RoleTemplate[] = [
       'clinical_record:correct',
       'clinical_record:sign',
       'clinical_record:break_glass',
+      'patient:mark_deceased',
       'vital_sign:read',
       'vital_sign:create',
       'vital_sign:override_plausibility',

@@ -160,4 +160,61 @@ describe('server engine', () => {
       'DEPENDENCY_REJECTED',
     ]);
   });
+
+  it('refuses a clinical act dated after a death recorded on another device', async () => {
+    const { a, b, server } = setup();
+    const { entityId: patientId } = await a.client.dispatch('patient.register', registration);
+    await a.client.sync();
+    await b.client.sync();
+
+    await a.client.dispatch(
+      'patient.mark_deceased',
+      { deceasedAt: '2026-10-29T10:00:00.000Z' },
+      { entityId: patientId },
+    );
+    await a.client.sync();
+    // B has not pulled yet: one measurement taken before the death, one after.
+    const vital = (measuredAt: string) => ({
+      patientId,
+      code: 'temp' as const,
+      value: 37.2,
+      unit: '°C',
+      measuredAt,
+    });
+    await b.client.dispatch('vital_sign.record', vital('2026-10-29T09:00:00.000Z'));
+    await b.client.dispatch('vital_sign.record', vital('2026-10-29T11:00:00.000Z'));
+    const res = await b.transport.push({
+      deviceId: b.id,
+      schemaVersion: 1,
+      ops: await pendingOps(b),
+    });
+    expect(res.results.map((r) => r.reason ?? r.status)).toEqual(['applied', 'PAT_DECEASED']);
+    expect(server.entitiesOf('vital_sign')).toHaveLength(1);
+
+    // Once it knows, the device itself refuses the act before queueing it.
+    await a.client.sync();
+    await expect(
+      a.client.dispatch('vital_sign.record', vital('2026-10-29T12:00:00.000Z')),
+    ).rejects.toMatchObject({ code: 'PAT_DECEASED' });
+  });
+
+  it('withdraws a death declaration only with a reason', async () => {
+    const { a, server } = setup();
+    const { entityId } = await a.client.dispatch('patient.register', registration);
+    await a.client.dispatch(
+      'patient.mark_deceased',
+      { deceasedAt: '2026-10-29T10:00:00.000Z' },
+      { entityId },
+    );
+    await expect(
+      a.client.dispatch('patient.mark_deceased', { deceasedAt: null }, { entityId }),
+    ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+    await a.client.dispatch(
+      'patient.mark_deceased',
+      { deceasedAt: null, correctionReason: 'Erreur de dossier' },
+      { entityId },
+    );
+    await a.client.sync();
+    expect(server.entitiesOf('patient')[0]?.data.deceasedAt).toBeNull();
+  });
 });

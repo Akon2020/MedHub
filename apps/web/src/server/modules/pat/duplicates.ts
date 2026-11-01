@@ -1,7 +1,7 @@
 import 'server-only';
 import { appendAudit, schema, withTenant } from '@medhub/db';
-import { AppError } from '@medhub/shared';
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { AppError, uuidv7 } from '@medhub/shared';
+import { and, desc, eq, inArray, ne } from 'drizzle-orm';
 import { database } from '../../platform/db';
 import { loadPermissions, requirePermission } from '../../platform/permissions';
 import type { RequestContext } from '../../platform/tenant';
@@ -118,5 +118,64 @@ export async function dismissDuplicate(
       entityId: input.candidateId,
       reason: input.reason,
     });
+  });
+}
+
+/**
+ * A user recognises two records as the same person, typically a provisional
+ * record and the patient's known one: the pair goes to the queue, where a
+ * user allowed to merge decides (the merge itself stays supervised).
+ */
+export async function reportDuplicate(
+  ctx: RequestContext,
+  input: { patientId: string; otherId: string },
+  client: { ip: string | null },
+): Promise<{ candidateId: string }> {
+  if (input.patientId === input.otherId) throw new AppError('VALIDATION_FAILED', 400);
+  return withTenant(database().db, { tenantId: ctx.tenantId, userId: ctx.userId }, async (tx) => {
+    requirePermission(await loadPermissions(tx, ctx.userId), 'patient:update');
+    const found = await tx
+      .select({ id: schema.patient.id, mergedIntoId: schema.patient.mergedIntoId })
+      .from(schema.patient)
+      .where(inArray(schema.patient.id, [input.patientId, input.otherId]));
+    if (found.length !== 2) throw new AppError('PAT_NOT_FOUND', 404);
+    if (found.some((p) => p.mergedIntoId)) throw new AppError('PAT_ALREADY_MERGED', 409);
+    const [a, b] =
+      input.patientId < input.otherId
+        ? [input.patientId, input.otherId]
+        : [input.otherId, input.patientId];
+    const now = new Date();
+    const [row] = await tx
+      .insert(schema.duplicateCandidate)
+      .values({
+        id: uuidv7(),
+        tenantId: ctx.tenantId,
+        patientAId: a,
+        patientBId: b,
+        score: 100,
+        reasons: ['manual'],
+      })
+      .onConflictDoUpdate({
+        target: [
+          schema.duplicateCandidate.tenantId,
+          schema.duplicateCandidate.patientAId,
+          schema.duplicateCandidate.patientBId,
+        ],
+        set: { status: 'open', score: 100, reasons: ['manual'], updatedAt: now },
+        setWhere: ne(schema.duplicateCandidate.status, 'merged'),
+      })
+      .returning({ id: schema.duplicateCandidate.id });
+    if (!row) throw new AppError('PAT_ALREADY_MERGED', 409);
+    await appendAudit(tx, {
+      tenantId: ctx.tenantId,
+      userId: ctx.userId,
+      deviceId: ctx.deviceId,
+      ip: client.ip,
+      action: 'duplicate_reported',
+      entity: 'duplicate_candidate',
+      entityId: row.id,
+      patientId: input.patientId,
+    });
+    return { candidateId: row.id };
   });
 }

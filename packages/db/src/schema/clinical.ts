@@ -53,6 +53,9 @@ export const patient = pgTable(
       .default({}),
     mergedIntoId: uuid('merged_into_id'),
     deceasedAt: timestamp('deceased_at', { withTimezone: true }),
+    /** Unidentified emergency or newborn, identified later or merged into a known record. */
+    isProvisional: boolean('is_provisional').notNull().default(false),
+    provisionalKind: text('provisional_kind'),
   },
   (t) => [
     uniqueIndex('patient_mrn_uq').on(t.tenantId, t.mrn),
@@ -62,6 +65,10 @@ export const patient = pgTable(
       .on(t.tenantId, t.cardToken)
       .where(sql`${t.cardToken} is not null`),
     check('patient_sex_check', sql`${t.sex} in ('M','F','U')`),
+    check(
+      'patient_provisional_kind_check',
+      sql`${t.provisionalKind} is null or ${t.provisionalKind} in ('unknown','newborn')`,
+    ),
     check(
       'patient_sensitivity_check',
       sql`${t.sensitivity} in ('normal','staff','vip','restricted')`,

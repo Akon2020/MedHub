@@ -1,4 +1,10 @@
-import { getCommand, type CommandName, type CommandPayload, type EntityName } from '@medhub/domain';
+import {
+  deathRefusal,
+  getCommand,
+  type CommandName,
+  type CommandPayload,
+  type EntityName,
+} from '@medhub/domain';
 import { AppError, HybridLogicalClock, toIso, uuidv7, type Clock } from '@medhub/shared';
 import {
   DEFAULT_PULL_LIMIT,
@@ -144,6 +150,12 @@ export class SyncClient {
       const current =
         command.kind === 'update' ? await tx.getEntity(command.entity, entityId) : null;
       if (command.kind === 'update' && !current) throw new AppError('NOT_FOUND', 404);
+      if (command.patientAct) {
+        const { patientId } = command.patientAct(parsed.data as never);
+        const patient = await tx.getEntity('patient', patientId);
+        const refusal = deathRefusal(command, parsed.data, patient?.data);
+        if (refusal) throw new AppError(refusal as never, 409);
+      }
 
       const now = this.opts.clock.now();
       const clockSuspect =

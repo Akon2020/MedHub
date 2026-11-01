@@ -10,6 +10,7 @@ import { useLocalQuery, useRuntime } from '@/client/runtime';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { initialsOf, isMerged, toPatientView } from '@/features/patients/patient-helpers';
+import { PatientStatusBadges } from '@/features/patients/patient-status';
 import { RegisterForm } from '@/features/patients/register-form';
 import { ServerResults } from '@/features/patients/server-results';
 import { SyncBadge } from '@/features/patients/sync-badge';
@@ -149,6 +150,7 @@ function PatientsScreen() {
                           {initialsOf(p.name)}
                         </span>
                         <span className="font-medium hover:text-primary">{p.name}</span>
+                        <PatientStatusBadges data={p.status} />
                       </Link>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-slate-ink">{p.mrn}</td>

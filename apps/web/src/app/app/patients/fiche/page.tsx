@@ -11,6 +11,12 @@ import { useLocalQuery } from '@/client/runtime';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FieldHistory, IdentityCard } from '@/features/patients/identity-card';
 import { PatientCardActions } from '@/features/patients/patient-card';
+import {
+  DeathPanel,
+  PatientStatusBadges,
+  ProvisionalPanel,
+  deceasedAtOf,
+} from '@/features/patients/patient-status';
 import { initialsOf, isMerged, toPatientView } from '@/features/patients/patient-helpers';
 import { mergeClosure, mergeTarget } from '@medhub/domain';
 import { SyncBadge } from '@/features/patients/sync-badge';
@@ -121,7 +127,10 @@ function PatientRecord() {
           {initialsOf(patient.name)}
         </span>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-2xl font-semibold">{patient.name}</h1>
+          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold">
+            <span className="truncate">{patient.name}</span>
+            <PatientStatusBadges data={raw} />
+          </h1>
           <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
             <span className="font-mono text-xs text-slate-ink">{patient.mrn}</span>
             <span>{tp(`sex.${patient.sex}`)}</span>
@@ -145,8 +154,11 @@ function PatientRecord() {
             patient={patient}
             cardToken={typeof raw.cardToken === 'string' ? raw.cardToken : null}
           />
+          <DeathPanel patientId={patient.id} data={raw} />
         </div>
       </section>
+
+      {raw.isProvisional === true && <ProvisionalPanel patientId={patient.id} />}
 
       {(mergedFrom || mergedCount > 0) && (
         <p
@@ -161,7 +173,7 @@ function PatientRecord() {
         </p>
       )}
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-        <VitalsPanel patientId={patient.id} vitals={vitals} />
+        <VitalsPanel patientId={patient.id} vitals={vitals} deceasedAt={deceasedAtOf(raw)} />
         <div className="grid content-start gap-6">
           <Card>
             <CardHeader>
