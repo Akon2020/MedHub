@@ -15,7 +15,8 @@ Le jalon **J0 Fondations** est construit :
 - thème clair, sombre ou automatique (selon le système) sur toute l'application ;
 - début de J1 (S4) : double authentification TOTP avec codes de secours, limitation de débit en base, règles d'IP, politique CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes, organisation de la structure ;
 - S5 (en cours) : appareils et effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs, éditeur de rôles, référentiels, traduction anglaise complète, diagnostic et base de formation (S5 terminée) ;
-- S6 (en cours) : détection des doublons de patients (alerte à la saisie, file des doublons), fusion supervisée et réversible, identité complète avec historique et revue des conflits, recherche serveur, carte patient avec QR, patients provisoires, décès, sensibilité des dossiers, favoris et périmètre de synchronisation.
+- S6 (terminée) : détection des doublons de patients (alerte à la saisie, file des doublons), fusion supervisée et réversible, identité complète avec historique et revue des conflits, recherche serveur, carte patient avec QR, patients provisoires, décès, sensibilité des dossiers, favoris et périmètre de synchronisation.
+- S7 (terminée côté code) : files d'attente et tickets, écran d'appel, triage, rendez-vous et agendas.
 
 Le journal complet de tout ce qui a été fait se trouve dans `walkthrough.md`.
 
@@ -381,6 +382,35 @@ Menu **Paramètres** (permission `configuration:read`, administrateur de structu
 - Pour s'exercer, chacun se connecte avec ce code au lieu du code habituel. Le bandeau « Base de formation » reste affiché.
 - **Réinitialiser** : la base actuelle est archivée (rien n'est supprimé), ses postes effacent leurs données de formation à leur prochain contact, et une nouvelle base est créée sous le même code avec la configuration du jour.
 - Aucun SMS ni courriel réel ne doit partir d'une base de formation : règle à appliquer par le module de notifications quand il arrivera (aucun envoi n'existe aujourd'hui).
+
+### Accueil, files et agendas : réglages (S7)
+
+- **Paramètres, Accueil, files et agendas** (en ligne, double authentification récente) :
+  - **Files d'attente** : une par point de passage (accueil, triage, consultation...), avec un préfixe de ticket d'une à trois lettres et, au besoin, le service rattaché.
+  - **Types de rendez-vous** : durée proposée à la prise de rendez-vous.
+  - **Agendas** : pour chaque soignant ou service, les plages de la semaine (début, fin, durée d'un créneau, surréservation permise) et les exceptions (jour ou heures fermés, plage supplémentaire).
+- Les postes reçoivent ces réglages avec leurs catalogues, à la connexion suivante ou par **Diagnostic, Recharger les catalogues**.
+
+### Arrivée d'un patient et files d'attente (S7)
+
+- Sur la fiche patient, carte **Arrivée** : type de visite, file, priorité, puis **Créer la visite et le ticket**. Le numéro affiché (par exemple `A-AB-001`) est formé du préfixe de la file, du code du poste et d'un compteur du jour : deux postes ne donnent jamais le même numéro, même hors connexion. Une urgence passe toujours en tête.
+- **Files d'attente** (menu Clinique) : choisissez la file et la salle de ce poste. Ordre de passage : urgences, puis personnes âgées, femmes enceintes et enfants, puis heure d'arrivée. Boutons **Appeler**, **Prendre en charge**, **Terminer**, **Parti** (le ticket n'est jamais supprimé).
+- Si deux postes appellent le même ticket hors connexion, le premier appel arrivé au serveur est gardé ; l'autre poste se met à jour à la synchronisation.
+- **Écran d'appel** : bouton du même nom, à ouvrir sur une télévision ou une tablette de la salle d'attente. Il affiche les numéros appelés et la salle, jamais un nom. **Activer le son** et **Plein écran** se règlent sur l'écran ; il se relit toutes les cinq secondes et se synchronise régulièrement.
+
+### Triage (S7)
+
+- Sur la fiche, carte **Triage de la visite du jour** (rôle infirmier) : motif principal, priorité, observations et **Orienter vers** une autre file. L'orientation termine le ticket en cours et donne au patient un ticket dans la file choisie, avec la priorité du triage.
+- Les constantes saisies sur la fiche pendant la visite y sont rattachées. Une correction du triage crée une nouvelle version ; l'ancienne reste lisible.
+
+### Rendez-vous (S7)
+
+- **Rendez-vous** (menu Clinique) : choisissez l'agenda et le jour, ou **Premier créneau libre**. Depuis une fiche patient, **Prendre rendez-vous** ouvre l'agenda avec le patient déjà choisi. Fonctionne hors connexion.
+- Sur un rendez-vous : **Arrivé** (crée aussi la visite et le ticket), **Déplacer** (puis choisir le nouveau créneau), **Absent** (après l'heure), **Annuler** (motif obligatoire).
+- Si deux postes prennent le même créneau hors connexion, le premier arrivé au serveur le garde ; l'autre poste affiche « Créneaux pris entre-temps sur un autre poste » avec **Choisir un autre créneau**. La surréservation réglée sur l'agenda permet d'ajouter des rendez-vous au même créneau.
+- La fiche patient montre les prochains rendez-vous et le nombre de rendez-vous manqués.
+- Avec la règle de synchronisation « Périmètre », un patient qui a un rendez-vous dans les sept jours ou une visite récente arrive sur les postes.
+- Les rappels par SMS attendent le choix d'un fournisseur (point ouvert).
 
 ### Patients provisoires (S6)
 
