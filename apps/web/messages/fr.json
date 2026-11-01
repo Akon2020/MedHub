@@ -330,7 +330,7 @@
       "clinical": "Clinique",
       "patients": "Patients",
       "consultations": "Consultations",
-      "appointments": "Rendez-vous et files",
+      "appointments": "Rendez-vous",
       "diagnostics": "Examens",
       "laboratory": "Laboratoire",
       "operations": "Opérations",
@@ -343,7 +343,8 @@
       "diagnostic": "Diagnostic",
       "collapse": "Réduire le menu",
       "expand": "Déplier le menu",
-      "soon": "bientôt"
+      "soon": "bientôt",
+      "queues": "Files d'attente"
     },
     "header": {
       "search": "Rechercher un patient (nom, téléphone, dossier)…",
@@ -777,7 +778,8 @@
     "PAT_PROVISIONAL_KIND": "Précisez le type de dossier provisoire.",
     "PAT_NOT_FOUND": "Ce patient est introuvable sur le serveur.",
     "PAT_ALREADY_MERGED": "L'un des deux dossiers a déjà été fusionné.",
-    "PAT_SENSITIVE": "Ce dossier est protégé : votre rôle ne permet pas de l'ouvrir."
+    "PAT_SENSITIVE": "Ce dossier est protégé : votre rôle ne permet pas de l'ouvrir.",
+    "RDV_TRANSITION_NOT_ALLOWED": "Ce ticket a déjà changé d'état : l'écran va se mettre à jour."
   },
   "account": {
     "title": "Mon compte",
@@ -1510,6 +1512,71 @@
           "extra": "Plage supplémentaire"
         }
       }
+    }
+  },
+  "visits": {
+    "kinds": {
+      "outpatient": "Consultation externe",
+      "emergency": "Urgence",
+      "inpatient": "Hospitalisation",
+      "day_care": "Hôpital de jour",
+      "teleconsult": "Téléconsultation",
+      "lab_only": "Laboratoire seul",
+      "pharmacy_only": "Pharmacie seule"
+    },
+    "priorities": {
+      "emergency": "Urgence",
+      "elderly": "Personne âgée",
+      "pregnant": "Femme enceinte",
+      "child": "Enfant",
+      "normal": "Normale"
+    },
+    "statuses": {
+      "waiting": "En attente",
+      "called": "Appelé",
+      "in_service": "En cours",
+      "done": "Terminé",
+      "left": "Parti sans être vu"
+    },
+    "arrival": {
+      "title": "Arrivée",
+      "kind": "Type de visite",
+      "queue": "File",
+      "priority": "Priorité",
+      "submit": "Créer la visite et le ticket",
+      "hint": "Fonctionne hors connexion : le numéro du ticket porte le code de ce poste, deux postes ne donnent jamais le même numéro.",
+      "noQueue": "Aucune file configurée : un administrateur les crée dans Paramètres, Accueil, files et agendas.",
+      "deceased": "Patient décédé : aucune nouvelle visite."
+    },
+    "board": {
+      "title": "Files d'attente",
+      "subtitle": "Patients du jour par file, dans l'ordre de passage : urgences d'abord, puis priorités, puis heure d'arrivée.",
+      "queue": "File",
+      "room": "Salle de ce poste",
+      "roomPlaceholder": "Salle 2",
+      "callScreen": "Écran d'appel",
+      "sections": {
+        "waiting": "En attente",
+        "called": "Appelés et en cours",
+        "finished": "Terminés"
+      },
+      "empty": "Personne pour le moment.",
+      "waited": "{minutes, plural, one {attend depuis # minute} other {attend depuis # minutes}}",
+      "unknownPatient": "Patient absent de ce poste",
+      "call": "Appeler",
+      "start": "Prendre en charge",
+      "complete": "Terminer",
+      "left": "Parti",
+      "noQueue": "Aucune file configurée : un administrateur les crée dans Paramètres, Accueil, files et agendas."
+    },
+    "screen": {
+      "title": "Salle d'attente",
+      "nowCalling": "Numéro appelé",
+      "noCall": "Aucun appel pour le moment.",
+      "waiting": "{count, plural, =0 {Personne en attente} one {# personne en attente} other {# personnes en attente}}",
+      "soundOn": "Son activé",
+      "soundOff": "Activer le son",
+      "fullscreen": "Plein écran"
     }
   }
 }

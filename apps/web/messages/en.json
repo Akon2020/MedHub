@@ -330,7 +330,7 @@
       "clinical": "Clinical",
       "patients": "Patients",
       "consultations": "Consultations",
-      "appointments": "Appointments and queues",
+      "appointments": "Appointments",
       "diagnostics": "Diagnostics",
       "laboratory": "Laboratory",
       "operations": "Operations",
@@ -343,7 +343,8 @@
       "diagnostic": "Diagnostics",
       "collapse": "Collapse menu",
       "expand": "Expand menu",
-      "soon": "soon"
+      "soon": "soon",
+      "queues": "Waiting queues"
     },
     "header": {
       "search": "Search a patient (name, phone, record)…",
@@ -777,7 +778,8 @@
     "PAT_PROVISIONAL_KIND": "Specify the kind of provisional record.",
     "PAT_NOT_FOUND": "This patient cannot be found on the server.",
     "PAT_ALREADY_MERGED": "One of the two records was already merged.",
-    "PAT_SENSITIVE": "This record is protected: your role cannot open it."
+    "PAT_SENSITIVE": "This record is protected: your role cannot open it.",
+    "RDV_TRANSITION_NOT_ALLOWED": "This ticket has already changed: the screen will refresh."
   },
   "account": {
     "title": "My account",
@@ -1510,6 +1512,71 @@
           "extra": "Extra hours"
         }
       }
+    }
+  },
+  "visits": {
+    "kinds": {
+      "outpatient": "Outpatient visit",
+      "emergency": "Emergency",
+      "inpatient": "Inpatient stay",
+      "day_care": "Day care",
+      "teleconsult": "Teleconsultation",
+      "lab_only": "Laboratory only",
+      "pharmacy_only": "Pharmacy only"
+    },
+    "priorities": {
+      "emergency": "Emergency",
+      "elderly": "Elderly person",
+      "pregnant": "Pregnant woman",
+      "child": "Child",
+      "normal": "Normal"
+    },
+    "statuses": {
+      "waiting": "Waiting",
+      "called": "Called",
+      "in_service": "In progress",
+      "done": "Done",
+      "left": "Left without being seen"
+    },
+    "arrival": {
+      "title": "Arrival",
+      "kind": "Visit type",
+      "queue": "Queue",
+      "priority": "Priority",
+      "submit": "Open the visit and the ticket",
+      "hint": "Works offline: the ticket number carries this workstation code, two workstations never give the same number.",
+      "noQueue": "No queue configured: an administrator creates them in Settings, Reception, queues and agendas.",
+      "deceased": "Patient deceased: no new visit."
+    },
+    "board": {
+      "title": "Waiting queues",
+      "subtitle": "Today's patients per queue, in order: emergencies first, then priorities, then arrival time.",
+      "queue": "Queue",
+      "room": "Room of this workstation",
+      "roomPlaceholder": "Room 2",
+      "callScreen": "Call screen",
+      "sections": {
+        "waiting": "Waiting",
+        "called": "Called and in progress",
+        "finished": "Finished"
+      },
+      "empty": "Nobody for now.",
+      "waited": "{minutes, plural, one {waiting for # minute} other {waiting for # minutes}}",
+      "unknownPatient": "Patient not on this workstation",
+      "call": "Call",
+      "start": "Take in charge",
+      "complete": "Finish",
+      "left": "Left",
+      "noQueue": "No queue configured: an administrator creates them in Settings, Reception, queues and agendas."
+    },
+    "screen": {
+      "title": "Waiting room",
+      "nowCalling": "Number called",
+      "noCall": "No call yet.",
+      "waiting": "{count, plural, =0 {Nobody waiting} one {# person waiting} other {# people waiting}}",
+      "soundOn": "Sound on",
+      "soundOff": "Turn sound on",
+      "fullscreen": "Full screen"
     }
   }
 }

@@ -106,6 +106,13 @@
       "when": 1793556970925,
       "tag": "0014_s7_rdv_config",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1793557645292,
+      "tag": "0015_s7_visits",
+      "breakpoints": true
     }
   ]
 }

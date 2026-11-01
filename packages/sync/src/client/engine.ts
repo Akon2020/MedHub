@@ -2,6 +2,7 @@ import {
   deathRefusal,
   getCommand,
   mergeablePayload,
+  transitionApplies,
   type CommandName,
   type CommandPayload,
   type EntityName,
@@ -153,6 +154,9 @@ export class SyncClient {
       const current =
         command.kind === 'update' ? await tx.getEntity(command.entity, entityId) : null;
       if (command.kind === 'update' && !current) throw new AppError('NOT_FOUND', 404);
+      if (current && !transitionApplies(command, current.data)) {
+        throw new AppError('RDV_TRANSITION_NOT_ALLOWED', 409);
+      }
       if (command.patientAct) {
         const { patientId } = command.patientAct(parsed.data as never);
         const patient = await tx.getEntity('patient', patientId);
@@ -335,13 +339,15 @@ export async function applyLocal(tx: ClientSyncTx, op: Operation): Promise<void>
   const existing = await tx.getEntity(entity, op.entityId);
 
   if (command.kind === 'update' || (command.kind === 'create' && existing)) {
-    if (!existing) return;
+    if (!existing || !transitionApplies(command, existing.data)) return;
     const outcome = mergeFields(
       entity,
       { ...existing, fieldMeta: {} },
       op,
       payload,
       existing.version,
+      undefined,
+      command.transition !== undefined,
     );
     await tx.putEntity(entity, { ...outcome.next, fieldMeta: existing.fieldMeta });
     return;

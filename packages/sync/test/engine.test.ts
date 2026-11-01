@@ -279,4 +279,55 @@ describe('server engine', () => {
     expect(a.store.entitiesOf('patient')).toEqual([]);
     expect(a.store.entitiesOf('vital_sign')).toEqual([]);
   });
+
+  it('keeps the first call of a ticket called by two devices offline', async () => {
+    const { a, b, server } = setup();
+    const { entityId: patientId } = await a.client.dispatch('patient.register', registration);
+    const { entityId: ticketId } = await a.client.dispatch('queue_ticket.issue', {
+      queueId: '01a19830-805e-7768-a65f-140ecc61aab9',
+      patientId,
+      number: 'C-AA-001',
+      issuedAt: '2026-11-02T08:00:00.000Z',
+    });
+    await a.client.sync();
+    await b.client.sync();
+
+    await a.client.dispatch(
+      'queue_ticket.call',
+      { calledAt: '2026-11-02T08:10:00.000Z', room: 'Salle 1' },
+      { entityId: ticketId },
+    );
+    await b.client.dispatch(
+      'queue_ticket.call',
+      { calledAt: '2026-11-02T08:11:00.000Z', room: 'Salle 2' },
+      { entityId: ticketId },
+    );
+    // On B the ticket already looks called: a second local call is refused.
+    await expect(
+      b.client.dispatch(
+        'queue_ticket.call',
+        { calledAt: '2026-11-02T08:12:00.000Z' },
+        { entityId: ticketId },
+      ),
+    ).rejects.toMatchObject({ code: 'RDV_TRANSITION_NOT_ALLOWED' });
+
+    const first = await a.transport.push({
+      deviceId: a.id,
+      schemaVersion: 1,
+      ops: await pendingOps(a),
+    });
+    expect(first.results[0]?.status).toBe('applied');
+    const second = await b.transport.push({
+      deviceId: b.id,
+      schemaVersion: 1,
+      ops: await pendingOps(b),
+    });
+    expect(second.results[0]).toMatchObject({ status: 'merged', warnings: ['TRANSITION_IGNORED'] });
+    const ticket = server.entitiesOf('queue_ticket')[0];
+    expect(ticket?.data).toMatchObject({ status: 'called', room: 'Salle 1' });
+
+    await a.client.sync();
+    await b.client.sync();
+    expect(b.store.entitiesOf('queue_ticket')[0]?.data).toMatchObject({ room: 'Salle 1' });
+  });
 });

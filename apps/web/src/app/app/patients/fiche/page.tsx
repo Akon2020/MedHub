@@ -28,6 +28,7 @@ import {
 import { mergeClosure, mergeTarget } from '@medhub/domain';
 import { SyncBadge } from '@/features/patients/sync-badge';
 import { VitalsPanel, type VitalView } from '@/features/patients/vitals-panel';
+import { ArrivalPanel } from '@/features/visits/arrival-panel';
 
 const TrendChart = dynamic(() => import('@/features/charts/trend-chart'), { ssr: false });
 
@@ -190,6 +191,7 @@ function PatientRecord() {
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <VitalsPanel patientId={patient.id} vitals={vitals} deceasedAt={deceasedAtOf(raw)} />
         <div className="grid content-start gap-6">
+          <ArrivalPanel patientId={patient.id} deceased={deceasedAtOf(raw) !== null} />
           <Card>
             <CardHeader>
               <CardTitle>{t('trend')}</CardTitle>

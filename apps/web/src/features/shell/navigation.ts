@@ -5,6 +5,7 @@ import {
   Gauge,
   HandCoins,
   LayoutGrid,
+  ListOrdered,
   Pill,
   Settings,
   Stethoscope,
@@ -29,6 +30,7 @@ export const NAVIGATION: NavGroup[] = [
     key: 'clinical',
     items: [
       { key: 'patients', href: '/app/patients', icon: Users, permission: 'patient:read' },
+      { key: 'queues', href: '/app/files', icon: ListOrdered, permission: 'queue:read' },
       { key: 'appointments', href: '/app/bientot?m=appointments', icon: CalendarClock, soon: 'S7' },
       {
         key: 'consultations',

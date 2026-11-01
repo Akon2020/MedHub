@@ -22,3 +22,4 @@ export * from './pat/lifecycle';
 export * from './pat/favorites';
 export * from './core/sync-scope';
 export * from './rdv/config';
+export * from './rdv/visits';

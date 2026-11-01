@@ -17,6 +17,8 @@ const NO_DELETE = [
   'patient',
   'patient_field_history',
   'patient_favorite',
+  'encounter',
+  'queue_ticket',
 ];
 const NO_UPDATE = [
   'stock_movement',

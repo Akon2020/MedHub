@@ -11,6 +11,7 @@ import {
   department,
   device,
   devicePatient,
+  encounter,
   duplicateCandidate,
   mfaRecoveryCode,
   numberSeries,
@@ -20,6 +21,7 @@ import {
   patientFieldHistory,
   patientMerge,
   queue,
+  queueTicket,
   role,
   rolePermission,
   scheduleException,
@@ -120,6 +122,29 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       tenantId,
       entity: 'patient',
       rule: { mode: 'scoped', recentDays: 30 },
+    });
+  },
+  encounter: async (tx, tenantId) => {
+    await tx.insert(encounter).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      kind: 'outpatient',
+      status: 'arrived',
+      visitNumber: `KIN-AA-2026-${String(Math.floor(Math.random() * 1e6)).padStart(6, '0')}`,
+      startedAt: new Date(),
+    });
+  },
+  queue_ticket: async (tx, tenantId) => {
+    await tx.insert(queueTicket).values({
+      id: uuidv7(),
+      tenantId,
+      queueId: uuidv7(),
+      patientId: uuidv7(),
+      number: 'C-AA-001',
+      priority: 'normal',
+      status: 'waiting',
+      issuedAt: new Date(),
     });
   },
   queue: async (tx, tenantId) => {

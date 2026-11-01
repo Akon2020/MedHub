@@ -5,12 +5,14 @@ import {
   date,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
+  timestamp,
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { tenantColumns } from '../columns';
+import { syncColumns, tenantColumns } from '../columns';
 
 const RESOURCE_KIND_CHECK = sql`in ('practitioner','department','room','equipment')`;
 
@@ -84,5 +86,72 @@ export const scheduleException = pgTable(
     index('schedule_exception_resource_idx').on(t.tenantId, t.resourceId, t.date),
     check('schedule_exception_kind_check', sql`${t.kind} in ('closed','extra')`),
     check('schedule_exception_resource_check', sql`${t.resourceKind} ${RESOURCE_KIND_CHECK}`),
+  ],
+);
+
+const fieldMeta = () =>
+  jsonb('field_meta').$type<Record<string, { hlc: string; v: number }>>().notNull().default({});
+
+/** A visit: opened at arrival, with or without appointment (docs/04 section 6). */
+export const encounter = pgTable(
+  'encounter',
+  {
+    ...syncColumns(),
+    patientId: uuid('patient_id').notNull(),
+    kind: text('kind').notNull(),
+    status: text('status').notNull(),
+    departmentId: uuid('department_id'),
+    practitionerId: uuid('practitioner_id'),
+    appointmentId: uuid('appointment_id'),
+    visitNumber: text('visit_number').notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
+    endedAt: timestamp('ended_at', { withTimezone: true }),
+    fieldMeta: fieldMeta(),
+  },
+  (t) => [
+    index('encounter_patient_idx').on(t.tenantId, t.patientId, t.startedAt),
+    index('encounter_day_idx').on(t.tenantId, t.startedAt),
+    uniqueIndex('encounter_visit_number_uq').on(t.tenantId, t.visitNumber),
+    check(
+      'encounter_kind_check',
+      sql`${t.kind} in ('outpatient','emergency','inpatient','day_care','teleconsult','lab_only','pharmacy_only')`,
+    ),
+    check(
+      'encounter_status_check',
+      sql`${t.status} in ('planned','arrived','triaged','in_consultation','waiting_results','completed','cancelled')`,
+    ),
+  ],
+);
+
+/** Waiting-queue ticket: never deleted, a patient who leaves is marked `left`. */
+export const queueTicket = pgTable(
+  'queue_ticket',
+  {
+    ...syncColumns(),
+    queueId: uuid('queue_id').notNull(),
+    patientId: uuid('patient_id').notNull(),
+    encounterId: uuid('encounter_id'),
+    number: text('number').notNull(),
+    priority: text('priority').notNull(),
+    status: text('status').notNull(),
+    issuedAt: timestamp('issued_at', { withTimezone: true }).notNull(),
+    calledAt: timestamp('called_at', { withTimezone: true }),
+    room: text('room'),
+    serviceStartedAt: timestamp('service_started_at', { withTimezone: true }),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    leftAt: timestamp('left_at', { withTimezone: true }),
+    fieldMeta: fieldMeta(),
+  },
+  (t) => [
+    index('queue_ticket_queue_idx').on(t.tenantId, t.queueId, t.issuedAt),
+    index('queue_ticket_patient_idx').on(t.tenantId, t.patientId),
+    check(
+      'queue_ticket_priority_check',
+      sql`${t.priority} in ('emergency','elderly','pregnant','child','normal')`,
+    ),
+    check(
+      'queue_ticket_status_check',
+      sql`${t.status} in ('waiting','called','in_service','done','left')`,
+    ),
   ],
 );

@@ -77,6 +77,8 @@ export function mergeFields(
   payload: Record<string, unknown>,
   nextVersion: number,
   sensitiveFields?: ReadonlySet<string>,
+  /** First-wins status changes: arrival order at the server decides, not the clocks. */
+  force = false,
 ): MergeOutcome {
   const data = { ...current.data };
   const fieldMeta: FieldMeta = { ...current.fieldMeta };
@@ -92,9 +94,10 @@ export function mergeFields(
       conflicts.push({ field, serverValue: data[field] ?? null, clientValue: value });
       continue;
     }
-    if (meta === undefined || compareHlc(op.hlc, meta.hlc) > 0) {
+    const newer = meta === undefined || compareHlc(op.hlc, meta.hlc) > 0;
+    if (newer || force) {
       data[field] = value;
-      fieldMeta[field] = { hlc: op.hlc, v: nextVersion };
+      fieldMeta[field] = { hlc: newer ? op.hlc : (meta?.hlc ?? op.hlc), v: nextVersion };
       applied.push(field);
     } else {
       skipped.push(field);
