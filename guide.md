@@ -15,7 +15,7 @@ Le jalon **J0 Fondations** est construit :
 - thème clair, sombre ou automatique (selon le système) sur toute l'application ;
 - début de J1 (S4) : double authentification TOTP avec codes de secours, limitation de débit en base, règles d'IP, politique CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes, organisation de la structure ;
 - S5 (en cours) : appareils et effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs, éditeur de rôles, référentiels, traduction anglaise complète, diagnostic et base de formation (S5 terminée) ;
-- S6 (en cours) : détection des doublons de patients (alerte à la saisie, file des doublons), fusion supervisée et réversible, identité complète avec historique et revue des conflits.
+- S6 (en cours) : détection des doublons de patients (alerte à la saisie, file des doublons), fusion supervisée et réversible, identité complète avec historique et revue des conflits, recherche serveur.
 
 Le journal complet de tout ce qui a été fait se trouve dans `walkthrough.md`.
 
@@ -381,6 +381,12 @@ Menu **Paramètres** (permission `configuration:read`, administrateur de structu
 - Pour s'exercer, chacun se connecte avec ce code au lieu du code habituel. Le bandeau « Base de formation » reste affiché.
 - **Réinitialiser** : la base actuelle est archivée (rien n'est supprimé), ses postes effacent leurs données de formation à leur prochain contact, et une nouvelle base est créée sous le même code avec la configuration du jour.
 - Aucun SMS ni courriel réel ne doit partir d'une base de formation : règle à appliquer par le module de notifications quand il arrivera (aucun envoi n'existe aujourd'hui).
+
+### Recherche de patients sur le serveur (S6)
+
+- La recherche de l'écran **Patients** fonctionne d'abord sur le poste, même hors connexion. En ligne, une section **Sur le serveur** ajoute les patients de la structure absents de ce poste (badge « Hors de ce poste ») ; **Ouvrir sur ce poste** copie le dossier sur le poste, qui l'ouvre ensuite même sans réseau.
+- On peut taper un nom (orthographe approximative tolérée), un téléphone (« 0991234567 » ou « +243 991 234 567 »), un numéro de dossier, le nom du père ou de la mère, et ajouter une année de naissance (« Kabila 1990 »).
+- Le serveur utilise `pg_trgm` s'il est installé (index créé par `pnpm db:migrate`, qui l'annonce) ; sinon, une recherche par mots et par prononciation. `MEDHUB_SEARCH_TRIGRAM=off` force ce repli.
 
 ### Identité complète et historique (S6)
 
