@@ -70,7 +70,7 @@ Environnement de développement constaté sur le poste du porteur du projet : Wi
 | 30/10/2026 | `docs/03-multitenant-securite.md` section 2 | Connexions inhabituelles : nouvel appareil et horaire inhabituel seulement (aucune géolocalisation), signalées dans le journal de sécurité de la structure ; notification courriel ou SMS avec le module NOTIF | À valider |
 | 30/10/2026 | `docs/02-offline-sync.md` section 9 | Clés publiques des jetons remises au poste à l'activation et conservées localement, au lieu d'être compilées dans l'application | À valider |
 | 30/10/2026 | `docs/02-offline-sync.md` section 9 | Licence calquée sur l'état de la structure, tous les modules MVP, sans plan ni limite, jusqu'à SADM (S14) ; postes activés avant S5 tolérés sans jeton jusqu'à leur prochaine synchronisation | À valider |
-| 01/11/2026 | `docs/02-offline-sync.md` et `docs/08-parcours-acceptation.md` (P2, variante) | Contradiction : valeur serveur gardée (docs/02, appliqué) ou valeur au HLC le plus récent (docs/08) | À trancher |
+| 01/11/2026 | `docs/02-offline-sync.md` et `docs/08-parcours-acceptation.md` (P2, variante) | Contradiction : valeur serveur gardée (docs/02) ou valeur au HLC le plus récent (docs/08). Tranché par le porteur le 01/11/2026 : `docs/02` ; `docs/08` aligné | Tranché |
 | 01/11/2026 | `docs/modules/pat.md` | Une seule personne à contacter (valeur structurée) au lieu de `patient.add_contact` en union ; revue des conflits réservée à `patient:merge` | À valider |
 | 31/10/2026 | `docs/modules/pat.md` fusion | « Quatre yeux si configuré » non appliqué en attendant le module d'approbations (`approval_request`) ; fusion soumise à `patient:merge` et à un motif | À valider |
 | 31/10/2026 | `docs/06-configuration.md` section 5 | Réinitialisation de la base de formation par archivage de l'ancienne structure et création d'une nouvelle sous le même code (aucune suppression, tables cliniques en ajout seul) ; « copie à la demande » de la configuration réalisée par cette même réinitialisation | À valider |
@@ -136,7 +136,7 @@ Constats :
 
 S6, identité complète et scénario P2 (01/11/2026) :
 - Migration `0010_s6_demographics` (colonnes démographiques, `patient_field_history` en ajout seul, fixture d'isolation), champs ajoutés aux commandes `patient.register` et `patient.update`, historique écrit par le serveur, routes `/api/v1/patients/history` et `/api/v1/patients/conflicts*`, carte d'identité modifiable hors connexion, historique à la demande, revue des conflits dans `/app/patients/doublons`.
-- **Contradiction signalée** : pour la variante de P2 (même date de naissance modifiée par deux postes), `docs/02-offline-sync.md` (tableau des stratégies) garde la valeur serveur et ouvre un conflit, `docs/08-parcours-acceptation.md` demande la valeur au HLC le plus récent. Le moteur suit `docs/02` (validé en J0). Décision attendue du porteur.
+- **Contradiction signalée** : pour la variante de P2 (même date de naissance modifiée par deux postes), `docs/02-offline-sync.md` (tableau des stratégies) garde la valeur serveur et ouvre un conflit, `docs/08-parcours-acceptation.md` demande la valeur au HLC le plus récent. Le moteur suit `docs/02` (validé en J0). Tranché par le porteur le 01/11/2026 en faveur de `docs/02` ; `docs/08` mis à jour.
 - Les allergies et antécédents de P2 sont reportés au dossier médical (S8). Une seule personne à contacter pour l'instant.
 - Tests : 2 tests d'intégration (P2), étape Playwright (fiche complétée hors connexion).
 

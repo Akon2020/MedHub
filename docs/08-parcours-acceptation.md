@@ -24,7 +24,7 @@ Vérifications : chronologie du patient complète et ordonnée ; audit présent 
 2. A corrige le téléphone ; B corrige l'adresse ; B ajoute une allergie ; A ajoute un antécédent.
 3. Reconnexion des deux postes dans un ordre quelconque.
 4. Résultat : téléphone de A, adresse de B, allergie et antécédent présents, historique des champs conservé, zéro conflit à revoir.
-5. Variante : A et B corrigent tous deux la date de naissance ; résultat : valeur au HLC le plus récent, un conflit `needs_review` créé et visible pour l'administrateur.
+5. Variante : A et B corrigent tous deux la date de naissance ; résultat : la valeur arrivée la première au serveur est gardée (`docs/02-offline-sync.md`, état civil), l'autre crée un conflit `needs_review` visible pour un superviseur, qui garde la valeur en vigueur ou applique l'autre avec un motif.
 
 ## P3. Doublon créé hors connexion (MVP, S6)
 
