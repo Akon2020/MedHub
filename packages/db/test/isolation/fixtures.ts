@@ -26,6 +26,8 @@ import {
   patientFieldHistory,
   patientMerge,
   problem,
+  program,
+  programEnrollment,
   queue,
   queueTicket,
   role,
@@ -237,6 +239,24 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       reasonText: 'Urgence vitale',
       startedAt: new Date(),
       endsAt: new Date(Date.now() + 3_600_000),
+    });
+  },
+  program: async (tx, tenantId) => {
+    await tx.insert(program).values({
+      id: uuidv7(),
+      tenantId,
+      code: 'HTA',
+      name: 'Hypertension',
+      followUpIntervalDays: 30,
+    });
+  },
+  program_enrollment: async (tx, tenantId) => {
+    await tx.insert(programEnrollment).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      programId: uuidv7(),
+      enrolledAt: new Date(),
     });
   },
   queue: async (tx, tenantId) => {

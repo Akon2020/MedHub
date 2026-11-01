@@ -21,6 +21,7 @@ import {
 import { triageRecordPayload } from './rdv/triage';
 import { recordAccessPayload } from './dpi/access-log';
 import { breakGlassPayload } from './dpi/break-glass';
+import { programDischargePayload, programEnrollPayload } from './dpi/programs';
 import {
   allergyAddPayload,
   allergyNoneKnownPayload,
@@ -55,7 +56,8 @@ export type EntityName =
   | 'medical_history'
   | 'problem'
   | 'record_access'
-  | 'break_glass';
+  | 'break_glass'
+  | 'program_enrollment';
 
 export type EntityDefinition = {
   name: EntityName;
@@ -132,6 +134,12 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
   },
   problem: {
     name: 'problem',
+    strategy: 'union',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  program_enrollment: {
+    name: 'program_enrollment',
     strategy: 'union',
     scopeKeys: (data) => [`patient:${String(data.patientId)}`],
     patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
@@ -429,6 +437,24 @@ export const COMMANDS = {
     permission: 'clinical_record:create',
     onlineOnly: false,
     transition: { from: ['active', 'resolved'], to: 'retracted' },
+  }),
+  'program_enrollment.enroll': define({
+    name: 'program_enrollment.enroll',
+    entity: 'program_enrollment',
+    kind: 'create',
+    payloadSchema: programEnrollPayload,
+    permission: 'clinical_record:create',
+    onlineOnly: false,
+    patientAct: (p) => ({ patientId: p.patientId, at: p.enrolledAt }),
+  }),
+  'program_enrollment.discharge': define({
+    name: 'program_enrollment.discharge',
+    entity: 'program_enrollment',
+    kind: 'update',
+    payloadSchema: programDischargePayload,
+    permission: 'clinical_record:create',
+    onlineOnly: false,
+    transition: { from: ['active'], to: 'discharged' },
   }),
   'break_glass.start': define({
     name: 'break_glass.start',

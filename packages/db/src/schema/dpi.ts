@@ -5,6 +5,7 @@ import {
   date,
   doublePrecision,
   index,
+  integer,
   jsonb,
   pgTable,
   text,
@@ -147,5 +148,38 @@ export const breakGlassEvent = pgTable(
       'break_glass_outcome_check',
       sql`${t.reviewOutcome} is null or ${t.reviewOutcome} in ('justified','to_investigate')`,
     ),
+  ],
+);
+
+/** Chronic care programme settings of the structure (diabetes, hypertension...). */
+export const program = pgTable(
+  'program',
+  {
+    ...tenantColumns(),
+    code: text('code').notNull(),
+    name: text('name').notNull(),
+    followUpIntervalDays: integer('follow_up_interval_days').notNull(),
+    graceDays: integer('grace_days').notNull().default(14),
+    isActive: boolean('is_active').notNull().default(true),
+  },
+  (t) => [uniqueIndex('program_code_uq').on(t.tenantId, t.code)],
+);
+
+export const programEnrollment = pgTable(
+  'program_enrollment',
+  {
+    ...syncColumns(),
+    patientId: uuid('patient_id').notNull(),
+    programId: uuid('program_id').notNull(),
+    enrolledAt: timestamp('enrolled_at', { withTimezone: true }).notNull(),
+    status: text('status').notNull().default('active'),
+    dischargedAt: timestamp('discharged_at', { withTimezone: true }),
+    dischargeReason: text('discharge_reason'),
+    fieldMeta: fieldMeta(),
+  },
+  (t) => [
+    index('program_enrollment_patient_idx').on(t.tenantId, t.patientId),
+    index('program_enrollment_program_idx').on(t.tenantId, t.programId, t.status),
+    check('program_enrollment_status_check', sql`${t.status} in ('active','discharged')`),
   ],
 );

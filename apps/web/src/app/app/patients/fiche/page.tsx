@@ -36,6 +36,7 @@ import {
 } from '@/features/record/record-lists';
 import { useRecordAccess } from '@/features/record/use-record-access';
 import { AccessJournal } from '@/features/record/access-journal';
+import { ProgramsCard } from '@/features/record/programs-card';
 import { EmergencyBanner, LockedRecord, toGrant } from '@/features/record/break-glass';
 import { VitalsSummary } from '@/features/record/vitals-summary';
 import { ArrivalPanel } from '@/features/visits/arrival-panel';
@@ -103,8 +104,18 @@ function PatientRecord() {
       const history = await gather('medical_history');
       const problems = await gather('problem');
       const grants = (await store.readEntitiesByPatient('break_glass', id)).map(toGrant);
+      const enrollments = await gather('program_enrollment');
+      // Last contact known on the device: a visit, a measurement or a triage.
+      const contacts = [
+        ...(await gather('encounter')).map((e) => String(e.data.startedAt ?? '')),
+        ...vitals.map((v) => v.measuredAt),
+        ...(await gather('triage')).map((e) => String(e.data.triagedAt ?? '')),
+      ].filter(Boolean);
+      const lastContact = contacts.sort().at(-1) ?? null;
       return {
         grants,
+        enrollments,
+        lastContact,
         patient: toPatientView(entity),
         raw: entity.data,
         vitals,
@@ -170,6 +181,8 @@ function PatientRecord() {
     allergies,
     history,
     problems,
+    enrollments,
+    lastContact,
     mergedCount,
   } = data;
 
@@ -260,6 +273,11 @@ function PatientRecord() {
             <>
               <AllergiesCard patientId={patient.id} rows={allergies} />
               <ProblemsCard patientId={patient.id} rows={problems} />
+              <ProgramsCard
+                patientId={patient.id}
+                enrollments={enrollments}
+                lastContact={lastContact}
+              />
               <HistoryCard patientId={patient.id} rows={history} />
             </>
           )}

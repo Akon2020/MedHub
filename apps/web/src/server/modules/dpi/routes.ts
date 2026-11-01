@@ -1,10 +1,11 @@
 import 'server-only';
-import { breakGlassReviewInput, vitalDefinitionInput } from '@medhub/domain';
+import { breakGlassReviewInput, programInput, vitalDefinitionInput } from '@medhub/domain';
 import { AppError } from '@medhub/shared';
 import { z } from 'zod';
 import { clientIp, defineRoute, json } from '../../platform/http';
 import { listBreakGlass, patientAccessLog, reviewBreakGlass } from './break-glass';
 import { getVitalDefinitions, saveVitalDefinition } from './config';
+import { followUpList, listPrograms, saveProgram } from './programs';
 
 export const vitalDefinitionsRoute = defineRoute({
   route: 'vital_sign_definitions.read',
@@ -41,4 +42,21 @@ export const patientAccessRoute = defineRoute({
     if (!id.success) throw new AppError('VALIDATION_FAILED', 400);
     return json(await patientAccessLog(ctx, id.data));
   },
+});
+
+export const programsRoute = defineRoute({
+  route: 'programs.read',
+  handler: async ({ ctx }) => json(await listPrograms(ctx)),
+});
+
+export const programSaveRoute = defineRoute({
+  route: 'programs.save',
+  schema: programInput,
+  handler: async ({ request, body, ctx }) =>
+    json(await saveProgram(ctx, body, { ip: clientIp(request) })),
+});
+
+export const followUpRoute = defineRoute({
+  route: 'programs.follow_up',
+  handler: async ({ ctx }) => json(await followUpList(ctx)),
 });

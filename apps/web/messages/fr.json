@@ -344,7 +344,8 @@
       "collapse": "Réduire le menu",
       "expand": "Déplier le menu",
       "soon": "bientôt",
-      "queues": "Files d'attente"
+      "queues": "Files d'attente",
+      "programs": "Programmes chroniques"
     },
     "header": {
       "search": "Rechercher un patient (nom, téléphone, dossier)…",
@@ -892,7 +893,7 @@
       },
       "clinical": {
         "title": "Clinique",
-        "text": "Constantes : bornes de plausibilité, marge de tendance et plages normales par âge et sexe."
+        "text": "Constantes (plausibilité, tendance, plages normales) et programmes chroniques."
       }
     },
     "organization": {
@@ -1566,6 +1567,21 @@
         "justified": "Justifié",
         "to_investigate": "À examiner"
       }
+    },
+    "programs": {
+      "title": "Programmes chroniques",
+      "subtitle": "Rythme de suivi de chaque programme : au-delà de l'intervalle plus le délai de grâce, le patient est perdu de vue.",
+      "empty": "Aucun programme.",
+      "rhythm": "suivi tous les {interval} jours, grâce {grace} jours",
+      "inactive": "Inactif",
+      "edit": "Modifier",
+      "name": "Nom",
+      "code": "Code",
+      "interval": "Intervalle (jours)",
+      "grace": "Grâce (jours)",
+      "active": "Actif",
+      "save": "Enregistrer",
+      "cancel": "Annuler"
     }
   },
   "visits": {
@@ -1809,6 +1825,28 @@
       "error": "Journal indisponible.",
       "emergency": "accès d'urgence",
       "device": "poste {code}"
+    },
+    "programs": {
+      "title": "Programmes chroniques",
+      "none": "Inscrit à aucun programme.",
+      "choose": "Programme",
+      "enroll": "Inscrire",
+      "discharge": "Sortie du programme",
+      "reason": "Motif de la sortie",
+      "confirmDischarge": "Confirmer la sortie",
+      "cancel": "Annuler",
+      "due": "prochain suivi attendu le {date}",
+      "lost": "{days, plural, one {perdu de vue, # jour de retard} other {perdu de vue, # jours de retard}}"
+    },
+    "followUp": {
+      "title": "Suivi des programmes",
+      "subtitle": "Patients inscrits aux programmes chroniques, les perdus de vue en tête : la liste d'appels de l'équipe. Disponible en ligne.",
+      "offline": "Liste disponible en ligne.",
+      "error": "Liste indisponible.",
+      "empty": "Aucun patient inscrit.",
+      "last": "dernier contact le {date}",
+      "due": "attendu le {date}",
+      "lost": "{days, plural, one {perdu de vue (# jour)} other {perdu de vue (# jours)}}"
     }
   }
 }

@@ -29,6 +29,7 @@ const READ_PERMISSION: Record<string, readonly string[]> = {
   allergy: ['clinical_record:read'],
   medical_history: ['clinical_record:read'],
   problem: ['clinical_record:read'],
+  program_enrollment: ['clinical_record:read'],
   vital_sign: ['vital_sign:read', 'clinical_record:read'],
   stock_movement: ['stock:read'],
 };

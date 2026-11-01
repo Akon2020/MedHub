@@ -344,7 +344,8 @@
       "collapse": "Collapse menu",
       "expand": "Expand menu",
       "soon": "soon",
-      "queues": "Waiting queues"
+      "queues": "Waiting queues",
+      "programs": "Chronic programmes"
     },
     "header": {
       "search": "Search a patient (name, phone, record)…",
@@ -892,7 +893,7 @@
       },
       "clinical": {
         "title": "Clinical",
-        "text": "Vital signs: plausibility bounds, trend margin and normal ranges by age and sex."
+        "text": "Vital signs (plausibility, trend, normal ranges) and chronic programmes."
       }
     },
     "organization": {
@@ -1566,6 +1567,21 @@
         "justified": "Justified",
         "to_investigate": "To investigate"
       }
+    },
+    "programs": {
+      "title": "Chronic programmes",
+      "subtitle": "Follow-up rhythm of each programme: beyond the interval plus the grace period, the patient is lost to follow-up.",
+      "empty": "No programme.",
+      "rhythm": "follow-up every {interval} days, grace {grace} days",
+      "inactive": "Inactive",
+      "edit": "Edit",
+      "name": "Name",
+      "code": "Code",
+      "interval": "Interval (days)",
+      "grace": "Grace (days)",
+      "active": "Active",
+      "save": "Save",
+      "cancel": "Cancel"
     }
   },
   "visits": {
@@ -1809,6 +1825,28 @@
       "error": "Journal unavailable.",
       "emergency": "emergency access",
       "device": "workstation {code}"
+    },
+    "programs": {
+      "title": "Chronic programmes",
+      "none": "Not enrolled in any programme.",
+      "choose": "Programme",
+      "enroll": "Enrol",
+      "discharge": "Discharge",
+      "reason": "Reason for discharge",
+      "confirmDischarge": "Confirm discharge",
+      "cancel": "Cancel",
+      "due": "next follow-up expected on {date}",
+      "lost": "{days, plural, one {lost to follow-up, # day late} other {lost to follow-up, # days late}}"
+    },
+    "followUp": {
+      "title": "Programme follow-up",
+      "subtitle": "Patients enrolled in chronic programmes, lost to follow-up first: the team's call list. Available online.",
+      "offline": "List available online.",
+      "error": "List unavailable.",
+      "empty": "No patient enrolled.",
+      "last": "last contact on {date}",
+      "due": "expected on {date}",
+      "lost": "{days, plural, one {lost to follow-up (# day)} other {lost to follow-up (# days)}}"
     }
   }
 }

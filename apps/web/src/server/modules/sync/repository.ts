@@ -597,6 +597,49 @@ const mappers = {
       };
     },
   },
+  program_enrollment: {
+    table: schema.programEnrollment,
+    toState(row: typeof schema.programEnrollment.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          programId: row.programId,
+          enrolledAt: row.enrolledAt.toISOString(),
+          status: row.status,
+          dischargedAt: row.dischargedAt?.toISOString(),
+          dischargeReason: row.dischargeReason,
+        }),
+        fieldMeta: row.fieldMeta,
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.programEnrollment.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        programId: String(d.programId),
+        enrolledAt: new Date(String(d.enrolledAt)),
+        status: str(d.status) ?? 'active',
+        dischargedAt: instant(d.dischargedAt),
+        dischargeReason: str(d.dischargeReason),
+        fieldMeta: state.fieldMeta,
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+        updatedAt: new Date(),
+        updatedBy: ctx.userId,
+      };
+    },
+  },
   break_glass: {
     table: schema.breakGlassEvent,
     toState(row: typeof schema.breakGlassEvent.$inferSelect): EntityState {
@@ -878,6 +921,14 @@ async function getEntity(tx: Tx, entity: EntityName, id: string): Promise<Entity
         .limit(1);
       return row ? mappers.problem.toState(row) : null;
     }
+    case 'program_enrollment': {
+      const [row] = await tx
+        .select()
+        .from(schema.programEnrollment)
+        .where(eq(schema.programEnrollment.id, id))
+        .limit(1);
+      return row ? mappers.program_enrollment.toState(row) : null;
+    }
     case 'break_glass': {
       const [row] = await tx
         .select()
@@ -947,6 +998,13 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
       return (await tx.select().from(schema.problem).where(inArray(schema.problem.id, ids))).map(
         (r) => mappers.problem.toState(r),
       );
+    case 'program_enrollment':
+      return (
+        await tx
+          .select()
+          .from(schema.programEnrollment)
+          .where(inArray(schema.programEnrollment.id, ids))
+      ).map((r) => mappers.program_enrollment.toState(r));
     case 'break_glass':
       return (
         await tx
@@ -1083,6 +1141,11 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         case 'problem':
           await tx.insert(schema.problem).values(mappers.problem.toRow(state, ctx));
           await recordClinicalEvent(tx, ctx, 'problem', state);
+          return;
+        case 'program_enrollment':
+          await tx
+            .insert(schema.programEnrollment)
+            .values(mappers.program_enrollment.toRow(state, ctx));
           return;
         case 'break_glass':
           await tx.insert(schema.breakGlassEvent).values(mappers.break_glass.toRow(state, ctx));
@@ -1221,6 +1284,19 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         }
         case 'stock_movement':
         case 'patient_favorite':
+        case 'program_enrollment': {
+          const {
+            id: _id,
+            tenantId: _t,
+            createdBy: _c,
+            ...row
+          } = mappers.program_enrollment.toRow(state, ctx);
+          await tx
+            .update(schema.programEnrollment)
+            .set(row)
+            .where(eq(schema.programEnrollment.id, state.id));
+          return;
+        }
         case 'break_glass':
         case 'record_access':
           throw new Error(`${entity} rows are immutable`);
@@ -1534,6 +1610,10 @@ export async function patientBundles(
     .select()
     .from(schema.problem)
     .where(inArray(schema.problem.patientId, ids));
+  const enrollments = await tx
+    .select()
+    .from(schema.programEnrollment)
+    .where(inArray(schema.programEnrollment.patientId, ids));
   return [
     ...patients.map((r) => ({ entity: 'patient' as const, state: mappers.patient.toState(r) })),
     ...triages.map((r) => ({ entity: 'triage' as const, state: mappers.triage.toState(r) })),
@@ -1543,6 +1623,10 @@ export async function patientBundles(
       state: mappers.medical_history.toState(r),
     })),
     ...problems.map((r) => ({ entity: 'problem' as const, state: mappers.problem.toState(r) })),
+    ...enrollments.map((r) => ({
+      entity: 'program_enrollment' as const,
+      state: mappers.program_enrollment.toState(r),
+    })),
     ...appointments.map((r) => ({
       entity: 'appointment' as const,
       state: mappers.appointment.toState(r),
