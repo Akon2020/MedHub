@@ -52,6 +52,11 @@ const demographicFields = {
   fatherName: shortText(120),
   motherName: shortText(120),
   contact: patientContactSchema,
+  /** Opaque token printed in the QR code of the patient card. */
+  cardToken: z
+    .string()
+    .regex(/^MHC1-[A-Z0-9]{20}$/)
+    .nullish(),
 };
 
 export const patientRegisterPayload = z.object({
@@ -86,6 +91,7 @@ export const PATIENT_MERGEABLE_FIELDS = [
   'fatherName',
   'motherName',
   'contact',
+  'cardToken',
 ] as const;
 export type PatientMergeableField = (typeof PATIENT_MERGEABLE_FIELDS)[number];
 

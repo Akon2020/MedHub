@@ -16,3 +16,4 @@ export * from './core/reference';
 export * from './core/training';
 export * from './pat/duplicate-score';
 export * from './pat/merge';
+export * from './pat/card';

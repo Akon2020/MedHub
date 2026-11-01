@@ -1,10 +1,11 @@
 'use client';
 
+import { normalizeCardToken } from '@medhub/domain';
 import { ChevronRight, GitMerge, Search, UserPlus, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Suspense, useDeferredValue, useState } from 'react';
+import { Suspense, useDeferredValue, useEffect, useState } from 'react';
 import { useLocalQuery, useRuntime } from '@/client/runtime';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -23,6 +24,21 @@ function PatientsScreen() {
   const [showForm, setShowForm] = useState(params.get('new') === '1');
   const canMerge = useRuntime().identity?.permissions.includes('patient:merge') ?? false;
   const deferred = useDeferredValue(query.trim());
+  const { store } = useRuntime();
+
+  // A card scanner types the opaque token: the matching record opens directly.
+  useEffect(() => {
+    const token = normalizeCardToken(deferred);
+    if (!token || !store) return;
+    let cancelled = false;
+    void store.readEntities('patient').then((patients) => {
+      const match = patients.find((p) => p.data.cardToken === token);
+      if (match && !cancelled) router.push(`/app/patients/fiche?id=${match.id}`);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [deferred, store, router]);
 
   const paramQuery = params.get('q') ?? '';
   const [lastParam, setLastParam] = useState(paramQuery);

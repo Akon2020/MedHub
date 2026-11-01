@@ -10,6 +10,7 @@ import { Suspense, useEffect } from 'react';
 import { useLocalQuery } from '@/client/runtime';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FieldHistory, IdentityCard } from '@/features/patients/identity-card';
+import { PatientCardActions } from '@/features/patients/patient-card';
 import { initialsOf, isMerged, toPatientView } from '@/features/patients/patient-helpers';
 import { mergeClosure, mergeTarget } from '@medhub/domain';
 import { SyncBadge } from '@/features/patients/sync-badge';
@@ -138,7 +139,13 @@ function PatientRecord() {
             )}
           </p>
         </div>
-        <SyncBadge state={patient.syncState} />
+        <div className="grid justify-items-end gap-2">
+          <SyncBadge state={patient.syncState} />
+          <PatientCardActions
+            patient={patient}
+            cardToken={typeof raw.cardToken === 'string' ? raw.cardToken : null}
+          />
+        </div>
       </section>
 
       {(mergedFrom || mergedCount > 0) && (

@@ -597,7 +597,8 @@
         "motherName": "Mother's name",
         "contact": "Person to contact",
         "sensitivity": "Sensitivity",
-        "mergedIntoId": "Merge"
+        "mergedIntoId": "Merge",
+        "cardToken": "Patient card"
       },
       "address": {
         "province": "Province",
@@ -632,6 +633,16 @@
         "unmerge": "merge undone",
         "review": "review"
       }
+    },
+    "card": {
+      "print": "Print the card",
+      "replace": "Lost card",
+      "replaceConfirm": "A new card will be printed with a new code: the old card will no longer find this patient.",
+      "replaceAction": "Print a new card",
+      "cancel": "Cancel",
+      "born": "born {date}",
+      "note": "Show this card at every visit. The QR code holds no personal information.",
+      "error": "The card could not be prepared. Try again."
     }
   },
   "diagnostic": {

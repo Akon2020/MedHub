@@ -1,3 +1,5 @@
+import { normalizeCardToken } from './card';
+
 /**
  * Search normalization shared by the server (search_text column), the offline
  * hashed index and the duplicate detector, so all three agree on matches.
@@ -58,6 +60,8 @@ function phoneticWord(word: string): string {
 }
 
 export type PatientQuery = {
+  /** Patient card read by a scanner: the search is then an exact lookup. */
+  cardToken: string | null;
   /** Normalized words, without the year, the phone or the record number. */
   text: string;
   phoneticKey: string;
@@ -78,6 +82,10 @@ export function parsePatientQuery(
   input: string,
   currentYear = new Date().getFullYear(),
 ): PatientQuery {
+  const cardToken = normalizeCardToken(input);
+  if (cardToken) {
+    return { cardToken, text: '', phoneticKey: '', phoneTail: null, mrn: null, year: null };
+  }
   const words: string[] = [];
   let phoneTail: string | null = null;
   let mrn: string | null = null;
@@ -105,5 +113,5 @@ export function parsePatientQuery(
     }
   }
   const text = normalizeSearchText(words.join(' '));
-  return { text, phoneticKey: phoneticKey(text), phoneTail, mrn, year };
+  return { cardToken: null, text, phoneticKey: phoneticKey(text), phoneTail, mrn, year };
 }

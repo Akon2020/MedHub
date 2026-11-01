@@ -40,6 +40,8 @@ export const patient = pgTable(
     motherName: text('mother_name'),
     /** Person to contact: name, relation, phone. */
     contact: jsonb('contact').$type<Record<string, string | null>>(),
+    /** Opaque token of the printed card's QR code (no personal data). */
+    cardToken: text('card_token'),
     sensitivity: text('sensitivity').notNull().default('normal'),
     searchText: text('search_text').notNull(),
     phoneticKey: text('phonetic_key').notNull(),
@@ -56,6 +58,9 @@ export const patient = pgTable(
     uniqueIndex('patient_mrn_uq').on(t.tenantId, t.mrn),
     index('patient_phonetic_idx').on(t.tenantId, t.phoneticKey),
     index('patient_phone_idx').on(t.tenantId, t.phone),
+    uniqueIndex('patient_card_token_uq')
+      .on(t.tenantId, t.cardToken)
+      .where(sql`${t.cardToken} is not null`),
     check('patient_sex_check', sql`${t.sex} in ('M','F','U')`),
     check(
       'patient_sensitivity_check',

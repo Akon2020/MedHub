@@ -602,7 +602,8 @@
         "motherName": "Nom de la mère",
         "contact": "Personne à contacter",
         "sensitivity": "Sensibilité",
-        "mergedIntoId": "Fusion"
+        "mergedIntoId": "Fusion",
+        "cardToken": "Carte patient"
       },
       "address": {
         "province": "Province",
@@ -637,6 +638,16 @@
         "unmerge": "fusion annulée",
         "review": "revue"
       }
+    },
+    "card": {
+      "print": "Imprimer la carte",
+      "replace": "Carte perdue",
+      "replaceConfirm": "Une nouvelle carte sera imprimée avec un nouveau code : l'ancienne carte ne permettra plus de retrouver ce patient.",
+      "replaceAction": "Imprimer une nouvelle carte",
+      "cancel": "Annuler",
+      "born": "né(e) {date}",
+      "note": "Présentez cette carte à chaque visite. Le code QR ne contient aucune information personnelle.",
+      "error": "La carte n'a pas pu être préparée. Réessayez."
     }
   },
   "diagnostic": {

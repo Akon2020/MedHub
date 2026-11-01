@@ -51,6 +51,7 @@ const TRACKED_FIELDS = [
   'fatherName',
   'motherName',
   'contact',
+  'cardToken',
   'mergedIntoId',
 ] as const;
 
@@ -118,6 +119,7 @@ const mappers = {
           fatherName: row.fatherName,
           motherName: row.motherName,
           contact: row.contact,
+          cardToken: row.cardToken,
         }),
         fieldMeta: row.fieldMeta,
         hlc: row.hlc ?? '',
@@ -152,6 +154,7 @@ const mappers = {
         fatherName: str(d.fatherName),
         motherName: str(d.motherName),
         contact: record(d.contact),
+        cardToken: str(d.cardToken),
         fieldMeta: state.fieldMeta,
         hlc: state.hlc,
         opId: state.opId || null,

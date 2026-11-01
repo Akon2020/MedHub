@@ -46,12 +46,15 @@ export async function searchPatients(
   input: { q: string; cursor: number },
 ): Promise<{ hits: PatientHit[]; next: number | null }> {
   const query = parsePatientQuery(input.q);
-  if (!query.text && !query.phoneTail && !query.mrn) return { hits: [], next: null };
+  if (!query.text && !query.phoneTail && !query.mrn && !query.cardToken) {
+    return { hits: [], next: null };
+  }
   return withTenant(database().db, { tenantId: ctx.tenantId, userId: ctx.userId }, async (tx) => {
     requirePermission(await loadPermissions(tx, ctx.userId), 'patient:read');
     const p = schema.patient;
     const where: SQL[] = [];
     let rank: SQL | null = null;
+    if (query.cardToken) where.push(sql`${p.cardToken} = ${query.cardToken}`);
     if (query.mrn) {
       where.push(
         sql`(upper(${p.mrn}) = ${query.mrn} or upper(coalesce(${p.officialMrn}, '')) = ${query.mrn})`,

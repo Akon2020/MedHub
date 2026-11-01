@@ -78,6 +78,13 @@
       "when": 1793513599052,
       "tag": "0010_s6_demographics",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793524149829,
+      "tag": "0011_s6_card",
+      "breakpoints": true
     }
   ]
 }

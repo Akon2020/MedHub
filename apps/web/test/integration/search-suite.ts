@@ -18,6 +18,7 @@ type Person = {
   birthDate: string;
   phone?: string;
   motherName?: string;
+  cardToken?: string;
 };
 
 const PEOPLE: (Person & { mrn: string })[] = [
@@ -28,6 +29,7 @@ const PEOPLE: (Person & { mrn: string })[] = [
     sex: 'M',
     birthDate: '1990-03-12',
     phone: '0991234567',
+    cardToken: 'MHC1-ABCDEFGHJKMNPQRSTVWX',
   },
   {
     mrn: 'KIN-AA-26-00002',
@@ -167,6 +169,7 @@ export function defineSearchSuite(mode: 'auto' | 'off'): void {
         expect(await names('+243 991 234 567')).toEqual(['KIN-AA-26-00001']);
         expect(await names('kin-aa-26-00004')).toEqual(['KIN-AA-26-00004']);
         expect(await names('Tshibanda Ruth')).toEqual(['KIN-AA-26-00003']);
+        expect(await names(' mhc1-abcdefghjkmnpqrstvwx ')).toEqual(['KIN-AA-26-00001']);
       });
 
       it('requires patient:read and returns the state a device stores', async () => {

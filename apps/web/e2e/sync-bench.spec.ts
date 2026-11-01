@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { activateDevice, unlock, withServer } from './support';
 
@@ -90,6 +91,22 @@ async function setNetwork(device: Device, random: () => number): Promise<void> {
   device.offline = random() < 0.35;
   device.loseResponses = !device.offline && random() < 0.4;
   await device.context.setOffline(device.offline);
+}
+
+/**
+ * The failed offline navigation of the form may still be running (Next.js
+ * retries it as a full page load): a goto interrupted by it is simply retried.
+ */
+async function gotoSettled(page: Page, url: string): Promise<void> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      await page.goto(url);
+      return;
+    } catch (error) {
+      if (attempt >= 2 || !String(error).includes('ERR_ABORTED')) throw error;
+      await page.waitForTimeout(500);
+    }
+  }
 }
 
 async function sync(device: Device): Promise<void> {
@@ -284,7 +301,7 @@ test('front desk registers a patient offline from the screen, then it syncs', as
   // offline: the patient must survive that failed navigation and a full reload,
   // then reach the server.
   await context.setOffline(false);
-  await page.goto('/app');
+  await gotoSettled(page, '/app');
   await unlock(page);
   await expect
     .poll(() => page.evaluate(() => window.__medhubTest!.sync()), { timeout: 20_000 })
@@ -357,5 +374,31 @@ test('front desk registers a patient offline from the screen, then it syncs', as
     commune: 'Lemba',
     fields: ['address', 'motherName', 'occupation'],
   });
+
+  // Patient card: a PDF with an opaque QR token, then the token found again as a scanner types it.
+  const downloading = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Imprimer la carte' }).click();
+  const card = await downloading;
+  expect(card.suggestedFilename()).toMatch(/^carte-.+\.pdf$/);
+  expect(
+    readFileSync(await card.path())
+      .subarray(0, 5)
+      .toString(),
+  ).toBe('%PDF-');
+  await expect
+    .poll(() => page.evaluate(() => window.__medhubTest!.sync()), { timeout: 20_000 })
+    .toBeNull();
+  const token = await withServer(async (client) => {
+    const { rows } = await client.query<{ token: string | null }>(
+      'select card_token as token from patient where id = $1',
+      [patientId],
+    );
+    return rows[0]?.token ?? '';
+  });
+  expect(token).toMatch(/^MHC1-[A-Z0-9]{20}$/);
+  await page.goto('/app/patients');
+  await unlock(page);
+  await page.getByPlaceholder('Nom, téléphone ou numéro de dossier').fill(token);
+  await page.waitForURL((u) => u.searchParams.get('id') === patientId, { timeout: 20_000 });
   await context.close();
 });

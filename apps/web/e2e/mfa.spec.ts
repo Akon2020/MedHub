@@ -431,6 +431,7 @@ test('content security policy carries a fresh nonce on every document', async ({
   const policy = first.headers()['content-security-policy'] ?? '';
   expect(policy).toContain("'strict-dynamic'");
   expect(policy).not.toContain("'unsafe-eval'");
+  expect(policy).toContain("'wasm-unsafe-eval'");
   const nonce = /'nonce-([^']+)'/.exec(policy)?.[1];
   expect(nonce).toBeTruthy();
   expect(second.headers()['content-security-policy']).not.toContain(nonce as string);

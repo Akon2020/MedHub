@@ -8,13 +8,17 @@ function contentSecurityPolicy(nonce: string): string {
   return [
     "default-src 'self'",
     // Nonce plus strict-dynamic: only scripts emitted by Next.js for this response run.
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${dev ? " 'unsafe-eval'" : ''}`,
+    // 'wasm-unsafe-eval' only lets WebAssembly compile (the PDF layout engine, Yoga):
+    // no eval of JavaScript, no inline or external script without the nonce.
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'${dev ? " 'unsafe-eval'" : ''}`,
     // React style attributes (charts, sizes) need inline styles; scripts never do.
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' blob: data:",
     "font-src 'self'",
-    `connect-src 'self'${dev ? ' ws: wss:' : ''}`,
-    "worker-src 'self'",
+    // data: and blob: are local to the page: the PDF engine reads its embedded
+    // WebAssembly module and runs a worker; nothing leaves for another origin.
+    `connect-src 'self' data:${dev ? ' ws: wss:' : ''}`,
+    "worker-src 'self' blob:",
     "manifest-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
