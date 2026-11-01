@@ -2,6 +2,7 @@ import { uuidv7 } from '@medhub/shared';
 import type { Tx } from '../../src/client';
 import { appendAudit } from '../../src/audit';
 import {
+  appointment,
   appointmentType,
   changeLog,
   choiceItem,
@@ -157,6 +158,18 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       priority: 'normal',
       chiefComplaint: 'Fièvre',
       triagedAt: new Date(),
+    });
+  },
+  appointment: async (tx, tenantId) => {
+    await tx.insert(appointment).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      resourceKind: 'practitioner',
+      resourceId: uuidv7(),
+      startsAt: new Date('2026-12-01T08:00:00Z'),
+      endsAt: new Date('2026-12-01T08:15:00Z'),
+      status: 'booked',
     });
   },
   queue: async (tx, tenantId) => {

@@ -31,7 +31,12 @@ export const NAVIGATION: NavGroup[] = [
     items: [
       { key: 'patients', href: '/app/patients', icon: Users, permission: 'patient:read' },
       { key: 'queues', href: '/app/files', icon: ListOrdered, permission: 'queue:read' },
-      { key: 'appointments', href: '/app/bientot?m=appointments', icon: CalendarClock, soon: 'S7' },
+      {
+        key: 'appointments',
+        href: '/app/rendez-vous',
+        icon: CalendarClock,
+        permission: 'appointment:read',
+      },
       {
         key: 'consultations',
         href: '/app/bientot?m=consultations',

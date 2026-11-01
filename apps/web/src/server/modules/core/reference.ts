@@ -413,7 +413,12 @@ export async function catalogSnapshot(ctx: RequestContext): Promise<CatalogSnaps
       .from(schema.userAccount)
       .where(eq(schema.userAccount.status, 'active'))
       .orderBy(asc(schema.userAccount.displayName), asc(schema.userAccount.id));
+    const [tenant] = await tx
+      .select({ timeZone: schema.tenant.timezone })
+      .from(schema.tenant)
+      .where(eq(schema.tenant.id, ctx.tenantId));
     const body = {
+      timeZone: tenant?.timeZone ?? 'Africa/Kinshasa',
       currencies,
       units,
       provinces,

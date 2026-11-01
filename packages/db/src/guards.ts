@@ -20,6 +20,7 @@ const NO_DELETE = [
   'encounter',
   'queue_ticket',
   'triage',
+  'appointment',
 ];
 const NO_UPDATE = [
   'stock_movement',

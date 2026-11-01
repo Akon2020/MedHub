@@ -15,6 +15,9 @@ export const ALL_PERMISSIONS = new Set([
   'encounter:update_status',
   'queue:call',
   'triage:create',
+  'appointment:create',
+  'appointment:update',
+  'appointment:cancel',
   'stock:move',
 ]);
 

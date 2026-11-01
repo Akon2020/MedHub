@@ -221,6 +221,8 @@ export type CatalogSnapshot = {
     endTime: string | null;
     slotMin: number | null;
   }[];
+  /** Time zone of the structure: agenda slots are local times there. */
+  timeZone?: string;
   /** Active users, for names on screens and practitioner agendas. */
   staff?: { id: string; displayName: string; title: string | null }[];
 };

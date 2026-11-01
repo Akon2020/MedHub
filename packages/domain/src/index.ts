@@ -24,3 +24,4 @@ export * from './core/sync-scope';
 export * from './rdv/config';
 export * from './rdv/visits';
 export * from './rdv/triage';
+export * from './rdv/appointments';

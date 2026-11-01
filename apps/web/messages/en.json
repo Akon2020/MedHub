@@ -779,7 +779,9 @@
     "PAT_NOT_FOUND": "This patient cannot be found on the server.",
     "PAT_ALREADY_MERGED": "One of the two records was already merged.",
     "PAT_SENSITIVE": "This record is protected: your role cannot open it.",
-    "RDV_TRANSITION_NOT_ALLOWED": "This ticket has already changed: the screen will refresh."
+    "RDV_TRANSITION_NOT_ALLOWED": "This ticket has already changed: the screen will refresh.",
+    "RDV_SLOT_TAKEN": "This slot was just taken on another workstation: choose another one.",
+    "RDV_SLOT_UNAVAILABLE": "This slot no longer exists in the agenda."
   },
   "account": {
     "title": "My account",
@@ -1591,5 +1593,53 @@
       "orientedTo": "sent to {queue}",
       "hint": "Works offline. Vital signs entered below are attached to this visit. Sending the patient on finishes the current ticket and issues one in the chosen queue, with the triage priority."
     }
+  },
+  "appointments": {
+    "title": "Appointments",
+    "subtitle": "Day agenda per practitioner or department. Works offline; when two workstations take the same slot, the first to reach the server keeps it and the other is asked to choose another one.",
+    "resource": "Agenda",
+    "date": "Day",
+    "previousDay": "Previous day",
+    "nextDay": "Next day",
+    "firstFree": "First free slot",
+    "noFreeSlot": "No free slot within the next 60 days.",
+    "noAgenda": "No agenda configured: an administrator sets the hours in Settings, Reception, queues and agendas.",
+    "bookingFor": "Appointment for",
+    "changePatient": "Change patient",
+    "choosePatient": "Patient (name, phone, record)",
+    "movingHint": "Choose the new slot for {name}.",
+    "cancel": "Cancel",
+    "rejectedTitle": "Slots taken meanwhile on another workstation",
+    "rebook": "Choose another slot",
+    "slotCount": "{count, plural, =0 {no slot} one {# slot} other {# slots}}",
+    "closed": "No consultation that day.",
+    "unknownPatient": "Patient not on this workstation",
+    "pending": "to send",
+    "arrive": "Arrived",
+    "move": "Move",
+    "noShow": "No show",
+    "cancelAppointment": "Cancel the appointment",
+    "cancelReason": "Reason for cancelling",
+    "confirmCancel": "Confirm the cancellation",
+    "moveHere": "Move here",
+    "overbook": "Add (overbooking)",
+    "book": "Book",
+    "booked": "Appointment saved.",
+    "moved": "Appointment moved.",
+    "arrived": "Arrival saved: visit and ticket created.",
+    "cancelled": "Appointment cancelled.",
+    "saved": "Saved.",
+    "statuses": {
+      "booked": "Booked",
+      "confirmed": "Confirmed",
+      "arrived": "Arrived",
+      "no_show": "No show",
+      "cancelled": "Cancelled",
+      "completed": "Completed"
+    },
+    "patientTitle": "Appointments",
+    "take": "Book an appointment",
+    "noneUpcoming": "No upcoming appointment.",
+    "missed": "{count, plural, one {# missed appointment} other {# missed appointments}}"
   }
 }

@@ -56,6 +56,10 @@ export interface ServerSyncTx {
     warehouseId: string,
     productId: string,
   ): Promise<{ kind: StockMovementKind; quantity: number }[]>;
+  /** Appointments the slot can hold (0: no such slot in the resource's agenda). */
+  slotCapacity(resourceId: string, startsAt: string): Promise<number>;
+  /** Appointments already holding the slot, the one being moved excluded. */
+  countSlotBookings(resourceId: string, startsAt: string, excludeId: string): Promise<number>;
 }
 
 export interface ServerSyncStore {
@@ -187,6 +191,18 @@ async function applyOperation(
   if (ruleError) throw new Rejection(ruleError);
 
   const entity = command.entity;
+  if (command.holdsSlot) {
+    const current = command.kind === 'update' ? await tx.getEntity(entity, op.entityId) : null;
+    if (!current || transitionApplies(command, current.data)) {
+      const resourceId = String(payload.resourceId ?? current?.data.resourceId ?? '');
+      const startsAt = String(payload.startsAt);
+      const capacity = await tx.slotCapacity(resourceId, startsAt);
+      if (capacity === 0) throw new Rejection('RDV_SLOT_UNAVAILABLE');
+      if ((await tx.countSlotBookings(resourceId, startsAt, op.entityId)) >= capacity) {
+        throw new Rejection('RDV_SLOT_TAKEN');
+      }
+    }
+  }
   if (command.patientAct && command.kind !== 'update') {
     const { patientId } = command.patientAct(payload as never);
     const patient = await tx.getEntity('patient', patientId);

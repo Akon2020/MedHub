@@ -1,6 +1,13 @@
 import 'server-only';
 import { appendAudit, enqueue, schema, withTenant, type Db, type Tx } from '@medhub/db';
-import { ENTITIES, getCommand, type EntityName, type PatientRegisterPayload } from '@medhub/domain';
+import {
+  ENTITIES,
+  SLOT_HOLDING_STATUSES,
+  getCommand,
+  slotCapacity,
+  type EntityName,
+  type PatientRegisterPayload,
+} from '@medhub/domain';
 import type { StockMovementKind } from '@medhub/shared';
 import { formatHlc, uuidv7 } from '@medhub/shared';
 import {
@@ -19,7 +26,7 @@ import {
   type ServerSyncStore,
   type ServerSyncTx,
 } from '@medhub/sync/server';
-import { and, asc, eq, gt, gte, inArray, isNull, lte } from 'drizzle-orm';
+import { and, asc, eq, gt, gte, inArray, isNull, lte, ne } from 'drizzle-orm';
 
 type Ctx = { tenantId: string; userId: string; deviceId: string | null };
 
@@ -372,6 +379,57 @@ const mappers = {
       };
     },
   },
+  appointment: {
+    table: schema.appointment,
+    toState(row: typeof schema.appointment.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          resourceKind: row.resourceKind,
+          resourceId: row.resourceId,
+          appointmentTypeId: row.appointmentTypeId,
+          startsAt: row.startsAt.toISOString(),
+          endsAt: row.endsAt.toISOString(),
+          status: row.status,
+          cancelReason: row.cancelReason,
+          source: row.source,
+          notes: row.notes,
+        }),
+        fieldMeta: row.fieldMeta,
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.appointment.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        resourceKind: String(d.resourceKind),
+        resourceId: String(d.resourceId),
+        appointmentTypeId: str(d.appointmentTypeId),
+        startsAt: new Date(String(d.startsAt)),
+        endsAt: new Date(String(d.endsAt)),
+        status: String(d.status),
+        cancelReason: str(d.cancelReason),
+        source: str(d.source) ?? 'front_desk',
+        notes: str(d.notes),
+        fieldMeta: state.fieldMeta,
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+        updatedAt: new Date(),
+        updatedBy: ctx.userId,
+      };
+    },
+  },
   patient_favorite: {
     table: schema.patientFavorite,
     toState(row: typeof schema.patientFavorite.$inferSelect): EntityState {
@@ -508,6 +566,14 @@ async function getEntity(tx: Tx, entity: EntityName, id: string): Promise<Entity
       const [row] = await tx.select().from(schema.triage).where(eq(schema.triage.id, id)).limit(1);
       return row ? mappers.triage.toState(row) : null;
     }
+    case 'appointment': {
+      const [row] = await tx
+        .select()
+        .from(schema.appointment)
+        .where(eq(schema.appointment.id, id))
+        .limit(1);
+      return row ? mappers.appointment.toState(row) : null;
+    }
   }
 }
 
@@ -545,6 +611,10 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
       return (await tx.select().from(schema.triage).where(inArray(schema.triage.id, ids))).map(
         (r) => mappers.triage.toState(r),
       );
+    case 'appointment':
+      return (
+        await tx.select().from(schema.appointment).where(inArray(schema.appointment.id, ids))
+      ).map((r) => mappers.appointment.toState(r));
   }
 }
 
@@ -648,6 +718,9 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         case 'triage':
           await tx.insert(schema.triage).values(mappers.triage.toRow(state, ctx));
           return;
+        case 'appointment':
+          await tx.insert(schema.appointment).values(mappers.appointment.toRow(state, ctx));
+          return;
       }
     },
     async updateEntity(entity, state) {
@@ -713,6 +786,16 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
           await tx.update(schema.queueTicket).set(row).where(eq(schema.queueTicket.id, state.id));
           return;
         }
+        case 'appointment': {
+          const {
+            id: _id,
+            tenantId: _t,
+            createdBy: _c,
+            ...row
+          } = mappers.appointment.toRow(state, ctx);
+          await tx.update(schema.appointment).set(row).where(eq(schema.appointment.id, state.id));
+          return;
+        }
         case 'triage':
           // Append-only: only the status changes, when a correction supersedes the row.
           await tx
@@ -752,6 +835,41 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         clientValue: Object.fromEntries(conflict.conflicts.map((c) => [c.field, c.clientValue])),
       });
       return id;
+    },
+    async slotCapacity(resourceId, startsAt) {
+      const [tenant] = await tx
+        .select({ timeZone: schema.tenant.timezone })
+        .from(schema.tenant)
+        .where(eq(schema.tenant.id, ctx.tenantId));
+      const schedules = await tx
+        .select()
+        .from(schema.scheduleTemplate)
+        .where(eq(schema.scheduleTemplate.resourceId, resourceId));
+      const exceptions = await tx
+        .select()
+        .from(schema.scheduleException)
+        .where(eq(schema.scheduleException.resourceId, resourceId));
+      return slotCapacity({
+        resourceId,
+        startsAt,
+        timeZone: tenant?.timeZone ?? 'Africa/Kinshasa',
+        schedules,
+        exceptions: exceptions.map((e) => ({ ...e, kind: e.kind as 'closed' | 'extra' })),
+      });
+    },
+    async countSlotBookings(resourceId, startsAt, excludeId) {
+      const rows = await tx
+        .select({ id: schema.appointment.id })
+        .from(schema.appointment)
+        .where(
+          and(
+            eq(schema.appointment.resourceId, resourceId),
+            eq(schema.appointment.startsAt, new Date(startsAt)),
+            ne(schema.appointment.id, excludeId),
+            inArray(schema.appointment.status, [...SLOT_HOLDING_STATUSES]),
+          ),
+        );
+      return rows.length;
     },
     async listStockMovements(warehouseId, productId) {
       const rows = await tx
@@ -1005,9 +1123,17 @@ export async function patientBundles(
     .select()
     .from(schema.triage)
     .where(inArray(schema.triage.patientId, ids));
+  const appointments = await tx
+    .select()
+    .from(schema.appointment)
+    .where(inArray(schema.appointment.patientId, ids));
   return [
     ...patients.map((r) => ({ entity: 'patient' as const, state: mappers.patient.toState(r) })),
     ...triages.map((r) => ({ entity: 'triage' as const, state: mappers.triage.toState(r) })),
+    ...appointments.map((r) => ({
+      entity: 'appointment' as const,
+      state: mappers.appointment.toState(r),
+    })),
     ...encounters.map((r) => ({
       entity: 'encounter' as const,
       state: mappers.encounter.toState(r),

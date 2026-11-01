@@ -779,7 +779,9 @@
     "PAT_NOT_FOUND": "Ce patient est introuvable sur le serveur.",
     "PAT_ALREADY_MERGED": "L'un des deux dossiers a déjà été fusionné.",
     "PAT_SENSITIVE": "Ce dossier est protégé : votre rôle ne permet pas de l'ouvrir.",
-    "RDV_TRANSITION_NOT_ALLOWED": "Ce ticket a déjà changé d'état : l'écran va se mettre à jour."
+    "RDV_TRANSITION_NOT_ALLOWED": "Ce ticket a déjà changé d'état : l'écran va se mettre à jour.",
+    "RDV_SLOT_TAKEN": "Ce créneau vient d'être pris sur un autre poste : choisissez-en un autre.",
+    "RDV_SLOT_UNAVAILABLE": "Ce créneau n'existe plus dans l'agenda."
   },
   "account": {
     "title": "Mon compte",
@@ -1591,5 +1593,53 @@
       "orientedTo": "orienté vers {queue}",
       "hint": "Fonctionne hors connexion. Les constantes saisies ci-dessous sont rattachées à cette visite. Orienter le patient termine son ticket en cours et lui donne un ticket dans la file choisie, avec la priorité du triage."
     }
+  },
+  "appointments": {
+    "title": "Rendez-vous",
+    "subtitle": "Agenda du jour par soignant ou par service. Fonctionne hors connexion ; si deux postes prennent le même créneau, le premier arrivé au serveur le garde et l'autre est invité à en choisir un autre.",
+    "resource": "Agenda",
+    "date": "Jour",
+    "previousDay": "Jour précédent",
+    "nextDay": "Jour suivant",
+    "firstFree": "Premier créneau libre",
+    "noFreeSlot": "Aucun créneau libre dans les 60 prochains jours.",
+    "noAgenda": "Aucun agenda configuré : un administrateur définit les horaires dans Paramètres, Accueil, files et agendas.",
+    "bookingFor": "Rendez-vous pour",
+    "changePatient": "Changer de patient",
+    "choosePatient": "Patient (nom, téléphone, dossier)",
+    "movingHint": "Choisissez le nouveau créneau de {name}.",
+    "cancel": "Annuler",
+    "rejectedTitle": "Créneaux pris entre-temps sur un autre poste",
+    "rebook": "Choisir un autre créneau",
+    "slotCount": "{count, plural, =0 {aucun créneau} one {# créneau} other {# créneaux}}",
+    "closed": "Pas de consultation ce jour-là.",
+    "unknownPatient": "Patient absent de ce poste",
+    "pending": "à envoyer",
+    "arrive": "Arrivé",
+    "move": "Déplacer",
+    "noShow": "Absent",
+    "cancelAppointment": "Annuler le rendez-vous",
+    "cancelReason": "Motif de l'annulation",
+    "confirmCancel": "Confirmer l'annulation",
+    "moveHere": "Déplacer ici",
+    "overbook": "Ajouter (surréservation)",
+    "book": "Réserver",
+    "booked": "Rendez-vous enregistré.",
+    "moved": "Rendez-vous déplacé.",
+    "arrived": "Arrivée enregistrée : visite et ticket créés.",
+    "cancelled": "Rendez-vous annulé.",
+    "saved": "Enregistré.",
+    "statuses": {
+      "booked": "Prévu",
+      "confirmed": "Confirmé",
+      "arrived": "Arrivé",
+      "no_show": "Absent",
+      "cancelled": "Annulé",
+      "completed": "Terminé"
+    },
+    "patientTitle": "Rendez-vous",
+    "take": "Prendre rendez-vous",
+    "noneUpcoming": "Aucun rendez-vous à venir.",
+    "missed": "{count, plural, one {# rendez-vous manqué} other {# rendez-vous manqués}}"
   }
 }

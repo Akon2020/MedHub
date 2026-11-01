@@ -180,3 +180,33 @@ export const triage = pgTable(
     ),
   ],
 );
+
+/** Appointment on an agenda slot; the slot is checked when the booking reaches the server. */
+export const appointment = pgTable(
+  'appointment',
+  {
+    ...syncColumns(),
+    patientId: uuid('patient_id').notNull(),
+    resourceKind: text('resource_kind').notNull(),
+    resourceId: uuid('resource_id').notNull(),
+    appointmentTypeId: uuid('appointment_type_id'),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+    status: text('status').notNull(),
+    cancelReason: text('cancel_reason'),
+    source: text('source').notNull().default('front_desk'),
+    notes: text('notes'),
+    reminderStatus: text('reminder_status'),
+    fieldMeta: fieldMeta(),
+  },
+  (t) => [
+    index('appointment_resource_idx').on(t.tenantId, t.resourceId, t.startsAt),
+    index('appointment_patient_idx').on(t.tenantId, t.patientId, t.startsAt),
+    check('appointment_resource_check', sql`${t.resourceKind} ${RESOURCE_KIND_CHECK}`),
+    check(
+      'appointment_status_check',
+      sql`${t.status} in ('booked','confirmed','arrived','no_show','cancelled','completed')`,
+    ),
+    check('appointment_source_check', sql`${t.source} in ('front_desk','portal','recurring')`),
+  ],
+);

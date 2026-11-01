@@ -167,10 +167,13 @@ export class EncryptedClientStore implements ClientSyncStore {
     return this.decodeEntity(record);
   }
 
-  async readEntities(entity: string): Promise<LocalEntity[]> {
+  /** Rows refused by the server are left out unless asked for (to offer a new attempt). */
+  async readEntities(entity: string, includeRejected = false): Promise<LocalEntity[]> {
     const records = await this.db.entities.where('entity').equals(entity).toArray();
     const out: LocalEntity[] = [];
-    for (const r of records) if (!r.rejected) out.push(await this.decodeEntity(r));
+    for (const r of records) {
+      if (includeRejected || !r.rejected) out.push(await this.decodeEntity(r));
+    }
     return out;
   }
 

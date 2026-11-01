@@ -28,6 +28,7 @@ import {
 import { mergeClosure, mergeTarget } from '@medhub/domain';
 import { SyncBadge } from '@/features/patients/sync-badge';
 import { VitalsPanel, type VitalView } from '@/features/patients/vitals-panel';
+import { PatientAppointments } from '@/features/appointments/patient-appointments';
 import { ArrivalPanel } from '@/features/visits/arrival-panel';
 import { TriagePanel } from '@/features/visits/triage-panel';
 import { currentTriage, openVisitOfToday, todayTickets } from '@/features/visits/visit-helpers';
@@ -218,6 +219,7 @@ function PatientRecord() {
         </div>
         <div className="grid content-start gap-6">
           <ArrivalPanel patientId={patient.id} deceased={deceasedAtOf(raw) !== null} />
+          <PatientAppointments patientId={patient.id} />
           <Card>
             <CardHeader>
               <CardTitle>{t('trend')}</CardTitle>

@@ -330,4 +330,39 @@ describe('server engine', () => {
     await b.client.sync();
     expect(b.store.entitiesOf('queue_ticket')[0]?.data).toMatchObject({ room: 'Salle 1' });
   });
+
+  it('gives a slot booked by two devices offline to the first to reach the server', async () => {
+    const { a, b, server } = setup();
+    const { entityId: patientId } = await a.client.dispatch('patient.register', registration);
+    await a.client.sync();
+    await b.client.sync();
+    const slot = {
+      patientId,
+      resourceKind: 'practitioner' as const,
+      resourceId: '01a19830-805e-7768-a65f-140ecc61aab9',
+      startsAt: '2026-11-09T07:00:00.000Z',
+      endsAt: '2026-11-09T07:15:00.000Z',
+    };
+    await a.client.dispatch('appointment.book', slot);
+    const second = await b.client.dispatch('appointment.book', slot);
+    await a.client.sync();
+    const res = await b.transport.push({
+      deviceId: b.id,
+      schemaVersion: 1,
+      ops: await pendingOps(b),
+    });
+    expect(res.results[0]).toMatchObject({ status: 'rejected', reason: 'RDV_SLOT_TAKEN' });
+    expect(server.entitiesOf('appointment')).toHaveLength(1);
+
+    // Moving the kept appointment to the same slot is not a conflict with itself.
+    const [kept] = server.entitiesOf('appointment');
+    await a.client.dispatch(
+      'appointment.reschedule',
+      { startsAt: slot.startsAt, endsAt: slot.endsAt },
+      { entityId: kept?.id ?? '' },
+    );
+    await a.client.sync();
+    expect(server.entitiesOf('appointment')[0]?.data.status).toBe('booked');
+    expect(second.entityId).not.toBe(kept?.id);
+  });
 });

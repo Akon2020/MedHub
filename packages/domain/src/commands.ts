@@ -11,6 +11,13 @@ import {
 import { patientFavoritePayload } from './pat/favorites';
 import { blockedByDeath, patientDeathPayload } from './pat/lifecycle';
 import { stockMovementRecordPayload } from './phar/stock';
+import {
+  UPCOMING_STATUSES,
+  appointmentBookPayload,
+  appointmentCancelPayload,
+  appointmentMarkPayload,
+  appointmentReschedulePayload,
+} from './rdv/appointments';
 import { triageRecordPayload } from './rdv/triage';
 import {
   OPEN_ENCOUNTER_STATUSES,
@@ -32,7 +39,8 @@ export type EntityName =
   | 'patient_favorite'
   | 'encounter'
   | 'queue_ticket'
-  | 'triage';
+  | 'triage'
+  | 'appointment';
 
 export type EntityDefinition = {
   name: EntityName;
@@ -86,6 +94,15 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
     scopeKeys: (data) => [`queue:${String(data.queueId)}`, `patient:${String(data.patientId)}`],
     patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
   },
+  appointment: {
+    name: 'appointment',
+    strategy: 'first_wins',
+    scopeKeys: (data) => [
+      `patient:${String(data.patientId)}`,
+      `resource:${String(data.resourceId)}`,
+    ],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
   triage: {
     name: 'triage',
     strategy: 'append_only',
@@ -118,6 +135,11 @@ export type CommandDefinition<S extends z.ZodType = z.ZodType> = {
    * `to` is the status set by the command; without it the payload carries it.
    */
   transition?: { from: readonly string[]; to?: string };
+  /**
+   * The command takes an appointment slot: the server checks, when the
+   * operation arrives, that the slot exists and is not full (first wins).
+   */
+  holdsSlot?: boolean;
   /** A clinical act on a patient: refused after the patient's recorded death. */
   patientAct?: (payload: z.infer<S>) => { patientId: string; at: string };
 };
@@ -239,6 +261,54 @@ export const COMMANDS = {
     permission: 'queue:call',
     onlineOnly: false,
     transition: TICKET_TRANSITIONS['queue_ticket.mark_left'],
+  }),
+  'appointment.book': define({
+    name: 'appointment.book',
+    entity: 'appointment',
+    kind: 'create',
+    payloadSchema: appointmentBookPayload,
+    permission: 'appointment:create',
+    onlineOnly: false,
+    holdsSlot: true,
+  }),
+  'appointment.reschedule': define({
+    name: 'appointment.reschedule',
+    entity: 'appointment',
+    kind: 'update',
+    payloadSchema: appointmentReschedulePayload,
+    permission: 'appointment:update',
+    onlineOnly: false,
+    holdsSlot: true,
+    transition: { from: UPCOMING_STATUSES },
+  }),
+  'appointment.cancel': define({
+    name: 'appointment.cancel',
+    entity: 'appointment',
+    kind: 'update',
+    payloadSchema: appointmentCancelPayload,
+    permission: 'appointment:cancel',
+    onlineOnly: false,
+    transition: { from: UPCOMING_STATUSES, to: 'cancelled' },
+  }),
+  'appointment.mark_arrived': define({
+    name: 'appointment.mark_arrived',
+    entity: 'appointment',
+    kind: 'update',
+    payloadSchema: appointmentMarkPayload,
+    permission: 'appointment:update',
+    onlineOnly: false,
+    transientFields: ['at'],
+    transition: { from: UPCOMING_STATUSES, to: 'arrived' },
+  }),
+  'appointment.mark_no_show': define({
+    name: 'appointment.mark_no_show',
+    entity: 'appointment',
+    kind: 'update',
+    payloadSchema: appointmentMarkPayload,
+    permission: 'appointment:update',
+    onlineOnly: false,
+    transientFields: ['at'],
+    transition: { from: UPCOMING_STATUSES, to: 'no_show' },
   }),
   'triage.record': define({
     name: 'triage.record',
