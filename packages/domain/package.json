@@ -5,7 +5,8 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./who-growth": "./src/dpi/who-growth/tables.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

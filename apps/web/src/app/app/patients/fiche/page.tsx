@@ -39,6 +39,7 @@ import { AccessJournal } from '@/features/record/access-journal';
 import { ProgramsCard } from '@/features/record/programs-card';
 import { EmergencyBanner, LockedRecord, toGrant } from '@/features/record/break-glass';
 import { VitalsSummary } from '@/features/record/vitals-summary';
+import { GROWTH_MAX_AGE_YEARS, GrowthCard } from '@/features/record/growth-card';
 import { ArrivalPanel } from '@/features/visits/arrival-panel';
 import { TriagePanel } from '@/features/visits/triage-panel';
 import { currentTriage, openVisitOfToday, todayTickets } from '@/features/visits/visit-helpers';
@@ -286,6 +287,12 @@ function PatientRecord() {
           <ArrivalPanel patientId={patient.id} deceased={deceasedAtOf(raw) !== null} />
           <PatientAppointments patientId={patient.id} />
           <VitalsSummary vitals={vitals} sex={patient.sex} birthDate={patient.birthDate} />
+          {patient.birthDate &&
+            patient.sex !== 'U' &&
+            patient.age !== null &&
+            patient.age < GROWTH_MAX_AGE_YEARS && (
+              <GrowthCard sex={patient.sex} birthDate={patient.birthDate} vitals={vitals} />
+            )}
           <IdentityCard key={patient.id} patientId={patient.id} data={raw} />
           <FieldHistory patientId={patient.id} />
           <AccessJournal patientId={patient.id} />

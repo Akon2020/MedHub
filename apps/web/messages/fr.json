@@ -1847,6 +1847,36 @@
       "last": "dernier contact le {date}",
       "due": "attendu le {date}",
       "lost": "{days, plural, one {perdu de vue (# jour)} other {perdu de vue (# jours)}}"
+    },
+    "growth": {
+      "title": "Croissance (OMS)",
+      "weightForAge": "Poids pour l'âge",
+      "heightForAge": "Taille pour l'âge",
+      "weightForLength": "Poids pour la taille couchée",
+      "weightForHeight": "Poids pour la taille",
+      "bmiForAge": "IMC pour l'âge",
+      "headForAge": "Périmètre crânien pour l'âge",
+      "z": "Z = {z} ({p}e percentile)",
+      "noMeasure": "Saisissez le poids et la taille pour situer l'enfant sur les courbes.",
+      "curve": "Courbe",
+      "months": "mois",
+      "charts": {
+        "weight_for_age": "Poids pour l'âge",
+        "height_for_age": "Taille pour l'âge",
+        "head_for_age": "Périmètre crânien pour l'âge",
+        "bmi_for_age": "IMC pour l'âge"
+      },
+      "alerts": {
+        "severe_wasting": "Émaciation sévère (Z < -3)",
+        "wasting": "Émaciation (Z < -2)",
+        "severe_stunting": "Retard de croissance sévère (Z < -3)",
+        "stunting": "Retard de croissance (Z < -2)",
+        "severe_underweight": "Insuffisance pondérale sévère (Z < -3)",
+        "underweight": "Insuffisance pondérale (Z < -2)",
+        "muac_severe": "Périmètre brachial < 115 mm",
+        "muac_moderate": "Périmètre brachial < 125 mm"
+      },
+      "source": "Références : standards de croissance de l'OMS (2006) de 0 à 5 ans, référence OMS (2007) de 5 à 19 ans."
     }
   }
 }

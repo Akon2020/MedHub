@@ -1847,6 +1847,36 @@
       "last": "last contact on {date}",
       "due": "expected on {date}",
       "lost": "{days, plural, one {lost to follow-up (# day)} other {lost to follow-up (# days)}}"
+    },
+    "growth": {
+      "title": "Growth (WHO)",
+      "weightForAge": "Weight-for-age",
+      "heightForAge": "Height-for-age",
+      "weightForLength": "Weight-for-length",
+      "weightForHeight": "Weight-for-height",
+      "bmiForAge": "BMI-for-age",
+      "headForAge": "Head circumference-for-age",
+      "z": "Z = {z} ({p}th percentile)",
+      "noMeasure": "Enter weight and height to place the child on the curves.",
+      "curve": "Curve",
+      "months": "months",
+      "charts": {
+        "weight_for_age": "Weight-for-age",
+        "height_for_age": "Height-for-age",
+        "head_for_age": "Head circumference-for-age",
+        "bmi_for_age": "BMI-for-age"
+      },
+      "alerts": {
+        "severe_wasting": "Severe wasting (Z < -3)",
+        "wasting": "Wasting (Z < -2)",
+        "severe_stunting": "Severe stunting (Z < -3)",
+        "stunting": "Stunting (Z < -2)",
+        "severe_underweight": "Severe underweight (Z < -3)",
+        "underweight": "Underweight (Z < -2)",
+        "muac_severe": "Mid-upper arm circumference < 115 mm",
+        "muac_moderate": "Mid-upper arm circumference < 125 mm"
+      },
+      "source": "References: WHO Child Growth Standards (2006) from 0 to 5 years, WHO Growth Reference (2007) from 5 to 19 years."
     }
   }
 }
