@@ -24,6 +24,7 @@ import { breakGlassPayload } from './dpi/break-glass';
 import { clinicalNotePayload, diagnosisPayload } from './dpi/consultation';
 import { formResponseCompletePayload, formResponseSignPayload } from './dpi/form-responses';
 import { invoiceFinalizePayload, invoiceLinePayload, invoiceOpenPayload } from './fact/invoice';
+import { creditNoteRequestPayload, discountRequestPayload } from './fact/adjustments';
 import {
   cashSessionClosePayload,
   cashSessionOpenPayload,
@@ -82,7 +83,10 @@ export type EntityName =
   | 'invoice'
   | 'invoice_line'
   | 'cash_session'
-  | 'payment';
+  | 'payment'
+  | 'approval_request'
+  | 'discount_grant'
+  | 'credit_note';
 
 export type EntityDefinition = {
   name: EntityName;
@@ -246,6 +250,24 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
     name: 'cash_session',
     strategy: 'field_merge',
     scopeKeys: (_data, id) => [`cash_session:${id}`],
+  },
+  approval_request: {
+    name: 'approval_request',
+    strategy: 'field_merge',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  discount_grant: {
+    name: 'discount_grant',
+    strategy: 'append_only',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  credit_note: {
+    name: 'credit_note',
+    strategy: 'append_only',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
   },
   payment: {
     name: 'payment',
@@ -643,6 +665,32 @@ export const COMMANDS = {
     kind: 'append',
     payloadSchema: paymentReceivePayload,
     permission: 'payment:receive',
+    onlineOnly: false,
+    check: (p) => (p.amount < 0 ? 'FACT_REFUND_NOT_ALLOWED' : null),
+  }),
+  'payment.refund': define({
+    name: 'payment.refund',
+    entity: 'payment',
+    kind: 'append',
+    payloadSchema: paymentReceivePayload,
+    permission: 'payment:refund',
+    onlineOnly: false,
+    check: (p) => (p.amount > 0 ? 'FACT_REFUND_NOT_ALLOWED' : null),
+  }),
+  'discount.request': define({
+    name: 'discount.request',
+    entity: 'approval_request',
+    kind: 'create',
+    payloadSchema: discountRequestPayload,
+    permission: 'invoice:discount',
+    onlineOnly: false,
+  }),
+  'credit_note.request': define({
+    name: 'credit_note.request',
+    entity: 'approval_request',
+    kind: 'create',
+    payloadSchema: creditNoteRequestPayload,
+    permission: 'invoice:void',
     onlineOnly: false,
   }),
   'form_response.sign': define({

@@ -12,3 +12,4 @@ export * from './prescription';
 export * from './finance';
 export * from './invoice';
 export * from './cash';
+export * from './adjustments';

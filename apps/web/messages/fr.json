@@ -817,7 +817,12 @@
     "FACT_SESSION_CLOSED": "La session de caisse est fermée : ouvrez-en une nouvelle.",
     "FACT_SESSION_NOT_YOURS": "Cette session de caisse appartient à un autre poste.",
     "FACT_DUPLICATE_REFERENCE": "Cette référence mobile money a déjà été encaissée.",
-    "FACT_INVOICE_VOIDED": "Cette facture est annulée."
+    "FACT_INVOICE_VOIDED": "Cette facture est annulée.",
+    "FACT_REFUND_NOT_ALLOWED": "Un remboursement passe par la commande dédiée, avec son motif.",
+    "FACT_ADJUSTMENT_TOO_HIGH": "Montant supérieur à ce qui reste facturé.",
+    "FACT_SAME_APPROVER": "Une autre personne que le demandeur doit décider.",
+    "FACT_ALREADY_DECIDED": "Cette demande est déjà décidée.",
+    "FACT_REFUND_REASON_REQUIRED": "Indiquez le motif du remboursement."
   },
   "account": {
     "title": "Mon compte",
@@ -2412,7 +2417,8 @@
       "state": {
         "unpaid": "Non payée",
         "partially_paid": "Payée en partie",
-        "paid": "Payée"
+        "paid": "Payée",
+        "refund_due": "À rembourser"
       },
       "pending": "En attente de synchronisation",
       "reprint": "Reçu",
@@ -2436,7 +2442,10 @@
       "rounding": "(arrondi {amount})",
       "settles": "Règle {amount} sur la facture.",
       "change": "Monnaie à rendre : {amount}",
-      "receive": "Encaisser et imprimer le reçu"
+      "receive": "Encaisser et imprimer le reçu",
+      "refundDue": "Trop perçu à rembourser : {amount}",
+      "refundReason": "Motif du remboursement",
+      "refund": "Rembourser en espèces"
     },
     "receipt": {
       "title": "Reçu de paiement",
@@ -2451,6 +2460,48 @@
       "change": "Monnaie rendue",
       "remaining": "Reste à payer",
       "thanks": "Merci."
-    }
+    },
+    "adjustments": {
+      "discount": "Remise",
+      "creditNote": "Avoir {number}",
+      "billed": "Net à payer",
+      "pendingApproval": "En attente d’approbation",
+      "askedDiscount": "Remise de {amount} demandée",
+      "askedCredit": "Avoir de {amount} demandé",
+      "rejected": "Demande de {amount} refusée.",
+      "ask": "Demander une remise ou un avoir",
+      "kind": "Type de demande",
+      "kinds": {
+        "discount": "Remise",
+        "credit_note": "Avoir (annulation)"
+      },
+      "amount": "Montant ({currency})",
+      "all": "Tout",
+      "reason": "Motif (obligatoire)",
+      "hint": "La demande part avec la prochaine synchronisation ; elle ne s’applique qu’après l’accord d’une autre personne habilitée.",
+      "send": "Envoyer la demande"
+    },
+    "approvals": {
+      "title": "Approbations",
+      "subtitle": "Remises et avoirs demandés à la caisse : une autre personne habilitée décide, avec le second facteur.",
+      "offline": "Les approbations se décident en ligne.",
+      "empty": "Aucune demande.",
+      "kinds": {
+        "discount": "Remise",
+        "credit_note": "Avoir"
+      },
+      "status": {
+        "pending": "En attente",
+        "approved": "Approuvée",
+        "rejected": "Refusée"
+      },
+      "asked": "Demandée par {name} le {date}",
+      "decidedBy": "décidée par {name}",
+      "reason": "Commentaire (obligatoire pour refuser)",
+      "approve": "Approuver",
+      "reject": "Refuser",
+      "ownRequest": "Votre propre demande : une autre personne doit la décider."
+    },
+    "approvalsLink": "Approbations en attente"
   }
 }

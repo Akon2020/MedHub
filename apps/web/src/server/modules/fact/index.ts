@@ -1,4 +1,7 @@
 export {
+  approvalDecideRoute,
+  approvalsRoute,
+  approvalThresholdRoute,
   billingRuleRoute,
   currencySettingRoute,
   exchangeRateRoute,

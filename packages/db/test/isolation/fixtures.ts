@@ -19,7 +19,11 @@ import {
   diagnosis,
   diagnosisCatalogItem,
   drug,
+  approvalRequest,
+  approvalThreshold,
   billingRule,
+  creditNote,
+  discountGrant,
   cashSession,
   exchangeRate,
   invoice,
@@ -301,6 +305,56 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       label: 'Paludisme simple',
       certainty: 'suspected',
       diagnosedAt: new Date(),
+    });
+  },
+  approval_request: async (tx, tenantId) => {
+    await tx.insert(approvalRequest).values({
+      id: uuidv7(),
+      tenantId,
+      kind: 'discount',
+      invoiceId: uuidv7(),
+      patientId: uuidv7(),
+      currency: 'USD',
+      amount: 100,
+      reason: 'Remise de test',
+      requestedAt: new Date(),
+    });
+  },
+  discount_grant: async (tx, tenantId) => {
+    await tx.insert(discountGrant).values({
+      id: uuidv7(),
+      tenantId,
+      approvalRequestId: uuidv7(),
+      invoiceId: uuidv7(),
+      patientId: uuidv7(),
+      currency: 'USD',
+      amount: 100,
+      reason: 'Remise de test',
+      grantedAt: new Date(),
+    });
+  },
+  credit_note: async (tx, tenantId) => {
+    await tx.insert(creditNote).values({
+      id: uuidv7(),
+      tenantId,
+      approvalRequestId: uuidv7(),
+      invoiceId: uuidv7(),
+      patientId: uuidv7(),
+      number: `AV-${uuidv7().slice(-10)}`,
+      currency: 'USD',
+      amount: 100,
+      reason: 'Avoir de test',
+      issuedAt: new Date(),
+    });
+  },
+  approval_threshold: async (tx, tenantId) => {
+    await tx.insert(approvalThreshold).values({
+      id: uuidv7(),
+      tenantId,
+      roleId: uuidv7(),
+      kind: 'discount',
+      currency: 'USD',
+      maxAmount: 0,
     });
   },
   cash_session: async (tx, tenantId) => {

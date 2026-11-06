@@ -42,6 +42,8 @@ export const paymentReceivePayload = z
     operator: z.enum(MOBILE_OPERATORS).nullish(),
     receiptNumber: z.string().trim().min(3).max(40),
     receivedAt: z.iso.datetime(),
+    /** A refund is a payment of the opposite sign, with its reason. */
+    refundReason: z.string().trim().min(5).max(300).nullish(),
   })
   .refine((p) => p.amount !== 0 && p.amountInInvoiceCurrency !== 0, { message: 'FACT_AMOUNT_ZERO' })
   .refine((p) => Math.sign(p.amount) === Math.sign(p.amountInInvoiceCurrency), {
@@ -53,6 +55,10 @@ export const paymentReceivePayload = z
   })
   .refine((p) => p.currency === p.invoiceCurrency || p.exchangeRate !== null, {
     message: 'FACT_RATE_REQUIRED',
+  })
+  .refine((p) => p.amount > 0 || Boolean(p.refundReason), {
+    message: 'FACT_REFUND_REASON_REQUIRED',
+    path: ['refundReason'],
   });
 export type PaymentPayload = z.infer<typeof paymentReceivePayload>;
 
@@ -92,15 +98,27 @@ export type PaymentView = {
 
 /** Paid and remaining amounts of an invoice, in its currency. */
 export function invoiceBalance(
+  /** Amount billed: gross minus discounts and credit notes. */
   gross: number,
   payments: readonly Pick<PaymentView, 'amountInInvoiceCurrency'>[],
-): { paid: number; remaining: number; state: 'unpaid' | 'partially_paid' | 'paid' } {
+): {
+  paid: number;
+  remaining: number;
+  state: 'unpaid' | 'partially_paid' | 'paid' | 'refund_due';
+} {
   const paid = payments.reduce((s, p) => s + p.amountInInvoiceCurrency, 0);
   const remaining = gross - paid;
   return {
     paid,
     remaining,
-    state: paid <= 0 ? 'unpaid' : remaining > 0 ? 'partially_paid' : 'paid',
+    state:
+      remaining < 0
+        ? 'refund_due'
+        : remaining === 0
+          ? 'paid'
+          : paid <= 0
+            ? 'unpaid'
+            : 'partially_paid',
   };
 }
 

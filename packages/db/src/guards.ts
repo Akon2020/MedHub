@@ -39,6 +39,9 @@ const NO_DELETE = [
   'invoice_line',
   'cash_session',
   'payment',
+  'approval_request',
+  'discount_grant',
+  'credit_note',
 ];
 const NO_UPDATE = [
   'stock_movement',
@@ -54,6 +57,8 @@ const NO_UPDATE = [
   'medication_reconciliation',
   'exchange_rate',
   'payment',
+  'discount_grant',
+  'credit_note',
 ];
 const STATUS_ONLY_UPDATE = [
   'vital_sign',
@@ -155,6 +160,25 @@ export async function ensureGuards(client: pg.ClientBase): Promise<void> {
       return new;
     end $$;
   `);
+  // A decided four-eyes request is final.
+  await client.query(`
+    create or replace function medhub_approval_guard() returns trigger language plpgsql as $$
+    begin
+      if old.status <> 'pending' then
+        raise exception 'MEDHUB_IMMUTABLE_ROW: a decided request cannot change' using errcode = 'P0001';
+      end if;
+      if new.amount is distinct from old.amount or new.kind is distinct from old.kind
+         or new.invoice_id is distinct from old.invoice_id
+         or new.created_by is distinct from old.created_by then
+        raise exception 'MEDHUB_IMMUTABLE_ROW: a request cannot change' using errcode = 'P0001';
+      end if;
+      return new;
+    end $$;
+  `);
+  await client.query('drop trigger if exists medhub_approval_guard on "approval_request"');
+  await client.query(
+    'create trigger medhub_approval_guard before update on "approval_request" for each row execute function medhub_approval_guard()',
+  );
   await client.query('drop trigger if exists medhub_cash_session_guard on "cash_session"');
   await client.query(
     'create trigger medhub_cash_session_guard before update on "cash_session" for each row execute function medhub_cash_session_guard()',

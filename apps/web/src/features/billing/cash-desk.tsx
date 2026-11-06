@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/features/shell/page-header';
 import { localDay } from '@/features/visits/visit-helpers';
 import { toInvoiceView, toLineView, totalsOf } from './billing-helpers';
+import { AdjustmentsPanel, adjustmentsOf, deductionsOf } from './adjustments-panel';
 import { CashSessionBar, paymentOf } from './cash-session';
 import { InvoiceCard, useMoney } from './invoice-card';
 import { PaymentPanel } from './payment-panel';
@@ -28,6 +29,7 @@ const nameOf = (d: Record<string, unknown>) =>
 /** Cash desk home: the invoices of the day on this workstation, open ones first. */
 export function CashDeskHome() {
   const t = useTranslations('billing');
+  const { identity } = useRuntime();
   const money = useMoney();
   const [filter, setFilter] = useState('');
   const { data } = useLocalQuery(async (store) => {
@@ -71,6 +73,14 @@ export function CashDeskHome() {
     <div className="mx-auto max-w-4xl">
       <PageHeader title={t('title')} subtitle={t('subtitle')} />
       <CashSessionBar />
+      {(identity?.permissions ?? []).includes('approval:decide') && (
+        <Link
+          href="/app/caisse/approbations"
+          className="mb-4 inline-block text-sm text-primary hover:underline"
+        >
+          {t('approvalsLink')}
+        </Link>
+      )}
       <Input
         aria-label={t('filter')}
         placeholder={t('filter')}
@@ -125,7 +135,12 @@ export function PatientBilling({ patientId }: { patientId: string }) {
       const payments = (await store.readEntitiesByPatient('payment', patientId))
         .filter((e) => !e.rejected)
         .map(paymentOf);
-      return { patient, invoices, lines, payments };
+      const adjustments = adjustmentsOf({
+        grants: await store.readEntitiesByPatient('discount_grant', patientId),
+        credits: await store.readEntitiesByPatient('credit_note', patientId),
+        requests: await store.readEntitiesByPatient('approval_request', patientId),
+      });
+      return { patient, invoices, lines, payments, adjustments };
     },
     [patientId],
   );
@@ -171,6 +186,11 @@ export function PatientBilling({ patientId }: { patientId: string }) {
         <span className="font-mono text-xs text-slate-ink">
           {String(data.patient.data.mrn ?? '')}
         </span>
+        {perms.includes('approval:decide') && (
+          <Link href="/app/caisse/approbations" className="text-sm text-primary hover:underline">
+            {t('approvalsLink')}
+          </Link>
+        )}
         {perms.includes('invoice:create') && (
           <Button size="sm" variant="secondary" onClick={() => void newInvoice()}>
             <FilePlus2 />
@@ -194,14 +214,18 @@ export function PatientBilling({ patientId }: { patientId: string }) {
             invoice={inv}
             lines={data.lines.filter((l) => l.invoiceId === inv.id)}
           >
-            {inv.status !== 'voided' && (
-              <PaymentPanel
-                invoice={inv}
-                lines={data.lines.filter((l) => l.invoiceId === inv.id)}
-                payments={data.payments.filter((p) => p.invoiceId === inv.id)}
-                patientName={patientName}
-              />
-            )}
+            <AdjustmentsPanel
+              invoice={inv}
+              gross={totalsOf(data.lines.filter((l) => l.invoiceId === inv.id)).gross}
+              rows={data.adjustments.filter((a) => a.invoiceId === inv.id)}
+            />
+            <PaymentPanel
+              invoice={inv}
+              lines={data.lines.filter((l) => l.invoiceId === inv.id)}
+              payments={data.payments.filter((p) => p.invoiceId === inv.id)}
+              deductions={deductionsOf(data.adjustments.filter((a) => a.invoiceId === inv.id))}
+              patientName={patientName}
+            />
           </InvoiceCard>
         ))}
       </div>

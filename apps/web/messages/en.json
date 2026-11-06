@@ -812,7 +812,12 @@
     "FACT_SESSION_CLOSED": "The cash session is closed: open a new one.",
     "FACT_SESSION_NOT_YOURS": "This cash session belongs to another workstation.",
     "FACT_DUPLICATE_REFERENCE": "This mobile money reference was already received.",
-    "FACT_INVOICE_VOIDED": "This invoice is voided."
+    "FACT_INVOICE_VOIDED": "This invoice is voided.",
+    "FACT_REFUND_NOT_ALLOWED": "A refund goes through its own command, with its reason.",
+    "FACT_ADJUSTMENT_TOO_HIGH": "Amount above what is still billed.",
+    "FACT_SAME_APPROVER": "Someone other than the requester must decide.",
+    "FACT_ALREADY_DECIDED": "This request is already decided.",
+    "FACT_REFUND_REASON_REQUIRED": "Give the reason for the refund."
   },
   "account": {
     "title": "My account",
@@ -2407,7 +2412,8 @@
       "state": {
         "unpaid": "Unpaid",
         "partially_paid": "Partly paid",
-        "paid": "Paid"
+        "paid": "Paid",
+        "refund_due": "Refund due"
       },
       "pending": "Waiting for synchronisation",
       "reprint": "Receipt",
@@ -2431,7 +2437,10 @@
       "rounding": "(rounding {amount})",
       "settles": "Settles {amount} on the invoice.",
       "change": "Change to give: {amount}",
-      "receive": "Take the payment and print the receipt"
+      "receive": "Take the payment and print the receipt",
+      "refundDue": "Overpayment to refund: {amount}",
+      "refundReason": "Reason for the refund",
+      "refund": "Refund in cash"
     },
     "receipt": {
       "title": "Payment receipt",
@@ -2446,6 +2455,48 @@
       "change": "Change",
       "remaining": "Balance due",
       "thanks": "Thank you."
-    }
+    },
+    "adjustments": {
+      "discount": "Discount",
+      "creditNote": "Credit note {number}",
+      "billed": "Net due",
+      "pendingApproval": "Waiting for approval",
+      "askedDiscount": "Discount of {amount} asked",
+      "askedCredit": "Credit note of {amount} asked",
+      "rejected": "Request of {amount} refused.",
+      "ask": "Ask for a discount or a credit note",
+      "kind": "Request type",
+      "kinds": {
+        "discount": "Discount",
+        "credit_note": "Credit note (cancellation)"
+      },
+      "amount": "Amount ({currency})",
+      "all": "All",
+      "reason": "Reason (required)",
+      "hint": "The request leaves with the next synchronisation; it applies only once another authorised person agrees.",
+      "send": "Send the request"
+    },
+    "approvals": {
+      "title": "Approvals",
+      "subtitle": "Discounts and credit notes asked at the cash desk: another authorised person decides, with the second factor.",
+      "offline": "Approvals are decided online.",
+      "empty": "No request.",
+      "kinds": {
+        "discount": "Discount",
+        "credit_note": "Credit note"
+      },
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Refused"
+      },
+      "asked": "Asked by {name} on {date}",
+      "decidedBy": "decided by {name}",
+      "reason": "Comment (required to refuse)",
+      "approve": "Approve",
+      "reject": "Refuse",
+      "ownRequest": "Your own request: another person must decide it."
+    },
+    "approvalsLink": "Pending approvals"
   }
 }

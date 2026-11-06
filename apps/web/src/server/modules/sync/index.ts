@@ -3,6 +3,7 @@ export {
   insertServerPatients,
   patientBundles,
   patientState,
+  applyApproval,
   pgSyncStore,
   toDrugInfo,
   updateServerPatient,

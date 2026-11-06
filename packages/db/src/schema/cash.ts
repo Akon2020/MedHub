@@ -66,6 +66,7 @@ export const payment = pgTable(
     operator: text('operator'),
     receiptNumber: text('receipt_number').notNull(),
     receivedAt: timestamp('received_at', { withTimezone: true }).notNull(),
+    refundReason: text('refund_reason'),
   },
   (t) => [
     index('payment_invoice_idx').on(t.tenantId, t.invoiceId),

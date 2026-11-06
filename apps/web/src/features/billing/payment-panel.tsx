@@ -38,11 +38,14 @@ export function PaymentPanel({
   invoice,
   lines,
   payments,
+  deductions,
   patientName,
 }: {
   invoice: InvoiceView;
   lines: InvoiceLineView[];
   payments: PaymentRow[];
+  /** Discounts and credit notes granted on the invoice. */
+  deductions: number;
   patientName: string;
 }) {
   const t = useTranslations('billing.payment');
@@ -67,7 +70,9 @@ export function PaymentPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const gross = totalsOf(lines).gross;
+  const gross = totalsOf(lines).gross - deductions;
+  const [refundReason, setRefundReason] = useState('');
+  const canRefund = identity?.permissions.includes('payment:refund') ?? false;
   const balance = invoiceBalance(gross, payments);
   const canReceive = identity?.permissions.includes('payment:receive') ?? false;
   const today = localDay(new Date());
@@ -149,8 +154,65 @@ export function PaymentPanel({
     }
   }
 
+  async function refund() {
+    if (!session || balance.remaining >= 0) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const now = new Date();
+      const seq = await nextCounter(`receipt:${now.getFullYear()}`);
+      await dispatch('payment.refund', {
+        patientId: invoice.patientId,
+        invoiceId: invoice.id,
+        cashSessionId: session.id,
+        method: 'cash',
+        currency: invoice.currency,
+        amount: balance.remaining,
+        invoiceCurrency: invoice.currency,
+        amountInInvoiceCurrency: balance.remaining,
+        exchangeRate: null,
+        exchangeRateDate: null,
+        refundReason: refundReason.trim(),
+        receiptNumber: formatNumber(RECEIPT_NUMBER_TEMPLATE, {
+          site: identity?.siteCode ?? 'SIT',
+          device: device?.deviceCode ?? 'XX',
+          year: now.getFullYear(),
+          seq,
+        }),
+        receivedAt: now.toISOString(),
+      });
+      setRefundReason('');
+    } catch (err) {
+      const code = err instanceof AppError ? err.code : 'UNKNOWN';
+      setError(tErr.has(code) ? tErr(code) : tErr('UNKNOWN'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="grid gap-3 rounded-xl p-3 ring-1 ring-border">
+      {balance.remaining < 0 && canRefund && session && (
+        <div className="grid gap-2 rounded-lg bg-warning-soft p-3 text-warning">
+          <p>{t('refundDue', { amount: money(-balance.remaining, invoice.currency) })}</p>
+          <div className="flex flex-wrap gap-2">
+            <Input
+              aria-label={t('refundReason')}
+              placeholder={t('refundReason')}
+              className="min-w-0 flex-1 bg-card"
+              value={refundReason}
+              onChange={(e) => setRefundReason(e.target.value)}
+            />
+            <Button
+              size="sm"
+              disabled={busy || refundReason.trim().length < 5}
+              onClick={() => void refund()}
+            >
+              {t('refund')}
+            </Button>
+          </div>
+        </div>
+      )}
       <p className="flex flex-wrap items-center gap-2">
         <span className="font-medium">{t('balance')}</span>
         <span className="font-mono">{money(balance.remaining, invoice.currency)}</span>
