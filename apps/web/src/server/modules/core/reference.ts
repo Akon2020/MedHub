@@ -16,7 +16,13 @@ import { database } from '../../platform/db';
 import { loadPermissions, requirePermission } from '../../platform/permissions';
 import type { RequestContext } from '../../platform/tenant';
 import { requireRecentStepUp } from './configuration';
-import { activeDiagnoses, activePrograms, effectiveVitalDefinitions } from '../dpi';
+import {
+  activeDiagnoses,
+  activeDrugs,
+  activePrograms,
+  effectiveVitalDefinitions,
+  interactionRules,
+} from '../dpi';
 import { publishedFormVersions } from '../form';
 
 type Client = { ip: string | null };
@@ -431,7 +437,11 @@ export async function catalogSnapshot(ctx: RequestContext): Promise<CatalogSnaps
     }));
     const diagnoses = await activeDiagnoses(tx);
     const forms = await publishedFormVersions(tx);
+    const drugs = await activeDrugs(tx);
+    const rules = await interactionRules(tx);
     const body = {
+      drugs,
+      interactionRules: rules,
       diagnoses,
       forms,
       programs,

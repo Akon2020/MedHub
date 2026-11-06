@@ -19,10 +19,48 @@ type Result = { items: number; errors: DiagnosisImportError[]; total: number };
  * saved; the list reaches the workstations with the next catalog refresh.
  */
 export function DiagnosisCatalogSettings() {
-  const t = useTranslations('settings.diagnoses');
+  const { catalogs } = useRuntime();
+  return (
+    <CatalogImport
+      endpoint="/api/v1/diagnoses/import"
+      namespace="settings.diagnoses"
+      known={catalogs?.snapshot.diagnoses?.length ?? 0}
+    />
+  );
+}
+
+/** Drug catalogue and interaction rules of the structure (S9: nothing preloaded). */
+export function DrugCatalogSettings() {
+  const { catalogs } = useRuntime();
+  return (
+    <>
+      <CatalogImport
+        endpoint="/api/v1/drugs/import"
+        namespace="settings.drugs"
+        known={catalogs?.snapshot.drugs?.length ?? 0}
+      />
+      <CatalogImport
+        endpoint="/api/v1/drug-interactions/import"
+        namespace="settings.interactions"
+        known={catalogs?.snapshot.interactionRules?.length ?? 0}
+      />
+    </>
+  );
+}
+
+function CatalogImport({
+  endpoint,
+  namespace,
+  known,
+}: {
+  endpoint: string;
+  namespace: 'settings.diagnoses' | 'settings.drugs' | 'settings.interactions';
+  known: number;
+}) {
+  const t = useTranslations(namespace);
   const tErr = useTranslations('errors');
   const online = useOnline();
-  const { identity, reloadCatalogs, catalogs } = useRuntime();
+  const { identity, reloadCatalogs } = useRuntime();
   const { guard, dialog } = useStepUp();
   const [csv, setCsv] = useState('');
   const [result, setResult] = useState<Result | null>(null);
@@ -30,7 +68,6 @@ export function DiagnosisCatalogSettings() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const canEdit = identity?.permissions.includes('configuration:edit') ?? false;
-  const known = catalogs?.snapshot.diagnoses?.length ?? 0;
 
   async function send(apply: boolean) {
     setBusy(true);
@@ -38,7 +75,7 @@ export function DiagnosisCatalogSettings() {
     setNotice(null);
     try {
       const call = () =>
-        apiFetch<Result>('/api/v1/diagnoses/import', {
+        apiFetch<Result>(endpoint, {
           method: 'POST',
           body: JSON.stringify({ csv, apply }),
         });

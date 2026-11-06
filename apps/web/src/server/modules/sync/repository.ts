@@ -9,6 +9,10 @@ import {
   type Tx,
 } from '@medhub/db';
 import {
+  checkPrescription,
+  overridesBlocking,
+  type DrugInfo,
+  type PrescriptionCreatePayload,
   ENTITIES,
   SLOT_HOLDING_STATUSES,
   getCommand,
@@ -694,6 +698,97 @@ const mappers = {
       };
     },
   },
+  medication_statement: {
+    table: schema.medicationStatement,
+    toState(row: typeof schema.medicationStatement.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          notedAt: row.notedAt.toISOString(),
+          status: row.status,
+          label: row.label,
+          atcCode: row.atcCode,
+          dose: row.dose,
+          source: row.source,
+          startedOn: row.startedOn,
+          stoppedOn: row.stoppedOn,
+          stopReason: row.stopReason,
+        }),
+        fieldMeta: row.fieldMeta,
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.medicationStatement.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        notedAt: new Date(String(d.notedAt)),
+        status: str(d.status) ?? 'active',
+        label: String(d.label),
+        atcCode: str(d.atcCode),
+        dose: str(d.dose),
+        source: str(d.source) ?? 'patient_report',
+        startedOn: str(d.startedOn),
+        stoppedOn: str(d.stoppedOn),
+        stopReason: str(d.stopReason),
+        fieldMeta: state.fieldMeta,
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+        updatedAt: new Date(),
+        updatedBy: ctx.userId,
+      };
+    },
+  },
+  medication_reconciliation: {
+    table: schema.medicationReconciliation,
+    toState(row: typeof schema.medicationReconciliation.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          encounterId: row.encounterId,
+          kind: row.kind,
+          decisions: row.decisions,
+          performedAt: row.performedAt.toISOString(),
+          status: row.status,
+        }),
+        fieldMeta: {},
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.medicationReconciliation.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        encounterId: str(d.encounterId),
+        kind: String(d.kind),
+        decisions: Array.isArray(d.decisions) ? (d.decisions as Record<string, unknown>[]) : [],
+        performedAt: new Date(String(d.performedAt)),
+        status: 'active',
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+      };
+    },
+  },
   form_response: {
     table: schema.formResponse,
     toState(row: typeof schema.formResponse.$inferSelect): EntityState {
@@ -957,6 +1052,7 @@ const TIMELINE: Partial<Record<EntityName, { kind: string; table: string; at: st
   clinical_note: { kind: 'note', table: 'clinical_note', at: 'signedAt' },
   diagnosis: { kind: 'diagnosis', table: 'diagnosis', at: 'diagnosedAt' },
   form_response: { kind: 'form_response', table: 'form_response', at: 'completedAt' },
+  prescription: { kind: 'prescription', table: 'prescription', at: 'prescribedAt' },
 };
 
 async function recordClinicalEvent(
@@ -1103,6 +1199,24 @@ async function getEntity(tx: Tx, entity: EntityName, id: string): Promise<Entity
         .limit(1);
       return row ? mappers.form_response.toState(row) : null;
     }
+    case 'prescription':
+      return (await prescriptionStates(tx, [id]))[0] ?? null;
+    case 'medication_statement': {
+      const [row] = await tx
+        .select()
+        .from(schema.medicationStatement)
+        .where(eq(schema.medicationStatement.id, id))
+        .limit(1);
+      return row ? mappers.medication_statement.toState(row) : null;
+    }
+    case 'medication_reconciliation': {
+      const [row] = await tx
+        .select()
+        .from(schema.medicationReconciliation)
+        .where(eq(schema.medicationReconciliation.id, id))
+        .limit(1);
+      return row ? mappers.medication_reconciliation.toState(row) : null;
+    }
     case 'break_glass': {
       const [row] = await tx
         .select()
@@ -1191,6 +1305,22 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
       return (
         await tx.select().from(schema.formResponse).where(inArray(schema.formResponse.id, ids))
       ).map((r) => mappers.form_response.toState(r));
+    case 'prescription':
+      return prescriptionStates(tx, ids);
+    case 'medication_statement':
+      return (
+        await tx
+          .select()
+          .from(schema.medicationStatement)
+          .where(inArray(schema.medicationStatement.id, ids))
+      ).map((r) => mappers.medication_statement.toState(r));
+    case 'medication_reconciliation':
+      return (
+        await tx
+          .select()
+          .from(schema.medicationReconciliation)
+          .where(inArray(schema.medicationReconciliation.id, ids))
+      ).map((r) => mappers.medication_reconciliation.toState(r));
     case 'break_glass':
       return (
         await tx
@@ -1214,7 +1344,15 @@ async function checkEntity(
   tx: Tx,
   entity: EntityName,
   payload: Record<string, unknown>,
+  permissions: ReadonlySet<string>,
 ): Promise<string | null> {
+  if (entity === 'prescription') {
+    // Overriding a blocking alert is a permission of its own (docs/modules/dpi.md 5).
+    const items = (payload as PrescriptionCreatePayload).items;
+    return overridesBlocking({ items }) && !permissions.has('prescription:override_alert')
+      ? 'PRESC_OVERRIDE_DENIED'
+      : null;
+  }
   if (entity !== 'form_response') return null;
   const [version] = await tx
     .select({
@@ -1236,6 +1374,209 @@ async function checkEntity(
     { structural: true },
   );
   return state.complete ? null : 'FORM_RESPONSE_INVALID';
+}
+
+/** A prescription and its lines, as the synchronised entity. */
+async function prescriptionStates(tx: Tx, ids: readonly string[]): Promise<EntityState[]> {
+  if (ids.length === 0) return [];
+  const rows = await tx
+    .select()
+    .from(schema.prescription)
+    .where(inArray(schema.prescription.id, [...ids]));
+  const items = await tx
+    .select()
+    .from(schema.prescriptionItem)
+    .where(inArray(schema.prescriptionItem.prescriptionId, [...ids]))
+    .orderBy(asc(schema.prescriptionItem.position));
+  return rows.map((row) => ({
+    id: row.id,
+    version: row.version,
+    data: compact({
+      patientId: row.patientId,
+      encounterId: row.encounterId,
+      kind: row.kind,
+      prescribedAt: row.prescribedAt.toISOString(),
+      prescriberId: row.prescriberId,
+      verificationCode: row.verificationCode,
+      status: row.status,
+      items: items
+        .filter((i) => i.prescriptionId === row.id)
+        .map((i) =>
+          compact({
+            itemId: i.id,
+            drugId: i.drugId,
+            drugCode: i.drugCode,
+            label: i.label,
+            atcCode: i.atcCode,
+            doseValue: i.doseValue,
+            doseUnit: i.doseUnit,
+            route: i.route,
+            frequency: i.frequency,
+            durationDays: i.durationDays,
+            quantity: i.quantity,
+            instructions: i.instructions,
+            substitutionAllowed: i.substitutionAllowed,
+            status: i.status,
+            alertsAcknowledged: i.alertsAcknowledged,
+          }),
+        ),
+    }),
+    fieldMeta: {},
+    hlc: row.hlc ?? '',
+    opId: row.opId ?? '',
+    deviceId: row.deviceId ?? '',
+    createdBy: row.createdBy ?? '',
+  }));
+}
+
+async function insertPrescription(tx: Tx, ctx: Ctx, state: EntityState): Promise<void> {
+  const d = state.data;
+  const items = (Array.isArray(d.items) ? d.items : []) as PrescriptionCreatePayload['items'];
+  await tx.insert(schema.prescription).values({
+    id: state.id,
+    tenantId: ctx.tenantId,
+    version: state.version,
+    patientId: String(d.patientId),
+    encounterId: str(d.encounterId),
+    kind: str(d.kind) ?? 'outpatient',
+    prescribedAt: new Date(String(d.prescribedAt)),
+    prescriberId: state.createdBy || null,
+    verificationCode: String(d.verificationCode),
+    status: 'active',
+    hlc: state.hlc,
+    opId: state.opId || null,
+    deviceId: state.deviceId || null,
+    createdBy: state.createdBy || null,
+  });
+  if (items.length > 0) {
+    await tx.insert(schema.prescriptionItem).values(
+      items.map((item, position) => ({
+        id: uuidv7(),
+        tenantId: ctx.tenantId,
+        version: state.version,
+        opId: state.opId || null,
+        hlc: state.hlc,
+        deviceId: state.deviceId || null,
+        prescriptionId: state.id,
+        position,
+        drugId: item.drugId ?? null,
+        drugCode: item.drugCode ?? null,
+        label: item.label,
+        atcCode: item.atcCode ?? null,
+        doseValue: item.doseValue,
+        doseUnit: item.doseUnit,
+        route: item.route ?? null,
+        frequency: item.frequency,
+        durationDays: item.durationDays ?? null,
+        quantity: item.quantity ?? null,
+        instructions: item.instructions ?? null,
+        substitutionAllowed: item.substitutionAllowed,
+        alertsAcknowledged: item.alertsAcknowledged,
+      })),
+    );
+  }
+  await recheckPrescription(tx, ctx, state.id, String(d.patientId), items, state.createdBy);
+}
+
+/**
+ * The workstation checked the prescription with what it knew. The server
+ * runs the same rules on its own data: a blocking alert the prescriber could
+ * not see (an allergy recorded on another device meanwhile) is reported in the
+ * security journal for review, the prescription itself is kept.
+ */
+async function recheckPrescription(
+  tx: Tx,
+  ctx: Ctx,
+  prescriptionId: string,
+  patientId: string,
+  items: PrescriptionCreatePayload['items'],
+  userId: string,
+): Promise<void> {
+  const drugIds = items.map((i) => i.drugId).filter((id): id is string => Boolean(id));
+  const drugs = drugIds.length
+    ? await tx.select().from(schema.drug).where(inArray(schema.drug.id, drugIds))
+    : [];
+  const allergies = await tx
+    .select({ substance: schema.allergy.substance, atcCode: schema.allergy.atcCode })
+    .from(schema.allergy)
+    .where(and(eq(schema.allergy.patientId, patientId), eq(schema.allergy.status, 'active')));
+  const problems = await tx
+    .select({ icd10: schema.problem.icd10 })
+    .from(schema.problem)
+    .where(and(eq(schema.problem.patientId, patientId), eq(schema.problem.status, 'active')));
+  const rules = await tx.select().from(schema.drugInteractionRule);
+  const alerts = checkPrescription(
+    items.map((i) => {
+      const row = drugs.find((r) => r.id === i.drugId);
+      return {
+        label: i.label,
+        drug: row ? toDrugInfo(row) : null,
+        atcCode: i.atcCode ?? null,
+        doseValue: i.doseValue,
+        doseUnit: i.doseUnit,
+        frequency: i.frequency,
+      };
+    }),
+    {
+      ageMonths: null,
+      weightKg: null,
+      pregnant: false,
+      allergies: allergies.flatMap((a) =>
+        a.substance ? [{ substance: a.substance, atcCode: a.atcCode }] : [],
+      ),
+      problemCodes: problems.flatMap((p) => (p.icd10 ? [p.icd10] : [])),
+    },
+    rules.map((r) => ({
+      atcA: r.atcA,
+      atcB: r.atcB,
+      severity: r.severity as 'minor' | 'moderate' | 'major' | 'contraindicated',
+      message: r.message,
+    })),
+  );
+  const unseen = alerts.filter(
+    (a) =>
+      a.severity === 'blocking' &&
+      !(items[a.item]?.alertsAcknowledged ?? []).some((k) => k.code === a.code),
+  );
+  if (unseen.length > 0) {
+    await recordSecurityEvent(tx, {
+      kind: 'prescription_alert_unseen',
+      severity: 'warning',
+      tenantId: ctx.tenantId,
+      userId: userId || null,
+      ip: null,
+      detail: { prescriptionId, alerts: unseen.map((a) => ({ item: a.item, code: a.code })) },
+    });
+  }
+}
+
+export function toDrugInfo(row: typeof schema.drug.$inferSelect): DrugInfo {
+  const pregnancy = row.pregnancyCategory;
+  return {
+    code: row.code,
+    inn: row.inn,
+    atcCode: row.atcCode,
+    form: row.form,
+    strength: row.strength,
+    route: row.route,
+    doseUnit: row.doseUnit,
+    maxSingleDose: row.maxSingleDose,
+    maxDailyDose: row.maxDailyDose,
+    maxDailyDosePerKg: row.maxDailyDosePerKg,
+    pregnancyCategory:
+      pregnancy === 'A' ||
+      pregnancy === 'B' ||
+      pregnancy === 'C' ||
+      pregnancy === 'D' ||
+      pregnancy === 'X'
+        ? pregnancy
+        : null,
+    minAgeMonths: row.minAgeMonths,
+    geriatricCaution: row.geriatricCaution,
+    renalCaution: row.renalCaution,
+    hepaticCaution: row.hepaticCaution,
+    isControlled: row.isControlled,
+  };
 }
 
 function isUniqueViolation(error: unknown, constraint: string): boolean {
@@ -1309,7 +1650,7 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
       }
     },
     getEntity: (entity, id) => getEntity(tx, entity, id),
-    checkEntity: (entity, payload) => checkEntity(tx, entity, payload),
+    checkEntity: (entity, payload, permissions) => checkEntity(tx, entity, payload, permissions),
     async insertEntity(entity, state, op) {
       switch (entity) {
         case 'patient':
@@ -1378,6 +1719,20 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         case 'form_response':
           await tx.insert(schema.formResponse).values(mappers.form_response.toRow(state, ctx));
           await recordClinicalEvent(tx, ctx, 'form_response', state);
+          return;
+        case 'prescription':
+          await insertPrescription(tx, ctx, state);
+          await recordClinicalEvent(tx, ctx, 'prescription', state);
+          return;
+        case 'medication_statement':
+          await tx
+            .insert(schema.medicationStatement)
+            .values(mappers.medication_statement.toRow(state, ctx));
+          return;
+        case 'medication_reconciliation':
+          await tx
+            .insert(schema.medicationReconciliation)
+            .values(mappers.medication_reconciliation.toRow(state, ctx));
           return;
         case 'program_enrollment':
           await tx
@@ -1553,6 +1908,32 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
             })
             .where(eq(schema.formResponse.id, state.id));
           return;
+        case 'prescription':
+          // Append-only: a cancellation only changes the status.
+          await tx
+            .update(schema.prescription)
+            .set({
+              status: String(state.data.status ?? 'active'),
+              version: state.version,
+              opId: state.opId,
+            })
+            .where(eq(schema.prescription.id, state.id));
+          return;
+        case 'medication_statement': {
+          const {
+            id: _id,
+            tenantId: _t,
+            createdBy: _c,
+            ...row
+          } = mappers.medication_statement.toRow(state, ctx);
+          await tx
+            .update(schema.medicationStatement)
+            .set(row)
+            .where(eq(schema.medicationStatement.id, state.id));
+          return;
+        }
+        case 'medication_reconciliation':
+          throw new Error('medication_reconciliation rows are immutable');
         case 'program_enrollment': {
           const {
             id: _id,
@@ -1895,6 +2276,21 @@ export async function patientBundles(
     .select()
     .from(schema.formResponse)
     .where(inArray(schema.formResponse.patientId, ids));
+  const prescriptionIds = (
+    await tx
+      .select({ id: schema.prescription.id })
+      .from(schema.prescription)
+      .where(inArray(schema.prescription.patientId, ids))
+  ).map((r) => r.id);
+  const prescriptions = await prescriptionStates(tx, prescriptionIds);
+  const statements = await tx
+    .select()
+    .from(schema.medicationStatement)
+    .where(inArray(schema.medicationStatement.patientId, ids));
+  const reconciliations = await tx
+    .select()
+    .from(schema.medicationReconciliation)
+    .where(inArray(schema.medicationReconciliation.patientId, ids));
   return [
     ...patients.map((r) => ({ entity: 'patient' as const, state: mappers.patient.toState(r) })),
     ...triages.map((r) => ({ entity: 'triage' as const, state: mappers.triage.toState(r) })),
@@ -1915,6 +2311,15 @@ export async function patientBundles(
     ...responses.map((r) => ({
       entity: 'form_response' as const,
       state: mappers.form_response.toState(r),
+    })),
+    ...prescriptions.map((state) => ({ entity: 'prescription' as const, state })),
+    ...statements.map((r) => ({
+      entity: 'medication_statement' as const,
+      state: mappers.medication_statement.toState(r),
+    })),
+    ...reconciliations.map((r) => ({
+      entity: 'medication_reconciliation' as const,
+      state: mappers.medication_reconciliation.toState(r),
     })),
     ...enrollments.map((r) => ({
       entity: 'program_enrollment' as const,

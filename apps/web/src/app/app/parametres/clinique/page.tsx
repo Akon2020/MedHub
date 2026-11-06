@@ -1,7 +1,10 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { DiagnosisCatalogSettings } from '@/features/settings/diagnosis-catalog-settings';
+import {
+  DiagnosisCatalogSettings,
+  DrugCatalogSettings,
+} from '@/features/settings/diagnosis-catalog-settings';
 import { ProgramsSettings } from '@/features/settings/programs-settings';
 import { VitalDefinitionsSettings } from '@/features/settings/vital-definitions-settings';
 import { PageHeader } from '@/features/shell/page-header';
@@ -14,6 +17,7 @@ export default function ClinicalSettingsPage() {
       <VitalDefinitionsSettings />
       <ProgramsSettings />
       <DiagnosisCatalogSettings />
+      <DrugCatalogSettings />
     </div>
   );
 }

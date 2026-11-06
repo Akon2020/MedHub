@@ -791,7 +791,12 @@
     "FORM_INVALID": "The form has errors: fix them before going on.",
     "FORM_CODE_TAKEN": "Another form already uses this code.",
     "FORM_VERSION_UNKNOWN": "This form version is not published.",
-    "FORM_RESPONSE_INVALID": "The answers do not fit the form version."
+    "FORM_RESPONSE_INVALID": "The answers do not fit the form version.",
+    "PRESC_OVERRIDE_DENIED": "Overriding a blocking alert needs the dedicated permission.",
+    "PRESC_IMPORT_COLUMNS": "Required columns not found in the header.",
+    "PRESC_IMPORT_MISSING": "required value missing",
+    "PRESC_IMPORT_VALUE": "invalid value (ATC code, category or number)",
+    "PRESC_IMPORT_DUPLICATE": "line repeated in the file"
   },
   "account": {
     "title": "My account",
@@ -1690,6 +1695,32 @@
         "child": "Child aged 4"
       },
       "previewUnavailable": "Fix the definition to see the preview."
+    },
+    "drugs": {
+      "title": "Drug catalogue",
+      "subtitle": "{count, plural, =0 {No drug on this workstation} one {# drug on this workstation} other {# drugs on this workstation}}.",
+      "hint": "CSV file. Required columns: code, dci. Optional: atc, forme, dosage, voie, unite_dose, dose_max_prise, dose_max_jour, dose_max_kg_jour, grossesse (A, B, C, D or X), age_min_mois, prudence_geriatrie, ajustement_renal, ajustement_hepatique, controle (oui or non). MedHub ships no list: import the national list or your own. Maximum doses feed the prescription alerts.",
+      "offline": "Importing needs a connection.",
+      "chooseFile": "Choose a file",
+      "paste": "Or paste the file content here",
+      "check": "Check the file",
+      "summary": "{valid, plural, =0 {No valid line} one {# valid line} other {# valid lines}}, {errors, plural, =0 {no error} one {# error} other {# errors}}.",
+      "error": "Line {line}: {problem}",
+      "apply": "{count, plural, one {Import # drug} other {Import # drugs}}",
+      "saved": "{count} drug entries imported. The catalogue now has {total}."
+    },
+    "interactions": {
+      "title": "Interaction rules",
+      "subtitle": "{count, plural, =0 {No rule on this workstation} one {# rule on this workstation} other {# rules on this workstation}}.",
+      "hint": "CSV file with the columns atc_a, atc_b (an ATC code or the start of one for a class), gravite (mineure, moderee, majeure, contre_indiquee) and message. Major and contraindicated block the prescription, moderate warns, minor informs.",
+      "offline": "Importing needs a connection.",
+      "chooseFile": "Choose a file",
+      "paste": "Or paste the file content here",
+      "check": "Check the file",
+      "summary": "{valid, plural, =0 {No valid line} one {# valid line} other {# valid lines}}, {errors, plural, =0 {no error} one {# error} other {# errors}}.",
+      "error": "Line {line}: {problem}",
+      "apply": "{count, plural, one {Import # rule} other {Import # rules}}",
+      "saved": "{count} rules imported. The base now has {total}."
     }
   },
   "visits": {
@@ -2096,5 +2127,82 @@
       "FORM_SCALE_BOUNDS": "Minimum and maximum required, the minimum smaller.",
       "DPI_VITAL_IMPLAUSIBLE": "Value outside plausible limits: check the entry."
     }
+  },
+  "prescription": {
+    "title": "Prescription",
+    "drug": "Drug (catalogue or free text)",
+    "removeLine": "Remove the line",
+    "noCatalog": "No catalogue imported: type the drug as free text (dose and interaction checks do not apply then).",
+    "dose": "Dose",
+    "unit": "Unit",
+    "frequency": "Frequency",
+    "days": "Duration (days)",
+    "instructions": "Instructions (before meals...)",
+    "quantity": "Total quantity: {quantity} {unit}",
+    "substitution": "Generic substitution allowed",
+    "severity": {
+      "info": "Information",
+      "warning": "Warning",
+      "blocking": "Blocking"
+    },
+    "alerts": {
+      "ALLERGY": "known allergy: {substance}.",
+      "DUPLICATE_CLASS": "same therapeutic class as {other}.",
+      "INTERACTION": "interaction with {other}: {message}",
+      "MAX_SINGLE_DOSE": "dose per intake above the maximum ({limit} {unit}).",
+      "MAX_DAILY_DOSE": "daily dose of {daily} {unit}, maximum {limit} {unit}.",
+      "MAX_DOSE_PER_KG": "daily dose of {daily} {unit}, maximum {limit} {unit} for this weight ({perKg} {unit}/kg/d).",
+      "PREGNANCY": "pregnancy: category {category}.",
+      "MIN_AGE": "younger than the minimum age ({months} months).",
+      "GERIATRIC": "caution in older people.",
+      "RENAL": "known renal failure: adjust the dose.",
+      "HEPATIC": "known liver disease: adjust the dose."
+    },
+    "justification": "Justification to override",
+    "changeDrug": "Change the drug or the dose: overriding needs a permission you do not have.",
+    "addLine": "Add a line",
+    "sign": "Sign the prescription",
+    "signed": "Prescription signed.",
+    "pregnant": "Patient is pregnant",
+    "status": {
+      "active": "Active",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "pending": "Waiting for synchronisation",
+    "posology": "{dose} {unit}, {frequency}{days, plural, =0 {} one {, # day} other {, # days}}",
+    "overridden": "(alert overridden)",
+    "print": "Print",
+    "cancel": "Cancel the prescription",
+    "cancelReason": "Reason for the cancellation",
+    "confirmCancel": "Confirm the cancellation",
+    "frequencies": {
+      "once": "once",
+      "1x_d": "once a day",
+      "2x_d": "twice a day",
+      "3x_d": "3 times a day",
+      "4x_d": "4 times a day",
+      "q12h": "every 12 h",
+      "q8h": "every 8 h",
+      "q6h": "every 6 h",
+      "prn": "as needed"
+    }
+  },
+  "medication": {
+    "title": "Habitual treatments",
+    "none": "No habitual treatment recorded.",
+    "decision": "Decision",
+    "decisions": {
+      "continue": "Continue",
+      "stop": "Stop",
+      "modify": "Modify"
+    },
+    "note": "Comment",
+    "reconcile": "Record the reconciliation",
+    "lastReconciliation": "Last reconciliation: {date}",
+    "add": "Add a treatment reported by the patient",
+    "label": "Drug",
+    "dose": "Dosage",
+    "addButton": "Add"
   }
 }

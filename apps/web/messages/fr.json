@@ -796,7 +796,12 @@
     "FORM_INVALID": "Le formulaire contient des erreurs : corrigez-les avant de continuer.",
     "FORM_CODE_TAKEN": "Un autre formulaire porte déjà ce code.",
     "FORM_VERSION_UNKNOWN": "Cette version du formulaire n’est pas publiée.",
-    "FORM_RESPONSE_INVALID": "Les réponses ne correspondent pas à la version du formulaire."
+    "FORM_RESPONSE_INVALID": "Les réponses ne correspondent pas à la version du formulaire.",
+    "PRESC_OVERRIDE_DENIED": "Passer outre une alerte bloquante demande la permission dédiée.",
+    "PRESC_IMPORT_COLUMNS": "Colonnes obligatoires introuvables dans l’en-tête.",
+    "PRESC_IMPORT_MISSING": "valeur obligatoire manquante",
+    "PRESC_IMPORT_VALUE": "valeur invalide (code ATC, catégorie ou nombre)",
+    "PRESC_IMPORT_DUPLICATE": "ligne en double dans le fichier"
   },
   "account": {
     "title": "Mon compte",
@@ -1695,6 +1700,32 @@
         "child": "Enfant de 4 ans"
       },
       "previewUnavailable": "Corrigez la définition pour voir l’aperçu."
+    },
+    "drugs": {
+      "title": "Catalogue des médicaments",
+      "subtitle": "{count, plural, =0 {Aucun médicament sur ce poste} one {# médicament sur ce poste} other {# médicaments sur ce poste}}.",
+      "hint": "Fichier CSV. Colonnes obligatoires : code, dci. Facultatives : atc, forme, dosage, voie, unite_dose, dose_max_prise, dose_max_jour, dose_max_kg_jour, grossesse (A, B, C, D ou X), age_min_mois, prudence_geriatrie, ajustement_renal, ajustement_hepatique, controle (oui ou non). Aucune liste n’est fournie par MedHub : importez la liste nationale ou celle de votre structure. Les doses maximales servent aux alertes de prescription.",
+      "offline": "L’import se fait en ligne.",
+      "chooseFile": "Choisir un fichier",
+      "paste": "Ou collez le contenu du fichier ici",
+      "check": "Vérifier le fichier",
+      "summary": "{valid, plural, =0 {Aucune ligne valide} one {# ligne valide} other {# lignes valides}}, {errors, plural, =0 {aucune erreur} one {# erreur} other {# erreurs}}.",
+      "error": "Ligne {line} : {problem}",
+      "apply": "{count, plural, one {Importer # médicament} other {Importer # médicaments}}",
+      "saved": "{count} médicament(s) importé(s). Le catalogue en compte {total}."
+    },
+    "interactions": {
+      "title": "Règles d’interaction",
+      "subtitle": "{count, plural, =0 {Aucune règle sur ce poste} one {# règle sur ce poste} other {# règles sur ce poste}}.",
+      "hint": "Fichier CSV avec les colonnes atc_a, atc_b (code ATC ou début de code pour une classe), gravite (mineure, moderee, majeure, contre_indiquee) et message. Majeure et contre-indiquée bloquent la prescription, modérée avertit, mineure informe.",
+      "offline": "L’import se fait en ligne.",
+      "chooseFile": "Choisir un fichier",
+      "paste": "Ou collez le contenu du fichier ici",
+      "check": "Vérifier le fichier",
+      "summary": "{valid, plural, =0 {Aucune ligne valide} one {# ligne valide} other {# lignes valides}}, {errors, plural, =0 {aucune erreur} one {# erreur} other {# erreurs}}.",
+      "error": "Ligne {line} : {problem}",
+      "apply": "{count, plural, one {Importer # règle} other {Importer # règles}}",
+      "saved": "{count} règle(s) importée(s). La base en compte {total}."
     }
   },
   "visits": {
@@ -2101,5 +2132,82 @@
       "FORM_SCALE_BOUNDS": "Minimum et maximum requis, le minimum plus petit.",
       "DPI_VITAL_IMPLAUSIBLE": "Valeur hors des limites plausibles : vérifiez la saisie."
     }
+  },
+  "prescription": {
+    "title": "Prescription",
+    "drug": "Médicament (catalogue ou texte libre)",
+    "removeLine": "Retirer la ligne",
+    "noCatalog": "Aucun catalogue importé : saisissez le médicament en texte libre (les contrôles de dose et d’interaction ne s’appliquent alors pas).",
+    "dose": "Dose",
+    "unit": "Unité",
+    "frequency": "Fréquence",
+    "days": "Durée (jours)",
+    "instructions": "Instructions (avant le repas...)",
+    "quantity": "Quantité totale : {quantity} {unit}",
+    "substitution": "Substitution générique autorisée",
+    "severity": {
+      "info": "Information",
+      "warning": "Avertissement",
+      "blocking": "Bloquant"
+    },
+    "alerts": {
+      "ALLERGY": "allergie connue : {substance}.",
+      "DUPLICATE_CLASS": "même classe thérapeutique que {other}.",
+      "INTERACTION": "interaction avec {other} : {message}",
+      "MAX_SINGLE_DOSE": "dose par prise au-dessus du maximum ({limit} {unit}).",
+      "MAX_DAILY_DOSE": "dose journalière de {daily} {unit}, maximum {limit} {unit}.",
+      "MAX_DOSE_PER_KG": "dose journalière de {daily} {unit}, maximum {limit} {unit} pour ce poids ({perKg} {unit}/kg/j).",
+      "PREGNANCY": "grossesse : catégorie {category}.",
+      "MIN_AGE": "âge inférieur à l’âge minimal ({months} mois).",
+      "GERIATRIC": "prudence chez la personne âgée.",
+      "RENAL": "insuffisance rénale connue : adapter la dose.",
+      "HEPATIC": "atteinte hépatique connue : adapter la dose."
+    },
+    "justification": "Justification pour passer outre",
+    "changeDrug": "Changez de médicament ou de dose : passer outre demande une permission que vous n’avez pas.",
+    "addLine": "Ajouter une ligne",
+    "sign": "Signer l’ordonnance",
+    "signed": "Ordonnance signée.",
+    "pregnant": "Patiente enceinte",
+    "status": {
+      "active": "Active",
+      "completed": "Terminée",
+      "cancelled": "Annulée"
+    },
+    "pending": "En attente de synchronisation",
+    "posology": "{dose} {unit}, {frequency}{days, plural, =0 {} one {, # jour} other {, # jours}}",
+    "overridden": "(alerte passée outre)",
+    "print": "Imprimer",
+    "cancel": "Annuler l’ordonnance",
+    "cancelReason": "Motif de l’annulation",
+    "confirmCancel": "Confirmer l’annulation",
+    "frequencies": {
+      "once": "une seule fois",
+      "1x_d": "1 fois par jour",
+      "2x_d": "2 fois par jour",
+      "3x_d": "3 fois par jour",
+      "4x_d": "4 fois par jour",
+      "q12h": "toutes les 12 h",
+      "q8h": "toutes les 8 h",
+      "q6h": "toutes les 6 h",
+      "prn": "si besoin"
+    }
+  },
+  "medication": {
+    "title": "Traitements habituels",
+    "none": "Aucun traitement habituel noté.",
+    "decision": "Décision",
+    "decisions": {
+      "continue": "Continuer",
+      "stop": "Arrêter",
+      "modify": "Modifier"
+    },
+    "note": "Commentaire",
+    "reconcile": "Enregistrer la réconciliation",
+    "lastReconciliation": "Dernière réconciliation : {date}",
+    "add": "Ajouter un traitement rapporté par le patient",
+    "label": "Médicament",
+    "dose": "Posologie",
+    "addButton": "Ajouter"
   }
 }

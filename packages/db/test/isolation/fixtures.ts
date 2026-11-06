@@ -18,7 +18,13 @@ import {
   devicePatient,
   diagnosis,
   diagnosisCatalogItem,
+  drug,
+  drugInteractionRule,
   formDefinition,
+  medicationReconciliation,
+  medicationStatement,
+  prescription,
+  prescriptionItem,
   formResponse,
   formVersion,
   encounter,
@@ -284,6 +290,60 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       label: 'Paludisme simple',
       certainty: 'suspected',
       diagnosedAt: new Date(),
+    });
+  },
+  drug: async (tx, tenantId) => {
+    await tx.insert(drug).values({ id: uuidv7(), tenantId, code: 'TEST1', inn: 'Produit test' });
+  },
+  drug_interaction_rule: async (tx, tenantId) => {
+    await tx.insert(drugInteractionRule).values({
+      id: uuidv7(),
+      tenantId,
+      atcA: 'A01',
+      atcB: 'B01',
+      severity: 'minor',
+      message: 'Règle de test',
+    });
+  },
+  prescription: async (tx, tenantId) => {
+    await tx.insert(prescription).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      prescribedAt: new Date(),
+      verificationCode: uuidv7().slice(-10),
+    });
+  },
+  prescription_item: async (tx, tenantId) => {
+    await tx.insert(prescriptionItem).values({
+      id: uuidv7(),
+      tenantId,
+      prescriptionId: uuidv7(),
+      position: 0,
+      label: 'Produit test',
+      doseValue: 1,
+      doseUnit: 'cp',
+      frequency: '1x/d',
+    });
+  },
+  medication_statement: async (tx, tenantId) => {
+    await tx.insert(medicationStatement).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      notedAt: new Date(),
+      label: 'Traitement habituel',
+      source: 'patient_report',
+    });
+  },
+  medication_reconciliation: async (tx, tenantId) => {
+    await tx.insert(medicationReconciliation).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      kind: 'consultation',
+      decisions: [],
+      performedAt: new Date(),
     });
   },
   form_definition: async (tx, tenantId) => {
