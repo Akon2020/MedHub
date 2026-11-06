@@ -711,7 +711,8 @@
       "sensitivitySave": "Enregistrer le niveau",
       "favoriteOn": "Favori",
       "favoriteOff": "Ajouter aux favoris"
-    }
+    },
+    "consult": "Consulter"
   },
   "diagnostic": {
     "title": "Diagnostic du poste",
@@ -785,7 +786,13 @@
     "RDV_TRANSITION_NOT_ALLOWED": "Ce ticket a déjà changé d'état : l'écran va se mettre à jour.",
     "RDV_SLOT_TAKEN": "Ce créneau vient d'être pris sur un autre poste : choisissez-en un autre.",
     "RDV_SLOT_UNAVAILABLE": "Ce créneau n'existe plus dans l'agenda.",
-    "DPI_BREAK_GLASS_DURATION": "Durée d'accès d'urgence invalide."
+    "DPI_BREAK_GLASS_DURATION": "Durée d'accès d'urgence invalide.",
+    "DPI_NOTE_EMPTY": "La note est vide : remplissez au moins une rubrique.",
+    "DPI_CORRECTION_REASON_REQUIRED": "Indiquez le motif de la correction.",
+    "DPI_ICD10_FORMAT": "Code CIM-10 invalide (exemple : A09 ou J18.9).",
+    "DPI_IMPORT_COLUMNS": "Colonnes code et label introuvables dans l’en-tête.",
+    "DPI_IMPORT_MISSING": "code ou libellé manquant",
+    "DPI_IMPORT_DUPLICATE": "code en double dans le fichier"
   },
   "account": {
     "title": "Mon compte",
@@ -1582,6 +1589,19 @@
       "active": "Actif",
       "save": "Enregistrer",
       "cancel": "Annuler"
+    },
+    "diagnoses": {
+      "title": "Liste des diagnostics",
+      "subtitle": "{count, plural, =0 {Aucun diagnostic sur ce poste} one {# diagnostic sur ce poste} other {# diagnostics sur ce poste}}.",
+      "hint": "Fichier CSV avec les colonnes code et label (ou libelle), et system facultatif (ICD10 par défaut, ou local). Aucune liste n’est fournie par MedHub : importez l’extrait CIM-10 de votre structure. Un code déjà présent est renommé.",
+      "offline": "L’import se fait en ligne.",
+      "chooseFile": "Choisir un fichier",
+      "paste": "Ou collez le contenu du fichier ici",
+      "check": "Vérifier le fichier",
+      "summary": "{valid, plural, =0 {Aucune ligne valide} one {# ligne valide} other {# lignes valides}}, {errors, plural, =0 {aucune erreur} one {# erreur} other {# erreurs}}.",
+      "error": "Ligne {line} : {problem}",
+      "apply": "{count, plural, one {Importer # diagnostic} other {Importer # diagnostics}}",
+      "saved": "{count} diagnostic(s) importé(s). La liste en compte {total}."
     }
   },
   "visits": {
@@ -1877,6 +1897,61 @@
         "muac_moderate": "Périmètre brachial < 125 mm"
       },
       "source": "Références : standards de croissance de l'OMS (2006) de 0 à 5 ans, référence OMS (2007) de 5 à 19 ans."
+    }
+  },
+  "consultation": {
+    "queueTitle": "Consultations",
+    "queueSubtitle": "Visites du jour encore ouvertes sur ce poste.",
+    "queueEmpty": "Aucune visite ouverte aujourd’hui sur ce poste.",
+    "notOnDevice": "Ce dossier n’est pas présent sur ce poste.",
+    "backToRecord": "Retour au dossier",
+    "noVisit": "Aucune visite ouverte aujourd’hui",
+    "closeVisit": "Terminer la visite",
+    "problems": "Problèmes actifs",
+    "noProblem": "Aucun problème actif.",
+    "status": {
+      "planned": "Prévue",
+      "arrived": "Arrivé",
+      "triaged": "Trié",
+      "in_consultation": "En consultation",
+      "waiting_results": "En attente de résultats",
+      "completed": "Terminée",
+      "cancelled": "Annulée"
+    },
+    "note": {
+      "title": "Note de consultation",
+      "correctTitle": "Corriger la note",
+      "sections": {
+        "complaint": "Motif",
+        "history": "Histoire de la maladie",
+        "examination": "Examen",
+        "assessment": "Conclusion",
+        "plan": "Conduite à tenir"
+      },
+      "correctionReason": "Motif de la correction",
+      "sign": "Signer la note",
+      "cancel": "Annuler",
+      "draftHint": "Brouillon enregistré sur le poste toutes les 5 secondes.",
+      "readOnly": "Vous pouvez lire les notes mais pas en signer.",
+      "signed": "Note signée.",
+      "signedBy": "Signée par {name} le {date}",
+      "superseded": "Remplacée",
+      "pending": "En attente de synchronisation",
+      "correctedBecause": "Correction : {reason}",
+      "correct": "Corriger"
+    },
+    "diagnoses": {
+      "title": "Diagnostics",
+      "none": "Aucun diagnostic pour cette visite.",
+      "primary": "Principal",
+      "suspected": "Suspecté",
+      "correct": "Corriger",
+      "correctTitle": "Corriger le diagnostic",
+      "search": "Rechercher un diagnostic (code ou libellé)",
+      "code": "Code CIM-10 (facultatif)",
+      "add": "Ajouter",
+      "cancel": "Annuler",
+      "noCatalog": "Aucune liste de diagnostics importée : saisissez le libellé et, si vous le connaissez, le code CIM-10."
     }
   }
 }

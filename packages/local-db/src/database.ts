@@ -85,7 +85,9 @@ export type MetaRecord =
   | { key: 'failedPins'; value: number }
   | { key: 'tokens'; value: StoredTokens }
   | { key: 'catalogs'; value: SealedCatalogs }
-  | { key: `counter:${string}`; value: number };
+  | { key: `counter:${string}`; value: number }
+  /** Unsigned work in progress (a note being written): encrypted, never synchronised. */
+  | { key: `draft:${string}`; value: Ciphertext };
 
 export class MedHubLocalDb extends Dexie {
   entities!: Table<EntityRecord, string>;

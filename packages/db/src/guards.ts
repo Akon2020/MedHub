@@ -27,6 +27,8 @@ const NO_DELETE = [
   'clinical_event',
   'break_glass_event',
   'program_enrollment',
+  'clinical_note',
+  'diagnosis',
 ];
 const NO_UPDATE = [
   'stock_movement',
@@ -40,7 +42,7 @@ const NO_UPDATE = [
   'patient_favorite',
   'clinical_event',
 ];
-const STATUS_ONLY_UPDATE = ['vital_sign', 'triage'];
+const STATUS_ONLY_UPDATE = ['vital_sign', 'triage', 'clinical_note', 'diagnosis'];
 
 export async function ensureGuards(client: pg.ClientBase): Promise<void> {
   // Configuration: drafts are free; a published or archived version may only

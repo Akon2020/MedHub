@@ -5,6 +5,7 @@ import {
   allergy,
   appointment,
   clinicalEvent,
+  clinicalNote,
   appointmentType,
   breakGlassEvent,
   changeLog,
@@ -15,6 +16,8 @@ import {
   department,
   device,
   devicePatient,
+  diagnosis,
+  diagnosisCatalogItem,
   encounter,
   medicalHistory,
   duplicateCandidate,
@@ -257,6 +260,36 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       patientId: uuidv7(),
       programId: uuidv7(),
       enrolledAt: new Date(),
+    });
+  },
+  clinical_note: async (tx, tenantId) => {
+    await tx.insert(clinicalNote).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      kind: 'consultation',
+      sections: { complaint: 'Fièvre' },
+      signedAt: new Date(),
+    });
+  },
+  diagnosis: async (tx, tenantId) => {
+    await tx.insert(diagnosis).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      codeSystem: 'local',
+      label: 'Paludisme simple',
+      certainty: 'suspected',
+      diagnosedAt: new Date(),
+    });
+  },
+  diagnosis_catalog_item: async (tx, tenantId) => {
+    await tx.insert(diagnosisCatalogItem).values({
+      id: uuidv7(),
+      tenantId,
+      codeSystem: 'local',
+      code: 'PALU',
+      label: 'Paludisme simple',
     });
   },
   queue: async (tx, tenantId) => {

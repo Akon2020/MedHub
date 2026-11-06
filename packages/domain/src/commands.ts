@@ -21,6 +21,7 @@ import {
 import { triageRecordPayload } from './rdv/triage';
 import { recordAccessPayload } from './dpi/access-log';
 import { breakGlassPayload } from './dpi/break-glass';
+import { clinicalNotePayload, diagnosisPayload } from './dpi/consultation';
 import { programDischargePayload, programEnrollPayload } from './dpi/programs';
 import {
   allergyAddPayload,
@@ -57,7 +58,9 @@ export type EntityName =
   | 'problem'
   | 'record_access'
   | 'break_glass'
-  | 'program_enrollment';
+  | 'program_enrollment'
+  | 'clinical_note'
+  | 'diagnosis';
 
 export type EntityDefinition = {
   name: EntityName;
@@ -135,6 +138,18 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
   problem: {
     name: 'problem',
     strategy: 'union',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  clinical_note: {
+    name: 'clinical_note',
+    strategy: 'append_only',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  diagnosis: {
+    name: 'diagnosis',
+    strategy: 'append_only',
     scopeKeys: (data) => [`patient:${String(data.patientId)}`],
     patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
   },
@@ -437,6 +452,24 @@ export const COMMANDS = {
     permission: 'clinical_record:create',
     onlineOnly: false,
     transition: { from: ['active', 'resolved'], to: 'retracted' },
+  }),
+  'clinical_note.sign': define({
+    name: 'clinical_note.sign',
+    entity: 'clinical_note',
+    kind: 'append',
+    payloadSchema: clinicalNotePayload,
+    permission: 'clinical_record:sign',
+    onlineOnly: false,
+    patientAct: (p) => ({ patientId: p.patientId, at: p.signedAt }),
+  }),
+  'diagnosis.add': define({
+    name: 'diagnosis.add',
+    entity: 'diagnosis',
+    kind: 'append',
+    payloadSchema: diagnosisPayload,
+    permission: 'diagnosis:create',
+    onlineOnly: false,
+    patientAct: (p) => ({ patientId: p.patientId, at: p.diagnosedAt }),
   }),
   'program_enrollment.enroll': define({
     name: 'program_enrollment.enroll',

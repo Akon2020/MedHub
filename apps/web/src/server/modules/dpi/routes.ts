@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { clientIp, defineRoute, json } from '../../platform/http';
 import { listBreakGlass, patientAccessLog, reviewBreakGlass } from './break-glass';
 import { getVitalDefinitions, saveVitalDefinition } from './config';
+import { importDiagnoses } from './consultation';
 import { followUpList, listPrograms, saveProgram } from './programs';
 
 export const vitalDefinitionsRoute = defineRoute({
@@ -59,4 +60,11 @@ export const programSaveRoute = defineRoute({
 export const followUpRoute = defineRoute({
   route: 'programs.follow_up',
   handler: async ({ ctx }) => json(await followUpList(ctx)),
+});
+
+export const diagnosisImportRoute = defineRoute({
+  route: 'diagnoses.import',
+  schema: z.object({ csv: z.string().max(5_000_000), apply: z.boolean().default(false) }),
+  handler: async ({ request, body, ctx }) =>
+    json(await importDiagnoses(ctx, body, { ip: clientIp(request) })),
 });

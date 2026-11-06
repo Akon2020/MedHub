@@ -597,6 +597,102 @@ const mappers = {
       };
     },
   },
+  clinical_note: {
+    table: schema.clinicalNote,
+    toState(row: typeof schema.clinicalNote.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          encounterId: row.encounterId,
+          kind: row.kind,
+          sections: row.sections,
+          signedBy: row.signedBy,
+          signedAt: row.signedAt.toISOString(),
+          supersedesId: row.supersedesId,
+          correctionReason: row.correctionReason,
+          status: row.status,
+        }),
+        fieldMeta: {},
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.clinicalNote.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        encounterId: str(d.encounterId),
+        kind: String(d.kind),
+        sections: (record(d.sections) ?? {}) as Record<string, string | null>,
+        // The signer is the author of the device-signed operation.
+        signedBy: state.createdBy || null,
+        signedAt: new Date(String(d.signedAt)),
+        signedOpId: state.opId || null,
+        correctionReason: str(d.correctionReason),
+        supersedesId: str(d.supersedesId),
+        status: str(d.status) ?? 'active',
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+      };
+    },
+  },
+  diagnosis: {
+    table: schema.diagnosis,
+    toState(row: typeof schema.diagnosis.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          encounterId: row.encounterId,
+          codeSystem: row.codeSystem,
+          code: row.code,
+          label: row.label,
+          certainty: row.certainty,
+          isPrimary: row.isPrimary,
+          diagnosedAt: row.diagnosedAt.toISOString(),
+          supersedesId: row.supersedesId,
+          status: row.status,
+        }),
+        fieldMeta: {},
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.diagnosis.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        encounterId: str(d.encounterId),
+        codeSystem: String(d.codeSystem),
+        code: str(d.code),
+        label: String(d.label),
+        certainty: String(d.certainty),
+        isPrimary: d.isPrimary === true,
+        diagnosedAt: new Date(String(d.diagnosedAt)),
+        supersedesId: str(d.supersedesId),
+        status: str(d.status) ?? 'active',
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+      };
+    },
+  },
   program_enrollment: {
     table: schema.programEnrollment,
     toState(row: typeof schema.programEnrollment.$inferSelect): EntityState {
@@ -807,6 +903,8 @@ const TIMELINE: Partial<Record<EntityName, { kind: string; table: string; at: st
   allergy: { kind: 'allergy', table: 'allergy', at: 'notedAt' },
   medical_history: { kind: 'history', table: 'medical_history', at: 'notedAt' },
   problem: { kind: 'problem', table: 'problem', at: 'notedAt' },
+  clinical_note: { kind: 'note', table: 'clinical_note', at: 'signedAt' },
+  diagnosis: { kind: 'diagnosis', table: 'diagnosis', at: 'diagnosedAt' },
 };
 
 async function recordClinicalEvent(
@@ -921,6 +1019,22 @@ async function getEntity(tx: Tx, entity: EntityName, id: string): Promise<Entity
         .limit(1);
       return row ? mappers.problem.toState(row) : null;
     }
+    case 'clinical_note': {
+      const [row] = await tx
+        .select()
+        .from(schema.clinicalNote)
+        .where(eq(schema.clinicalNote.id, id))
+        .limit(1);
+      return row ? mappers.clinical_note.toState(row) : null;
+    }
+    case 'diagnosis': {
+      const [row] = await tx
+        .select()
+        .from(schema.diagnosis)
+        .where(eq(schema.diagnosis.id, id))
+        .limit(1);
+      return row ? mappers.diagnosis.toState(row) : null;
+    }
     case 'program_enrollment': {
       const [row] = await tx
         .select()
@@ -998,6 +1112,14 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
       return (await tx.select().from(schema.problem).where(inArray(schema.problem.id, ids))).map(
         (r) => mappers.problem.toState(r),
       );
+    case 'clinical_note':
+      return (
+        await tx.select().from(schema.clinicalNote).where(inArray(schema.clinicalNote.id, ids))
+      ).map((r) => mappers.clinical_note.toState(r));
+    case 'diagnosis':
+      return (
+        await tx.select().from(schema.diagnosis).where(inArray(schema.diagnosis.id, ids))
+      ).map((r) => mappers.diagnosis.toState(r));
     case 'program_enrollment':
       return (
         await tx
@@ -1090,7 +1212,7 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
       }
     },
     getEntity: (entity, id) => getEntity(tx, entity, id),
-    async insertEntity(entity, state) {
+    async insertEntity(entity, state, op) {
       switch (entity) {
         case 'patient':
           await tx.insert(schema.patient).values(mappers.patient.toRow(state, ctx));
@@ -1141,6 +1263,19 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         case 'problem':
           await tx.insert(schema.problem).values(mappers.problem.toRow(state, ctx));
           await recordClinicalEvent(tx, ctx, 'problem', state);
+          return;
+        case 'clinical_note':
+          await tx.insert(schema.clinicalNote).values({
+            ...mappers.clinical_note.toRow(state, ctx),
+            signedOperation: op
+              ? (JSON.parse(JSON.stringify(op)) as Record<string, unknown>)
+              : null,
+          });
+          await recordClinicalEvent(tx, ctx, 'clinical_note', state);
+          return;
+        case 'diagnosis':
+          await tx.insert(schema.diagnosis).values(mappers.diagnosis.toRow(state, ctx));
+          await recordClinicalEvent(tx, ctx, 'diagnosis', state);
           return;
         case 'program_enrollment':
           await tx
@@ -1284,6 +1419,28 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         }
         case 'stock_movement':
         case 'patient_favorite':
+        case 'clinical_note':
+          // Append-only: only the status changes, when a correction supersedes the row.
+          await tx
+            .update(schema.clinicalNote)
+            .set({
+              status: String(state.data.status ?? 'active'),
+              version: state.version,
+              opId: state.opId,
+            })
+            .where(eq(schema.clinicalNote.id, state.id));
+          return;
+        case 'diagnosis':
+          // Append-only: only the status changes, when a correction supersedes the row.
+          await tx
+            .update(schema.diagnosis)
+            .set({
+              status: String(state.data.status ?? 'active'),
+              version: state.version,
+              opId: state.opId,
+            })
+            .where(eq(schema.diagnosis.id, state.id));
+          return;
         case 'program_enrollment': {
           const {
             id: _id,
@@ -1610,6 +1767,14 @@ export async function patientBundles(
     .select()
     .from(schema.problem)
     .where(inArray(schema.problem.patientId, ids));
+  const notes = await tx
+    .select()
+    .from(schema.clinicalNote)
+    .where(inArray(schema.clinicalNote.patientId, ids));
+  const diagnoses = await tx
+    .select()
+    .from(schema.diagnosis)
+    .where(inArray(schema.diagnosis.patientId, ids));
   const enrollments = await tx
     .select()
     .from(schema.programEnrollment)
@@ -1623,6 +1788,14 @@ export async function patientBundles(
       state: mappers.medical_history.toState(r),
     })),
     ...problems.map((r) => ({ entity: 'problem' as const, state: mappers.problem.toState(r) })),
+    ...notes.map((r) => ({
+      entity: 'clinical_note' as const,
+      state: mappers.clinical_note.toState(r),
+    })),
+    ...diagnoses.map((r) => ({
+      entity: 'diagnosis' as const,
+      state: mappers.diagnosis.toState(r),
+    })),
     ...enrollments.map((r) => ({
       entity: 'program_enrollment' as const,
       state: mappers.program_enrollment.toState(r),

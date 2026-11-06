@@ -31,3 +31,4 @@ export * from './dpi/calculations';
 export * from './dpi/break-glass';
 export * from './dpi/programs';
 export * from './dpi/who-growth/engine';
+export * from './dpi/consultation';

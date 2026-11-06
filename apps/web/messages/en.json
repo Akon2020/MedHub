@@ -706,7 +706,8 @@
       "sensitivitySave": "Save the level",
       "favoriteOn": "Favourite",
       "favoriteOff": "Add to favourites"
-    }
+    },
+    "consult": "Consult"
   },
   "diagnostic": {
     "title": "Workstation diagnostics",
@@ -780,7 +781,13 @@
     "RDV_TRANSITION_NOT_ALLOWED": "This ticket has already changed: the screen will refresh.",
     "RDV_SLOT_TAKEN": "This slot was just taken on another workstation: choose another one.",
     "RDV_SLOT_UNAVAILABLE": "This slot no longer exists in the agenda.",
-    "DPI_BREAK_GLASS_DURATION": "Invalid emergency access duration."
+    "DPI_BREAK_GLASS_DURATION": "Invalid emergency access duration.",
+    "DPI_NOTE_EMPTY": "The note is empty: fill in at least one section.",
+    "DPI_CORRECTION_REASON_REQUIRED": "Give the reason for the correction.",
+    "DPI_ICD10_FORMAT": "Invalid ICD-10 code (for example A09 or J18.9).",
+    "DPI_IMPORT_COLUMNS": "Columns code and label not found in the header.",
+    "DPI_IMPORT_MISSING": "missing code or label",
+    "DPI_IMPORT_DUPLICATE": "code repeated in the file"
   },
   "account": {
     "title": "My account",
@@ -1577,6 +1584,19 @@
       "active": "Active",
       "save": "Save",
       "cancel": "Cancel"
+    },
+    "diagnoses": {
+      "title": "Diagnosis list",
+      "subtitle": "{count, plural, =0 {No diagnosis on this workstation} one {# diagnosis on this workstation} other {# diagnoses on this workstation}}.",
+      "hint": "CSV file with the columns code and label (or libelle), and an optional system (ICD10 by default, or local). MedHub ships no list: import your structure’s ICD-10 extract. A code already present is renamed.",
+      "offline": "Importing needs a connection.",
+      "chooseFile": "Choose a file",
+      "paste": "Or paste the file content here",
+      "check": "Check the file",
+      "summary": "{valid, plural, =0 {No valid line} one {# valid line} other {# valid lines}}, {errors, plural, =0 {no error} one {# error} other {# errors}}.",
+      "error": "Line {line}: {problem}",
+      "apply": "{count, plural, one {Import # diagnosis} other {Import # diagnoses}}",
+      "saved": "{count} diagnosis entries imported. The list now has {total}."
     }
   },
   "visits": {
@@ -1872,6 +1892,61 @@
         "muac_moderate": "Mid-upper arm circumference < 125 mm"
       },
       "source": "References: WHO Child Growth Standards (2006) from 0 to 5 years, WHO Growth Reference (2007) from 5 to 19 years."
+    }
+  },
+  "consultation": {
+    "queueTitle": "Consultations",
+    "queueSubtitle": "Today’s visits still open on this workstation.",
+    "queueEmpty": "No open visit today on this workstation.",
+    "notOnDevice": "This record is not on this workstation.",
+    "backToRecord": "Back to the record",
+    "noVisit": "No open visit today",
+    "closeVisit": "Finish the visit",
+    "problems": "Active problems",
+    "noProblem": "No active problem.",
+    "status": {
+      "planned": "Planned",
+      "arrived": "Arrived",
+      "triaged": "Triaged",
+      "in_consultation": "In consultation",
+      "waiting_results": "Waiting for results",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "note": {
+      "title": "Consultation note",
+      "correctTitle": "Correct the note",
+      "sections": {
+        "complaint": "Reason for visit",
+        "history": "History of present illness",
+        "examination": "Examination",
+        "assessment": "Assessment",
+        "plan": "Plan"
+      },
+      "correctionReason": "Reason for the correction",
+      "sign": "Sign the note",
+      "cancel": "Cancel",
+      "draftHint": "Draft saved on the workstation every 5 seconds.",
+      "readOnly": "You can read notes but not sign them.",
+      "signed": "Note signed.",
+      "signedBy": "Signed by {name} on {date}",
+      "superseded": "Replaced",
+      "pending": "Waiting for synchronisation",
+      "correctedBecause": "Correction: {reason}",
+      "correct": "Correct"
+    },
+    "diagnoses": {
+      "title": "Diagnoses",
+      "none": "No diagnosis for this visit.",
+      "primary": "Primary",
+      "suspected": "Suspected",
+      "correct": "Correct",
+      "correctTitle": "Correct the diagnosis",
+      "search": "Search a diagnosis (code or label)",
+      "code": "ICD-10 code (optional)",
+      "add": "Add",
+      "cancel": "Cancel",
+      "noCatalog": "No diagnosis list imported: type the label and, if you know it, the ICD-10 code."
     }
   }
 }

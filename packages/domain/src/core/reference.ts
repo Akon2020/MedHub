@@ -236,6 +236,8 @@ export type CatalogSnapshot = {
       high?: number | null;
     }[];
   }[];
+  /** Diagnosis list imported by the structure (S9); none is built in. */
+  diagnoses?: { code: string; label: string; codeSystem: 'ICD10' | 'local' }[];
   /** Chronic care programmes (S8). */
   programs?: {
     id: string;

@@ -16,7 +16,7 @@ import { database } from '../../platform/db';
 import { loadPermissions, requirePermission } from '../../platform/permissions';
 import type { RequestContext } from '../../platform/tenant';
 import { requireRecentStepUp } from './configuration';
-import { activePrograms, effectiveVitalDefinitions } from '../dpi';
+import { activeDiagnoses, activePrograms, effectiveVitalDefinitions } from '../dpi';
 
 type Client = { ip: string | null };
 
@@ -428,7 +428,9 @@ export async function catalogSnapshot(ctx: RequestContext): Promise<CatalogSnaps
       followUpIntervalDays: p.followUpIntervalDays,
       graceDays: p.graceDays,
     }));
+    const diagnoses = await activeDiagnoses(tx);
     const body = {
+      diagnoses,
       programs,
       vitalDefinitions,
       timeZone: tenant?.timeZone ?? 'Africa/Kinshasa',
