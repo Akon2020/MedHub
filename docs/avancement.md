@@ -146,6 +146,16 @@ J0 (en cours) : le risque principal, la synchronisation, est couvert par trois n
 
 ## Journal des sessions
 
+### 06/11/2026 (S10)
+
+Décisions du porteur au lancement de S10 (après une coupure de courant, questions reposées) :
+- Arrondi des paiements en espèces réglable par devise, **50 CDF par défaut**, USD sans arrondi ; l'écart d'arrondi est une ligne visible.
+- Sans taux du jour : **dernier taux connu, avec avertissement** et date du taux ; le taux appliqué est enregistré dans le paiement ; jamais de blocage hors connexion.
+- La consultation est ajoutée à la facture **à l'ouverture de la visite** (paiement avant les soins possible) ; une visite annulée reçoit un avoir.
+- Remises et avoirs : **tout approuvé par un second utilisateur habilité** (plafond 0 pour le caissier), plafonds réglables par rôle.
+
+S10, tranche 1 (tarification) : `packages/domain/src/fact/pricing.ts` (choix du prix : grille de la couverture, puis du type de patient, puis publique, prix daté ; taux direct ou inverse en arithmétique entière ; arrondi de caisse), migration `0025_s10_pricing` (`service_item`, `price_list`, `price`, `tax` inactive, `exchange_rate` immuable, `tenant_currency`), module serveur `fact`, écran `/app/parametres/finances`, copie des tarifs sur les postes. La démonstration contient la prestation « Consultation générale » et la grille « Public » sans aucun prix (règle 13).
+
 ### 06/11/2026 (suite)
 
 Revue S9 par le porteur du projet :

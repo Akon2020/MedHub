@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStepUp } from '@/features/auth/step-up';
 
-type Result = { items: number; errors: DiagnosisImportError[]; total: number };
+type Result = { items: number; errors: DiagnosisImportError[]; total?: number };
 
 /**
  * Diagnosis list of the structure (S9 decision: nothing preloaded, the
@@ -48,14 +48,24 @@ export function DrugCatalogSettings() {
   );
 }
 
-function CatalogImport({
+export function CatalogImport({
   endpoint,
   namespace,
   known,
+  extra,
+  onDone,
 }: {
   endpoint: string;
-  namespace: 'settings.diagnoses' | 'settings.drugs' | 'settings.interactions';
+  namespace:
+    | 'settings.diagnoses'
+    | 'settings.drugs'
+    | 'settings.interactions'
+    | 'settings.finance.services'
+    | 'settings.finance.prices';
   known: number;
+  /** Other fields of the request body (the price list of a price import). */
+  extra?: Record<string, unknown>;
+  onDone?: () => void;
 }) {
   const t = useTranslations(namespace);
   const tErr = useTranslations('errors');
@@ -77,11 +87,12 @@ function CatalogImport({
       const call = () =>
         apiFetch<Result>(endpoint, {
           method: 'POST',
-          body: JSON.stringify({ csv, apply }),
+          body: JSON.stringify({ ...extra, csv, apply }),
         });
       const out = apply ? await guard(call) : await call();
       if (apply) {
-        setNotice(t('saved', { count: out.items, total: out.total }));
+        setNotice(t('saved', { count: out.items, total: out.total ?? out.items }));
+        onDone?.();
         setCsv('');
         setResult(null);
         await reloadCatalogs();

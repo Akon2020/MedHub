@@ -19,6 +19,12 @@ import {
   diagnosis,
   diagnosisCatalogItem,
   drug,
+  exchangeRate,
+  price,
+  priceList,
+  serviceItem,
+  tax,
+  tenantCurrency,
   drugInteractionRule,
   formDefinition,
   medicationReconciliation,
@@ -291,6 +297,52 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       certainty: 'suspected',
       diagnosedAt: new Date(),
     });
+  },
+  service_item: async (tx, tenantId) => {
+    await tx.insert(serviceItem).values({
+      id: uuidv7(),
+      tenantId,
+      code: 'CONS',
+      name: 'Consultation de test',
+      category: 'consultation',
+    });
+  },
+  price_list: async (tx, tenantId) => {
+    await tx.insert(priceList).values({
+      id: uuidv7(),
+      tenantId,
+      code: 'PUB',
+      name: 'Public',
+      kind: 'public',
+      currency: 'USD',
+    });
+  },
+  price: async (tx, tenantId) => {
+    await tx.insert(price).values({
+      id: uuidv7(),
+      tenantId,
+      priceListId: uuidv7(),
+      serviceItemId: uuidv7(),
+      amount: 1000,
+      currency: 'USD',
+      validFrom: '2026-01-01',
+    });
+  },
+  tax: async (tx, tenantId) => {
+    await tx.insert(tax).values({ id: uuidv7(), tenantId, code: 'T', name: 'Taxe', rate: '0' });
+  },
+  exchange_rate: async (tx, tenantId) => {
+    await tx.insert(exchangeRate).values({
+      id: uuidv7(),
+      tenantId,
+      fromCurrency: 'USD',
+      toCurrency: 'CDF',
+      rate: '2850',
+      validFrom: '2026-11-01',
+    });
+  },
+  tenant_currency: async (tx, tenantId) => {
+    await tx.insert(tenantCurrency).values({ tenantId, currency: 'CDF', cashRoundingStep: 5000 });
   },
   drug: async (tx, tenantId) => {
     await tx.insert(drug).values({ id: uuidv7(), tenantId, code: 'TEST1', inn: 'Produit test' });

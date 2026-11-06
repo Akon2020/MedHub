@@ -11,6 +11,8 @@ import {
   department,
   formDefinition,
   formVersion,
+  priceList,
+  serviceItem,
   queue,
   role,
   rolePermission,
@@ -225,6 +227,30 @@ export async function seedDemo(
           );
         }
       }
+
+      // Billing nomenclature of the demo: a consultation and a public list, without any price
+      // (prices are the structure's data, never invented: import them in Prices and currencies).
+      await tx
+        .insert(serviceItem)
+        .values({
+          id: uuidv7(),
+          tenantId,
+          code: 'CONS-GEN',
+          name: 'Consultation générale',
+          category: 'consultation',
+        })
+        .onConflictDoNothing();
+      await tx
+        .insert(priceList)
+        .values({
+          id: uuidv7(),
+          tenantId,
+          code: 'PUB',
+          name: 'Public',
+          kind: 'public',
+          currency: 'USD',
+        })
+        .onConflictDoNothing();
 
       // The general consultation template, published, so a consultation can be filled at once.
       const [form] = await tx

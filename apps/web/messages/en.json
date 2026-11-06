@@ -796,7 +796,15 @@
     "PRESC_IMPORT_COLUMNS": "Required columns not found in the header.",
     "PRESC_IMPORT_MISSING": "required value missing",
     "PRESC_IMPORT_VALUE": "invalid value (ATC code, category or number)",
-    "PRESC_IMPORT_DUPLICATE": "line repeated in the file"
+    "PRESC_IMPORT_DUPLICATE": "line repeated in the file",
+    "FACT_CODE_TAKEN": "This code is already used.",
+    "FACT_RATE_INVALID": "Invalid rate: two different currencies and a positive rate.",
+    "FACT_NO_PRICE": "No price for this service on this date.",
+    "FACT_IMPORT_COLUMNS": "Required columns not found in the header.",
+    "FACT_IMPORT_VALUE": "invalid value (code, amount or date)",
+    "FACT_IMPORT_CATEGORY": "unknown category",
+    "FACT_IMPORT_DUPLICATE": "line repeated in the file",
+    "FACT_IMPORT_UNKNOWN_SERVICE": "unknown service: import it first"
   },
   "account": {
     "title": "My account",
@@ -909,6 +917,10 @@
       "forms": {
         "title": "Clinical forms",
         "text": "Builder, published versions, general consultation template."
+      },
+      "finance": {
+        "title": "Prices and currencies",
+        "text": "Services, price lists, exchange rates, cash rounding."
       }
     },
     "organization": {
@@ -1721,6 +1733,91 @@
       "error": "Line {line}: {problem}",
       "apply": "{count, plural, one {Import # rule} other {Import # rules}}",
       "saved": "{count} rules imported. The base now has {total}."
+    },
+    "finance": {
+      "title": "Prices and currencies",
+      "subtitle": "Services, dated price lists, rate of the day and cash rounding. Workstations receive them with their catalogs.",
+      "offline": "Prices are set online.",
+      "save": "Save",
+      "saved": "Saved.",
+      "inactive": "Inactive",
+      "code": "Code",
+      "name": "Name",
+      "category": "Category",
+      "kind": "List type",
+      "currency": "Currency",
+      "add": "Add the service",
+      "addList": "Create the list",
+      "period": "from {from} to {until}",
+      "since": "since {from}",
+      "categories": {
+        "consultation": "Consultation",
+        "procedure": "Procedure",
+        "lab": "Laboratory",
+        "imaging": "Imaging",
+        "bed_day": "Bed day",
+        "drug": "Drug",
+        "consumable": "Consumable",
+        "other": "Other"
+      },
+      "kinds": {
+        "public": "Public",
+        "private": "Private",
+        "contract": "Contract",
+        "foreigner": "Foreigner",
+        "staff": "Staff",
+        "indigent": "Indigent"
+      },
+      "currencies": {
+        "title": "Currencies and cash rounding",
+        "text": "Rounding of cash payments and change, in the currency unit (50 for 50 CDF; 0 for none). The rounding difference shows on the receipt.",
+        "rounding": "Rounding step"
+      },
+      "rates": {
+        "title": "Exchange rates",
+        "text": "Enter the rate of the day. Without one, the cash desk uses the last known rate and shows its date.",
+        "from": "1",
+        "value": "is worth",
+        "to": "in",
+        "day": "From",
+        "save": "Save the rate",
+        "none": "No rate recorded."
+      },
+      "serviceCard": {
+        "title": "Services",
+        "text": "{count, plural, =0 {No service} one {# service} other {# services}}. The code of a service never changes once created."
+      },
+      "lists": {
+        "title": "Price lists",
+        "text": "One list per patient type (public, contract, indigent...) and currency. A new price starts on its date; the previous one stays in the history.",
+        "empty": "No price in this list: import a file."
+      },
+      "services": {
+        "title": "Import services",
+        "subtitle": "{count, plural, =0 {No service} one {# service} other {# services}}.",
+        "hint": "CSV file with the columns code, libelle and categorie (consultation, acte, laboratoire, imagerie, hospitalisation, medicament, consommable, autre). An existing code is renamed.",
+        "offline": "Importing needs a connection.",
+        "chooseFile": "Choose a file",
+        "paste": "Or paste the file content here",
+        "check": "Check the file",
+        "summary": "{valid, plural, =0 {No valid line} one {# valid line} other {# valid lines}}, {errors, plural, =0 {no error} one {# error} other {# errors}}.",
+        "error": "Line {line}: {problem}",
+        "apply": "{count, plural, one {Import # service} other {Import # services}}",
+        "saved": "{count} services imported."
+      },
+      "prices": {
+        "title": "Import the prices of this list",
+        "subtitle": "{count, plural, =0 {No price in force} one {# price in force or to come} other {# prices in force or to come}}.",
+        "hint": "CSV file with the columns code (of the service), montant (in the list currency, for example 12.50), debut (YYYY-MM-DD) and fin (optional, excluded). MedHub ships no price.",
+        "offline": "Importing needs a connection.",
+        "chooseFile": "Choose a file",
+        "paste": "Or paste the file content here",
+        "check": "Check the file",
+        "summary": "{valid, plural, =0 {No valid line} one {# valid line} other {# valid lines}}, {errors, plural, =0 {no error} one {# error} other {# errors}}.",
+        "error": "Line {line}: {problem}",
+        "apply": "{count, plural, one {Import # price} other {Import # prices}}",
+        "saved": "{count} prices imported."
+      }
     }
   },
   "visits": {

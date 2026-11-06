@@ -1,3 +1,4 @@
+import type { ExchangeRate, Price, PriceList, ServiceItem } from '../fact/pricing';
 import type { DrugInfo, InteractionRule } from '../dpi/prescription';
 import { ADMIN_AREA_KINDS, type CsvTable } from '@medhub/shared';
 import { z } from 'zod';
@@ -239,6 +240,14 @@ export type CatalogSnapshot = {
   }[];
   /** Diagnosis list imported by the structure (S9); none is built in. */
   diagnoses?: { code: string; label: string; codeSystem: 'ICD10' | 'local' }[];
+  /** Pricing for the offline cash desk (S10). */
+  finance?: {
+    serviceItems: ServiceItem[];
+    priceLists: PriceList[];
+    prices: Price[];
+    exchangeRates: ExchangeRate[];
+    currencies: { currency: string; cashRoundingStep: number; isAccepted: boolean }[];
+  };
   /** Drug catalogue and interaction rules imported by the structure (S9). */
   drugs?: (DrugInfo & { id: string })[];
   interactionRules?: InteractionRule[];

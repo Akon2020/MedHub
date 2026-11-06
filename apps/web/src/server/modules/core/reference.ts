@@ -23,6 +23,7 @@ import {
   effectiveVitalDefinitions,
   interactionRules,
 } from '../dpi';
+import { financeCatalog } from '../fact';
 import { publishedFormVersions } from '../form';
 
 type Client = { ip: string | null };
@@ -437,9 +438,11 @@ export async function catalogSnapshot(ctx: RequestContext): Promise<CatalogSnaps
     }));
     const diagnoses = await activeDiagnoses(tx);
     const forms = await publishedFormVersions(tx);
+    const finance = await financeCatalog(tx, new Date().toISOString().slice(0, 10));
     const drugs = await activeDrugs(tx);
     const rules = await interactionRules(tx);
     const body = {
+      finance,
       drugs,
       interactionRules: rules,
       diagnoses,

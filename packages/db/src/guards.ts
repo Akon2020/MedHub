@@ -34,6 +34,7 @@ const NO_DELETE = [
   'prescription_item',
   'medication_statement',
   'medication_reconciliation',
+  'exchange_rate',
 ];
 const NO_UPDATE = [
   'stock_movement',
@@ -47,6 +48,7 @@ const NO_UPDATE = [
   'patient_favorite',
   'clinical_event',
   'medication_reconciliation',
+  'exchange_rate',
 ];
 const STATUS_ONLY_UPDATE = [
   'vital_sign',

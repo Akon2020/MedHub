@@ -35,3 +35,4 @@ export * from './dpi/consultation';
 export * from './dpi/form-responses';
 export * from './dpi/prescription';
 export * from './dpi/prescription-checks';
+export * from './fact/pricing';

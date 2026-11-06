@@ -5,6 +5,7 @@ import {
   CalendarClock,
   ChevronRight,
   ClipboardList,
+  HandCoins,
   Database,
   GraduationCap,
   KeyRound,
@@ -55,6 +56,12 @@ const ENTRIES: Entry[] = [
     icon: Stethoscope,
     href: '/app/parametres/clinique',
     permission: 'configuration:read',
+  },
+  {
+    key: 'finance',
+    icon: HandCoins,
+    href: '/app/parametres/finances',
+    permission: 'price:read',
   },
   {
     key: 'forms',

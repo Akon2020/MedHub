@@ -801,7 +801,15 @@
     "PRESC_IMPORT_COLUMNS": "Colonnes obligatoires introuvables dans l’en-tête.",
     "PRESC_IMPORT_MISSING": "valeur obligatoire manquante",
     "PRESC_IMPORT_VALUE": "valeur invalide (code ATC, catégorie ou nombre)",
-    "PRESC_IMPORT_DUPLICATE": "ligne en double dans le fichier"
+    "PRESC_IMPORT_DUPLICATE": "ligne en double dans le fichier",
+    "FACT_CODE_TAKEN": "Ce code est déjà utilisé.",
+    "FACT_RATE_INVALID": "Taux invalide : deux devises différentes et un taux positif.",
+    "FACT_NO_PRICE": "Aucun prix pour cette prestation à cette date.",
+    "FACT_IMPORT_COLUMNS": "Colonnes obligatoires introuvables dans l’en-tête.",
+    "FACT_IMPORT_VALUE": "valeur invalide (code, montant ou date)",
+    "FACT_IMPORT_CATEGORY": "catégorie inconnue",
+    "FACT_IMPORT_DUPLICATE": "ligne en double dans le fichier",
+    "FACT_IMPORT_UNKNOWN_SERVICE": "prestation inconnue : importez-la d’abord"
   },
   "account": {
     "title": "Mon compte",
@@ -914,6 +922,10 @@
       "forms": {
         "title": "Formulaires cliniques",
         "text": "Constructeur, versions publiées, modèle de consultation générale."
+      },
+      "finance": {
+        "title": "Tarifs et devises",
+        "text": "Prestations, grilles de prix, taux de change, arrondi de caisse."
       }
     },
     "organization": {
@@ -1726,6 +1738,91 @@
       "error": "Ligne {line} : {problem}",
       "apply": "{count, plural, one {Importer # règle} other {Importer # règles}}",
       "saved": "{count} règle(s) importée(s). La base en compte {total}."
+    },
+    "finance": {
+      "title": "Tarifs et devises",
+      "subtitle": "Prestations, grilles de prix datées, taux du jour et arrondi de caisse. Les postes les reçoivent avec leurs catalogues.",
+      "offline": "Les tarifs se règlent en ligne.",
+      "save": "Enregistrer",
+      "saved": "Enregistré.",
+      "inactive": "Inactif",
+      "code": "Code",
+      "name": "Nom",
+      "category": "Catégorie",
+      "kind": "Type de grille",
+      "currency": "Devise",
+      "add": "Ajouter la prestation",
+      "addList": "Créer la grille",
+      "period": "du {from} au {until}",
+      "since": "depuis le {from}",
+      "categories": {
+        "consultation": "Consultation",
+        "procedure": "Acte",
+        "lab": "Laboratoire",
+        "imaging": "Imagerie",
+        "bed_day": "Journée d’hospitalisation",
+        "drug": "Médicament",
+        "consumable": "Consommable",
+        "other": "Autre"
+      },
+      "kinds": {
+        "public": "Public",
+        "private": "Privé",
+        "contract": "Convention",
+        "foreigner": "Étranger",
+        "staff": "Personnel",
+        "indigent": "Indigent"
+      },
+      "currencies": {
+        "title": "Devises et arrondi de caisse",
+        "text": "Arrondi appliqué aux paiements en espèces et à la monnaie rendue, dans l’unité de la devise (50 pour 50 CDF ; 0 pour aucun arrondi). L’écart d’arrondi apparaît sur le reçu.",
+        "rounding": "Pas d’arrondi"
+      },
+      "rates": {
+        "title": "Taux de change",
+        "text": "Saisissez le taux du jour. Sans taux du jour, la caisse utilise le dernier taux connu et affiche sa date.",
+        "from": "1",
+        "value": "vaut",
+        "to": "en",
+        "day": "À partir du",
+        "save": "Enregistrer le taux",
+        "none": "Aucun taux enregistré."
+      },
+      "serviceCard": {
+        "title": "Prestations",
+        "text": "{count, plural, =0 {Aucune prestation} one {# prestation} other {# prestations}}. Le code d’une prestation ne change plus une fois créé."
+      },
+      "lists": {
+        "title": "Grilles de prix",
+        "text": "Une grille par type de patient (public, convention, indigent...) et par devise. Un nouveau prix commence à sa date ; le précédent reste dans l’historique.",
+        "empty": "Aucun prix dans cette grille : importez un fichier."
+      },
+      "services": {
+        "title": "Importer des prestations",
+        "subtitle": "{count, plural, =0 {Aucune prestation} one {# prestation} other {# prestations}}.",
+        "hint": "Fichier CSV avec les colonnes code, libelle et categorie (consultation, acte, laboratoire, imagerie, hospitalisation, medicament, consommable, autre). Un code existant est renommé.",
+        "offline": "L’import se fait en ligne.",
+        "chooseFile": "Choisir un fichier",
+        "paste": "Ou collez le contenu du fichier ici",
+        "check": "Vérifier le fichier",
+        "summary": "{valid, plural, =0 {Aucune ligne valide} one {# ligne valide} other {# lignes valides}}, {errors, plural, =0 {aucune erreur} one {# erreur} other {# erreurs}}.",
+        "error": "Ligne {line} : {problem}",
+        "apply": "{count, plural, one {Importer # prestation} other {Importer # prestations}}",
+        "saved": "{count} prestation(s) importée(s)."
+      },
+      "prices": {
+        "title": "Importer les prix de cette grille",
+        "subtitle": "{count, plural, =0 {Aucun prix en vigueur} one {# prix en vigueur ou à venir} other {# prix en vigueur ou à venir}}.",
+        "hint": "Fichier CSV avec les colonnes code (de la prestation), montant (dans la devise de la grille, par exemple 12,50), debut (AAAA-MM-JJ) et fin (facultative, exclue). MedHub ne fournit aucun prix.",
+        "offline": "L’import se fait en ligne.",
+        "chooseFile": "Choisir un fichier",
+        "paste": "Ou collez le contenu du fichier ici",
+        "check": "Vérifier le fichier",
+        "summary": "{valid, plural, =0 {Aucune ligne valide} one {# ligne valide} other {# lignes valides}}, {errors, plural, =0 {aucune erreur} one {# erreur} other {# erreurs}}.",
+        "error": "Ligne {line} : {problem}",
+        "apply": "{count, plural, one {Importer # prix} other {Importer # prix}}",
+        "saved": "{count} prix importé(s)."
+      }
     }
   },
   "visits": {
