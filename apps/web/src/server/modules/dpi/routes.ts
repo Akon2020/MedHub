@@ -5,6 +5,8 @@ import { z } from 'zod';
 import { clientIp, defineRoute, json } from '../../platform/http';
 import { listBreakGlass, patientAccessLog, reviewBreakGlass } from './break-glass';
 import { getVitalDefinitions, saveVitalDefinition } from './config';
+import { importDiagnoses } from './consultation';
+import { importDrugs, importInteractions } from './prescription';
 import { followUpList, listPrograms, saveProgram } from './programs';
 
 export const vitalDefinitionsRoute = defineRoute({
@@ -59,4 +61,30 @@ export const programSaveRoute = defineRoute({
 export const followUpRoute = defineRoute({
   route: 'programs.follow_up',
   handler: async ({ ctx }) => json(await followUpList(ctx)),
+});
+
+export const diagnosisImportRoute = defineRoute({
+  route: 'diagnoses.import',
+  schema: z.object({ csv: z.string().max(5_000_000), apply: z.boolean().default(false) }),
+  handler: async ({ request, body, ctx }) =>
+    json(await importDiagnoses(ctx, body, { ip: clientIp(request) })),
+});
+
+const catalogImport = z.object({
+  csv: z.string().max(5_000_000),
+  apply: z.boolean().default(false),
+});
+
+export const drugImportRoute = defineRoute({
+  route: 'drugs.import',
+  schema: catalogImport,
+  handler: async ({ request, body, ctx }) =>
+    json(await importDrugs(ctx, body, { ip: clientIp(request) })),
+});
+
+export const interactionImportRoute = defineRoute({
+  route: 'drug_interactions.import',
+  schema: catalogImport,
+  handler: async ({ request, body, ctx }) =>
+    json(await importInteractions(ctx, body, { ip: clientIp(request) })),
 });

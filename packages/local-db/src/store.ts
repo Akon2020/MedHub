@@ -214,6 +214,30 @@ export class EncryptedClientStore implements ClientSyncStore {
     return out;
   }
 
+  async saveDraft(name: string, value: unknown): Promise<void> {
+    await this.db.meta.put({
+      key: `draft:${name}`,
+      value: await encryptJson(this.keys.dataKey, value),
+    });
+  }
+
+  async loadDraft<T>(name: string): Promise<T | null> {
+    const row = await this.db.meta.get(`draft:${name}`);
+    if (!row || !row.key.startsWith('draft:')) return null;
+    try {
+      return await decryptJson<T>(
+        this.keys.dataKey,
+        row.value as Parameters<typeof decryptJson>[1],
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  async deleteDraft(name: string): Promise<void> {
+    await this.db.meta.delete(`draft:${name}`);
+  }
+
   async readState(): Promise<SyncStateRecord> {
     const row = await this.db.syncState.get('state');
     if (!row) return { ...DEFAULT_STATE };

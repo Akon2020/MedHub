@@ -4,6 +4,7 @@ export {
   patientBundles,
   patientState,
   pgSyncStore,
+  toDrugInfo,
   updateServerPatient,
 } from './repository';
 export { pinPatient } from './scope';

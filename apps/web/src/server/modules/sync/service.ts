@@ -30,6 +30,12 @@ const READ_PERMISSION: Record<string, readonly string[]> = {
   medical_history: ['clinical_record:read'],
   problem: ['clinical_record:read'],
   program_enrollment: ['clinical_record:read'],
+  clinical_note: ['clinical_record:read'],
+  diagnosis: ['diagnosis:read', 'clinical_record:read'],
+  form_response: ['clinical_record:read'],
+  prescription: ['prescription:read', 'clinical_record:read'],
+  medication_statement: ['clinical_record:read'],
+  medication_reconciliation: ['clinical_record:read'],
   vital_sign: ['vital_sign:read', 'clinical_record:read'],
   stock_movement: ['stock:read'],
 };

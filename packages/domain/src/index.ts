@@ -31,3 +31,8 @@ export * from './dpi/calculations';
 export * from './dpi/break-glass';
 export * from './dpi/programs';
 export * from './dpi/who-growth/engine';
+export * from './dpi/consultation';
+export * from './dpi/form-responses';
+export * from './dpi/prescription';
+export * from './dpi/prescription-checks';
+export * from './fact/pricing';

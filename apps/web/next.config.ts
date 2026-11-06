@@ -28,6 +28,7 @@ const nextConfig: NextConfig = {
   transpilePackages: [
     '@medhub/shared',
     '@medhub/domain',
+    '@medhub/forms',
     '@medhub/sync',
     '@medhub/local-db',
     '@medhub/db',

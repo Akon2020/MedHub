@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { consultationGeneral } from '@medhub/forms';
 import { ROLE_TEMPLATES, uuidv7 } from '@medhub/shared';
 import { and, eq } from 'drizzle-orm';
 import { appendAudit } from '../src/audit';
@@ -8,6 +9,10 @@ import { hashPassword } from '../src/password';
 import {
   appointmentType,
   department,
+  formDefinition,
+  formVersion,
+  priceList,
+  serviceItem,
   queue,
   role,
   rolePermission,
@@ -47,6 +52,8 @@ const DEMO_USERS: {
   { username: 'medecin', displayName: 'Dieudonné Kasongo', title: 'Dr', roles: ['physician'] },
   { username: 'pharmacie', displayName: 'Patience Lukusa', title: 'Ph.', roles: ['pharmacist'] },
   { username: 'caisse', displayName: 'Héritier Mwamba', title: null, roles: ['cashier'] },
+  { username: 'direction', displayName: 'Sagesse Direction', title: null, roles: ['director'] },
+  { username: 'laboratoire', displayName: 'Fidèle Analyses', title: 'Tech.', roles: ['lab_tech'] },
 ];
 
 export type SeedTenant = typeof DEMO_TENANT;
@@ -219,6 +226,55 @@ export async function seedDemo(
             })),
           );
         }
+      }
+
+      // Billing nomenclature of the demo: a consultation and a public list, without any price
+      // (prices are the structure's data, never invented: import them in Prices and currencies).
+      await tx
+        .insert(serviceItem)
+        .values({
+          id: uuidv7(),
+          tenantId,
+          code: 'CONS-GEN',
+          name: 'Consultation générale',
+          category: 'consultation',
+        })
+        .onConflictDoNothing();
+      await tx
+        .insert(priceList)
+        .values({
+          id: uuidv7(),
+          tenantId,
+          code: 'PUB',
+          name: 'Public',
+          kind: 'public',
+          currency: 'USD',
+        })
+        .onConflictDoNothing();
+
+      // The general consultation template, published, so a consultation can be filled at once.
+      const [form] = await tx
+        .select({ id: formDefinition.id })
+        .from(formDefinition)
+        .where(eq(formDefinition.code, consultationGeneral.code));
+      if (!form) {
+        const formId = uuidv7();
+        await tx.insert(formDefinition).values({
+          id: formId,
+          tenantId,
+          code: consultationGeneral.code,
+          step: consultationGeneral.step,
+          title: consultationGeneral.title,
+        });
+        await tx.insert(formVersion).values({
+          id: uuidv7(),
+          tenantId,
+          formDefinitionId: formId,
+          version: 1,
+          definition: consultationGeneral as unknown as Record<string, unknown>,
+          status: 'published',
+          publishedAt: new Date(),
+        });
       }
     });
     return { tenantId };

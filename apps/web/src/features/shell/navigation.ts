@@ -46,9 +46,9 @@ export const NAVIGATION: NavGroup[] = [
       },
       {
         key: 'consultations',
-        href: '/app/bientot?m=consultations',
+        href: '/app/consultation',
         icon: Stethoscope,
-        soon: 'S8-S9',
+        permission: 'clinical_record:sign',
       },
     ],
   },

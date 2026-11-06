@@ -48,8 +48,15 @@ export interface ServerSyncTx {
   findOpResult(opId: string): Promise<OpResult | null>;
   saveOp(op: Operation, result: OpResult): Promise<void>;
   getEntity(entity: EntityName, id: string): Promise<EntityState | null>;
-  insertEntity(entity: EntityName, state: EntityState): Promise<void>;
+  /** `op` is the signed operation that creates the row (kept with signed clinical notes). */
+  insertEntity(entity: EntityName, state: EntityState, op?: Operation): Promise<void>;
   updateEntity(entity: EntityName, state: EntityState): Promise<void>;
+  /** Checks that need stored data (a form response against its version); a code refuses the op. */
+  checkEntity?(
+    entity: EntityName,
+    payload: Record<string, unknown>,
+    permissions: ReadonlySet<string>,
+  ): Promise<string | null>;
   appendChange(change: ChangeEntry): Promise<void>;
   createConflict(conflict: ConflictEntry): Promise<string>;
   listStockMovements(
@@ -209,6 +216,10 @@ async function applyOperation(
     const refusal = deathRefusal(command, payload, patient?.data);
     if (refusal) throw new Rejection(refusal);
   }
+  if (command.kind !== 'update' && tx.checkEntity) {
+    const refusal = await tx.checkEntity(entity, payload, ctx.permissions);
+    if (refusal) throw new Rejection(refusal);
+  }
   switch (command.kind) {
     case 'create':
       return applyCreate(tx, op, entity, payload);
@@ -244,7 +255,7 @@ async function applyCreate(
 ): Promise<OpResult> {
   if (await tx.getEntity(entity, op.entityId)) throw new Rejection('VERSION_CONFLICT');
   const state = createState(entity, op.entityId, op, payload, 1);
-  await tx.insertEntity(entity, state);
+  await tx.insertEntity(entity, state, op);
   await recordChange(tx, entity, state, op);
   return { opId: op.opId, status: 'applied', serverVersion: 1 };
 }
@@ -313,7 +324,7 @@ async function applyAppend(
     await recordChange(tx, entity, superseded, op);
   }
 
-  await tx.insertEntity(entity, state);
+  await tx.insertEntity(entity, state, op);
   await recordChange(tx, entity, state, op);
 
   if (strategy === 'movements') {

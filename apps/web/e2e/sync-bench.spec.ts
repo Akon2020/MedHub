@@ -606,6 +606,10 @@ test('arrival, call and triage offline across two workstations, then an appointm
   const consult = nurse.page.getByRole('listitem').filter({ hasText: /^C-/ }).first();
   const consultNumber = ((await consult.locator('span').first().textContent()) ?? '').trim();
   await consult.getByRole('button', { name: 'Appeler' }).click();
+  // The call is written locally before leaving the page.
+  await expect(
+    nurse.page.getByRole('listitem').filter({ hasText: consultNumber }).getByText('Appelé'),
+  ).toBeVisible({ timeout: 20_000 });
   await nurse.page.goto(`/app/ecran-appel?queue=${queueId}`);
   await unlock(nurse.page);
   await expect(nurse.page.getByText(consultNumber, { exact: true })).toBeVisible({

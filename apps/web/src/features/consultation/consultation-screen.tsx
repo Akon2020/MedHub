@@ -1,0 +1,286 @@
+'use client';
+
+import { activeBreakGlass, mergeClosure, patientFullName, recordAccess } from '@medhub/domain';
+import { AppError } from '@medhub/shared';
+import { ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { useState } from 'react';
+import { useLocalQuery, useRuntime } from '@/client/runtime';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AllergyBanner, toAllergyView } from '@/features/record/record-lists';
+import { LockedRecord, toGrant } from '@/features/record/break-glass';
+import { useRecordAccess } from '@/features/record/use-record-access';
+import { openVisitOfToday, todayTickets } from '@/features/visits/visit-helpers';
+import { FormsPanel } from '@/features/forms/forms-panel';
+import { MedicationPanel } from '@/features/prescription/medication-panel';
+import { PrescriptionPanel } from '@/features/prescription/prescription-panel';
+import { usePrescriptionPrint } from '@/features/prescription/prescription-pdf';
+import { DiagnosesPanel } from './diagnoses-panel';
+import { NoteEditor } from './note-editor';
+
+/**
+ * Consultation (docs/07-ui-ux.md 5.3): compact summary on the left, note and
+ * coded diagnoses in the centre, prescription on the right. Everything works
+ * offline; the first signed note starts the consultation, closing the visit
+ * finishes the ticket being served.
+ */
+export function ConsultationScreen({ patientId }: { patientId: string }) {
+  const t = useTranslations('consultation');
+  const tErr = useTranslations('errors');
+  const tp = useTranslations('patients');
+  const tc = useTranslations('common');
+  const printPrescription = usePrescriptionPrint();
+  const { dispatch, identity } = useRuntime();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [now] = useState(() => new Date());
+
+  const { data } = useLocalQuery(
+    async (store) => {
+      const patient = await store.readEntity('patient', patientId);
+      if (!patient) return null;
+      const records = (await store.readEntities('patient')).map((p) => ({
+        id: p.id,
+        mergedIntoId: typeof p.data.mergedIntoId === 'string' ? p.data.mergedIntoId : null,
+      }));
+      const ids = mergeClosure(patientId, records);
+      const gather = async (entity: string) =>
+        (await Promise.all(ids.map((pid) => store.readEntitiesByPatient(entity, pid)))).flat();
+      const encounters = await store.readEntitiesByPatient('encounter', patientId);
+      const visitId = openVisitOfToday(encounters);
+      const visit = encounters.find((e) => e.id === visitId) ?? null;
+      const byVisit = (rows: Awaited<ReturnType<typeof gather>>) =>
+        rows.filter((r) => (visitId ? r.data.encounterId === visitId : !r.data.encounterId));
+      return {
+        patient,
+        visitId,
+        visitStatus: typeof visit?.data.status === 'string' ? visit.data.status : null,
+        notes: byVisit(await gather('clinical_note')),
+        diagnoses: byVisit(await gather('diagnosis')),
+        responses: byVisit(await gather('form_response')),
+        lastVitals: lastVitalsOf(await gather('vital_sign')),
+        allergyRows: await gather('allergy'),
+        prescriptions: await gather('prescription'),
+        statements: await gather('medication_statement'),
+        reconciliations: byVisit(await gather('medication_reconciliation')),
+        problems: (await gather('problem')).filter((p) => p.data.status === 'active'),
+        tickets: todayTickets(await store.readEntitiesByPatient('queue_ticket', patientId)),
+        grants: (await store.readEntitiesByPatient('break_glass', patientId)).map(toGrant),
+      };
+    },
+    [patientId],
+  );
+
+  const access = data
+    ? recordAccess(
+        data.patient.data.sensitivity,
+        identity?.sensitivityMax ?? 'normal',
+        activeBreakGlass(data.grants, identity?.userId ?? '', patientId, now),
+      )
+    : null;
+  useRecordAccess(
+    patientId,
+    access === 'emergency' ? 'break_glass' : 'patient_record',
+    access === 'open' || access === 'emergency',
+  );
+
+  if (!data) return <p className="text-sm text-muted-foreground">{t('notOnDevice')}</p>;
+  if (access === 'locked') {
+    return <LockedRecord patientId={patientId} mrn={String(data.patient.data.mrn ?? '')} />;
+  }
+
+  const d = data.patient.data;
+  const name = patientFullName({
+    familyName: String(d.familyName ?? ''),
+    middleName: typeof d.middleName === 'string' ? d.middleName : null,
+    givenName: typeof d.givenName === 'string' ? d.givenName : null,
+  });
+  const canClose = identity?.permissions.includes('encounter:close') ?? false;
+  const open = data.visitStatus !== null && data.visitStatus !== 'completed';
+
+  async function closeVisit() {
+    if (!data?.visitId) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const at = new Date().toISOString();
+      for (const ticket of data.tickets) {
+        if (ticket.encounterId === data.visitId && ticket.status === 'in_service') {
+          await dispatch('queue_ticket.complete', { completedAt: at }, { entityId: ticket.id });
+        }
+      }
+      await dispatch(
+        'encounter.close',
+        { status: 'completed', endedAt: at },
+        { entityId: data.visitId },
+      );
+    } catch (err) {
+      const code = err instanceof AppError ? err.code : 'UNKNOWN';
+      setError(tErr.has(code) ? tErr(code) : tErr('UNKNOWN'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-7xl">
+      <Link
+        href={`/app/patients/fiche?id=${patientId}`}
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary"
+      >
+        <ArrowLeft className="size-4" aria-hidden />
+        {t('backToRecord')}
+      </Link>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <h1 className="text-2xl font-semibold">{name}</h1>
+        <span className="font-mono text-xs text-slate-ink">{String(d.mrn ?? '')}</span>
+        {data.visitStatus && <Badge variant="info">{t(`status.${data.visitStatus}`)}</Badge>}
+        {!data.visitId && <Badge variant="warning">{t('noVisit')}</Badge>}
+        {canClose && open && data.visitId && (
+          <Button size="sm" variant="secondary" disabled={busy} onClick={() => void closeVisit()}>
+            {busy ? <Loader2 className="animate-spin" /> : <CheckCircle2 />}
+            {t('closeVisit')}
+          </Button>
+        )}
+      </div>
+      {error && (
+        <p role="alert" className="mb-4 text-sm text-danger">
+          {error}
+        </p>
+      )}
+      <AllergyBanner rows={data.allergyRows.map(toAllergyView)} />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1.5fr)]">
+        <div className="grid content-start gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('problems')}</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm">
+              {data.problems.length === 0 ? (
+                <p className="text-muted-foreground">{t('noProblem')}</p>
+              ) : (
+                <ul className="grid gap-1">
+                  {data.problems.map((p) => (
+                    <li key={p.id}>{String(p.data.label)}</li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+          <DiagnosesPanel
+            patientId={patientId}
+            encounterId={data.visitId}
+            diagnoses={data.diagnoses}
+          />
+        </div>
+        <div className="grid content-start gap-6">
+          <NoteEditor
+            key={data.visitId ?? 'none'}
+            patientId={patientId}
+            encounterId={data.visitId}
+            notes={data.notes}
+            onSigned={async () => {
+              // The first signed note starts the consultation of the visit.
+              if (
+                data.visitId &&
+                (data.visitStatus === 'arrived' || data.visitStatus === 'triaged') &&
+                identity?.permissions.includes('encounter:update_status')
+              ) {
+                await dispatch(
+                  'encounter.update_status',
+                  { status: 'in_consultation' },
+                  { entityId: data.visitId },
+                );
+              }
+            }}
+          />
+          <FormsPanel
+            step="consultation"
+            patientId={patientId}
+            encounterId={data.visitId}
+            responses={data.responses}
+            context={{
+              birthDate: typeof d.birthDate === 'string' ? d.birthDate : null,
+              sex: d.sex === 'M' || d.sex === 'F' ? d.sex : 'U',
+              pregnant: false,
+              vitals: data.lastVitals,
+            }}
+          />
+        </div>
+        <div className="grid content-start gap-6 lg:col-start-2 2xl:col-start-auto">
+          <PrescriptionPanel
+            patientId={patientId}
+            encounterId={data.visitId}
+            prescriptions={data.prescriptions}
+            onPrint={(p) => {
+              const months = ageInMonths(typeof d.birthDate === 'string' ? d.birthDate : null, now);
+              void printPrescription(p, {
+                name,
+                mrn: String(d.mrn ?? ''),
+                details: [
+                  tp(`sex.${d.sex === 'M' || d.sex === 'F' ? d.sex : 'U'}`),
+                  months === null ? '' : tc('years', { count: Math.floor(months / 12) }),
+                ]
+                  .filter(Boolean)
+                  .join(' · '),
+                weight:
+                  typeof data.lastVitals.weight === 'number'
+                    ? `${data.lastVitals.weight} kg`
+                    : null,
+              }).catch(() => setError(tErr('UNKNOWN')));
+            }}
+            canBePregnant={d.sex === 'F'}
+            facts={{
+              ageMonths: ageInMonths(typeof d.birthDate === 'string' ? d.birthDate : null, now),
+              weightKg: data.lastVitals.weight ?? null,
+              pregnant: false,
+              allergies: data.allergyRows
+                .filter(
+                  (a) => !a.rejected && a.data.status === 'active' && a.data.noneKnown !== true,
+                )
+                .map((a) => ({
+                  substance: String(a.data.substance ?? ''),
+                  atcCode: typeof a.data.atcCode === 'string' ? a.data.atcCode : null,
+                })),
+              problemCodes: data.problems.flatMap((p) =>
+                typeof p.data.icd10 === 'string' ? [p.data.icd10] : [],
+              ),
+            }}
+          />
+          <MedicationPanel
+            patientId={patientId}
+            encounterId={data.visitId}
+            statements={data.statements}
+            reconciliations={data.reconciliations}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Age in whole months from a YYYY-MM-DD birth date, for the prescription checks. */
+function ageInMonths(birthDate: string | null, now: Date): number | null {
+  if (!birthDate || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return null;
+  const [y, m, day] = birthDate.split('-').map(Number) as [number, number, number];
+  let months = (now.getFullYear() - y) * 12 + (now.getMonth() + 1 - m);
+  if (now.getDate() < day) months -= 1;
+  return months < 0 ? null : months;
+}
+
+/** Last active measurement of each vital sign, for the forms' calculations. */
+function lastVitalsOf(rows: { rejected?: boolean; data: Record<string, unknown> }[]) {
+  const last: Record<string, { at: string; value: number }> = {};
+  for (const r of rows) {
+    if (r.rejected || r.data.status === 'superseded') continue;
+    const code = String(r.data.code);
+    const at = String(r.data.measuredAt);
+    const value = Number(r.data.value);
+    if (!Number.isFinite(value)) continue;
+    if (!last[code] || last[code].at < at) last[code] = { at, value };
+  }
+  return Object.fromEntries(Object.entries(last).map(([k, v]) => [k, v.value]));
+}

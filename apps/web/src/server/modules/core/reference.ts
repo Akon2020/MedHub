@@ -16,7 +16,15 @@ import { database } from '../../platform/db';
 import { loadPermissions, requirePermission } from '../../platform/permissions';
 import type { RequestContext } from '../../platform/tenant';
 import { requireRecentStepUp } from './configuration';
-import { activePrograms, effectiveVitalDefinitions } from '../dpi';
+import {
+  activeDiagnoses,
+  activeDrugs,
+  activePrograms,
+  effectiveVitalDefinitions,
+  interactionRules,
+} from '../dpi';
+import { financeCatalog } from '../fact';
+import { publishedFormVersions } from '../form';
 
 type Client = { ip: string | null };
 
@@ -415,7 +423,7 @@ export async function catalogSnapshot(ctx: RequestContext): Promise<CatalogSnaps
       .where(eq(schema.userAccount.status, 'active'))
       .orderBy(asc(schema.userAccount.displayName), asc(schema.userAccount.id));
     const [tenant] = await tx
-      .select({ timeZone: schema.tenant.timezone })
+      .select({ timeZone: schema.tenant.timezone, legalMentions: schema.tenant.legalMentions })
       .from(schema.tenant)
       .where(eq(schema.tenant.id, ctx.tenantId));
     const vitalDefinitions = (await effectiveVitalDefinitions(tx)).map(
@@ -428,10 +436,21 @@ export async function catalogSnapshot(ctx: RequestContext): Promise<CatalogSnaps
       followUpIntervalDays: p.followUpIntervalDays,
       graceDays: p.graceDays,
     }));
+    const diagnoses = await activeDiagnoses(tx);
+    const forms = await publishedFormVersions(tx);
+    const finance = await financeCatalog(tx, new Date().toISOString().slice(0, 10));
+    const drugs = await activeDrugs(tx);
+    const rules = await interactionRules(tx);
     const body = {
+      finance,
+      drugs,
+      interactionRules: rules,
+      diagnoses,
+      forms,
       programs,
       vitalDefinitions,
       timeZone: tenant?.timeZone ?? 'Africa/Kinshasa',
+      legalMentions: tenant?.legalMentions ?? null,
       currencies,
       units,
       provinces,

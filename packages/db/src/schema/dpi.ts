@@ -13,7 +13,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { appendOnlyColumns, syncColumns, tenantColumns } from '../columns';
+import { appendOnlyColumns, clinicalStatusCheck, syncColumns, tenantColumns } from '../columns';
 
 const fieldMeta = () =>
   jsonb('field_meta').$type<Record<string, { hlc: string; v: number }>>().notNull().default({});
@@ -182,4 +182,63 @@ export const programEnrollment = pgTable(
     index('program_enrollment_program_idx').on(t.tenantId, t.programId, t.status),
     check('program_enrollment_status_check', sql`${t.status} in ('active','discharged')`),
   ],
+);
+
+/**
+ * Signed consultation notes: append-only, a correction supersedes the note.
+ * `signed_op_id` points to the device-signed operation kept in op_log, which
+ * proves the content and its author.
+ */
+export const clinicalNote = pgTable(
+  'clinical_note',
+  {
+    ...appendOnlyColumns(),
+    patientId: uuid('patient_id').notNull(),
+    encounterId: uuid('encounter_id'),
+    kind: text('kind').notNull(),
+    sections: jsonb('sections').$type<Record<string, string | null>>().notNull(),
+    signedBy: uuid('signed_by'),
+    signedAt: timestamp('signed_at', { withTimezone: true }).notNull(),
+    signedOpId: uuid('signed_op_id'),
+    /** The device-signed operation as received, verifiable with the device public key. */
+    signedOperation: jsonb('signed_operation').$type<Record<string, unknown>>(),
+    correctionReason: text('correction_reason'),
+  },
+  (t) => [
+    index('clinical_note_patient_idx').on(t.tenantId, t.patientId, t.signedAt),
+    check('clinical_note_status_check', clinicalStatusCheck),
+  ],
+);
+
+export const diagnosis = pgTable(
+  'diagnosis',
+  {
+    ...appendOnlyColumns(),
+    patientId: uuid('patient_id').notNull(),
+    encounterId: uuid('encounter_id'),
+    codeSystem: text('code_system').notNull(),
+    code: text('code'),
+    label: text('label').notNull(),
+    certainty: text('certainty').notNull(),
+    isPrimary: boolean('is_primary').notNull().default(false),
+    diagnosedAt: timestamp('diagnosed_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    index('diagnosis_patient_idx').on(t.tenantId, t.patientId, t.diagnosedAt),
+    check('diagnosis_status_check', clinicalStatusCheck),
+    check('diagnosis_certainty_check', sql`${t.certainty} in ('suspected','confirmed')`),
+  ],
+);
+
+/** Diagnosis list of the structure, imported by CSV (no list is built in). */
+export const diagnosisCatalogItem = pgTable(
+  'diagnosis_catalog_item',
+  {
+    ...tenantColumns(),
+    codeSystem: text('code_system').notNull(),
+    code: text('code').notNull(),
+    label: text('label').notNull(),
+    isActive: boolean('is_active').notNull().default(true),
+  },
+  (t) => [uniqueIndex('diagnosis_catalog_code_uq').on(t.tenantId, t.codeSystem, t.code)],
 );

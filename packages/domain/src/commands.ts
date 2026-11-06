@@ -21,6 +21,15 @@ import {
 import { triageRecordPayload } from './rdv/triage';
 import { recordAccessPayload } from './dpi/access-log';
 import { breakGlassPayload } from './dpi/break-glass';
+import { clinicalNotePayload, diagnosisPayload } from './dpi/consultation';
+import { formResponseCompletePayload, formResponseSignPayload } from './dpi/form-responses';
+import {
+  medicationReconciliationPayload,
+  medicationStatementAddPayload,
+  medicationStatementStopPayload,
+  prescriptionCancelPayload,
+  prescriptionCreatePayload,
+} from './dpi/prescription';
 import { programDischargePayload, programEnrollPayload } from './dpi/programs';
 import {
   allergyAddPayload,
@@ -57,7 +66,13 @@ export type EntityName =
   | 'problem'
   | 'record_access'
   | 'break_glass'
-  | 'program_enrollment';
+  | 'program_enrollment'
+  | 'clinical_note'
+  | 'diagnosis'
+  | 'form_response'
+  | 'prescription'
+  | 'medication_statement'
+  | 'medication_reconciliation';
 
 export type EntityDefinition = {
   name: EntityName;
@@ -135,6 +150,42 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
   problem: {
     name: 'problem',
     strategy: 'union',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  clinical_note: {
+    name: 'clinical_note',
+    strategy: 'append_only',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  diagnosis: {
+    name: 'diagnosis',
+    strategy: 'append_only',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  prescription: {
+    name: 'prescription',
+    strategy: 'append_only',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  medication_statement: {
+    name: 'medication_statement',
+    strategy: 'union',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  medication_reconciliation: {
+    name: 'medication_reconciliation',
+    strategy: 'append_only',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  form_response: {
+    name: 'form_response',
+    strategy: 'append_only',
     scopeKeys: (data) => [`patient:${String(data.patientId)}`],
     patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
   },
@@ -437,6 +488,88 @@ export const COMMANDS = {
     permission: 'clinical_record:create',
     onlineOnly: false,
     transition: { from: ['active', 'resolved'], to: 'retracted' },
+  }),
+  'clinical_note.sign': define({
+    name: 'clinical_note.sign',
+    entity: 'clinical_note',
+    kind: 'append',
+    payloadSchema: clinicalNotePayload,
+    permission: 'clinical_record:sign',
+    onlineOnly: false,
+    patientAct: (p) => ({ patientId: p.patientId, at: p.signedAt }),
+  }),
+  'diagnosis.add': define({
+    name: 'diagnosis.add',
+    entity: 'diagnosis',
+    kind: 'append',
+    payloadSchema: diagnosisPayload,
+    permission: 'diagnosis:create',
+    onlineOnly: false,
+    patientAct: (p) => ({ patientId: p.patientId, at: p.diagnosedAt }),
+  }),
+  'form_response.complete': define({
+    name: 'form_response.complete',
+    entity: 'form_response',
+    kind: 'append',
+    payloadSchema: formResponseCompletePayload,
+    permission: 'clinical_record:create',
+    onlineOnly: false,
+    patientAct: (p) => ({ patientId: p.patientId, at: p.completedAt }),
+  }),
+  'prescription.create': define({
+    name: 'prescription.create',
+    entity: 'prescription',
+    kind: 'append',
+    payloadSchema: prescriptionCreatePayload,
+    permission: 'prescription:create',
+    onlineOnly: false,
+    patientAct: (p) => ({ patientId: p.patientId, at: p.prescribedAt }),
+  }),
+  'prescription.cancel': define({
+    name: 'prescription.cancel',
+    entity: 'prescription',
+    kind: 'update',
+    payloadSchema: prescriptionCancelPayload,
+    permission: 'prescription:cancel',
+    onlineOnly: false,
+    transientFields: ['cancelReason'],
+    transition: { from: ['active'], to: 'cancelled' },
+  }),
+  'medication_statement.add': define({
+    name: 'medication_statement.add',
+    entity: 'medication_statement',
+    kind: 'create',
+    payloadSchema: medicationStatementAddPayload,
+    permission: 'clinical_record:create',
+    onlineOnly: false,
+    patientAct: (p) => ({ patientId: p.patientId, at: p.notedAt }),
+  }),
+  'medication_statement.stop': define({
+    name: 'medication_statement.stop',
+    entity: 'medication_statement',
+    kind: 'update',
+    payloadSchema: medicationStatementStopPayload,
+    permission: 'clinical_record:create',
+    onlineOnly: false,
+    transition: { from: ['active'], to: 'stopped' },
+  }),
+  'medication_reconciliation.record': define({
+    name: 'medication_reconciliation.record',
+    entity: 'medication_reconciliation',
+    kind: 'append',
+    payloadSchema: medicationReconciliationPayload,
+    permission: 'clinical_record:create',
+    onlineOnly: false,
+    patientAct: (p) => ({ patientId: p.patientId, at: p.performedAt }),
+  }),
+  'form_response.sign': define({
+    name: 'form_response.sign',
+    entity: 'form_response',
+    kind: 'append',
+    payloadSchema: formResponseSignPayload,
+    permission: 'clinical_record:sign',
+    onlineOnly: false,
+    patientAct: (p) => ({ patientId: p.patientId, at: p.completedAt }),
   }),
   'program_enrollment.enroll': define({
     name: 'program_enrollment.enroll',

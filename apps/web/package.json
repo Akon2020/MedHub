@@ -15,6 +15,7 @@
   "dependencies": {
     "@medhub/db": "workspace:*",
     "@medhub/domain": "workspace:*",
+    "@medhub/forms": "workspace:*",
     "@medhub/local-db": "workspace:*",
     "@medhub/shared": "workspace:*",
     "@medhub/sync": "workspace:*",

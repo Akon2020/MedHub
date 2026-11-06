@@ -67,6 +67,7 @@ export const RATE_LIMITS = {
   loginByIp: { name: 'login-ip', limit: 30, windowSeconds: 300 },
   loginByAccount: { name: 'login-account', limit: 10, windowSeconds: 300 },
   mfaByUser: { name: 'mfa-user', limit: 8, windowSeconds: 300 },
+  verifyByIp: { name: 'verify-ip', limit: 30, windowSeconds: 300 },
 } satisfies Record<string, RateLimitRule>;
 
 /**

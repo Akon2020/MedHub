@@ -6,13 +6,14 @@ Tenu à jour par Claude Code à la fin de chaque session de travail. Le porteur 
 
 - Jalon en cours : **J0 Fondations** terminé côté code (critère de sortie atteint en tests automatisés) ; **J1, semaine S4, commencée** sur instruction du porteur du projet du 30/10/2026 (« poursuis avec l'étape suivante »). Reste à faire pour clore formellement J0 : liste de contrôle cPanel sur l'hébergement réel et premier déploiement, validation de la décision d'architecture et des écarts par le porteur du projet.
 - S4 livré : double authentification TOTP (imposée aux rôles privilégiés, codes de secours, sans rejeu), limitation de débit en base, règles d'IP et blocage automatique, journal `security_event`, CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes. Seconde partie de S4 livrée le même jour : écrans Paramètres (organisation : structure, sites, services ; journal de sécurité), confirmation par second facteur (step-up, 15 minutes) avec rotation de l'identifiant de session, détection des connexions inhabituelles (nouvel appareil, horaire inhabituel). **S4 terminée.**
+- S9 (06/11/2026, « démarre S9 ») : consultation (note signée, diagnostics codés), formulaires cliniques configurables (moteur, constructeur, modèle « Consultation générale »), prescription avec alertes et réconciliation simple, ordonnance A5 avec QR et page de vérification. **Critère de sortie de J1 atteint en test automatisé** : scénario Playwright P1 (accueil, triage puis consultation hors connexion, synchronisation sans aucun rejet). **S9 terminée côté code.** Restent pour clore J1 formellement : votre validation des écarts « à valider » et les étapes de P1 qui dépendent de J2 (caisse, laboratoire, pharmacie).
 - S8 (02/11/2026, « Start S8 ») : allergies, antécédents et problèmes ; index chronologique et journal des accès ; constantes (plages normales réglables, tendances, IMC, surface corporelle, NEWS2) ; accès d'urgence hors connexion avec revue ; programmes chroniques et perdus de vue ; courbes de croissance OMS. **S8 terminée côté code.** La consultation et les notes signées viennent en S9.
 - S7 (02/11/2026, « Start S7 ») : configuration des files, types de rendez-vous et agendas ; visites et tickets hors connexion ; écran des files et écran d'appel ; triage avec orientation ; rendez-vous avec créneaux, surréservation et conflit tranché à l'arrivée au serveur ; visites et rendez-vous dans le périmètre de synchronisation. **S7 terminée côté code.** Rappels SMS en attente du fournisseur.
 - S6 (31/10/2026, « Start S6 ») : détection des doublons de patients livrée (score partagé, alerte avant création sur le poste, tâche de fond après synchronisation, file des doublons) , fusion supervisée et réversible, identité complète avec historique et revue des conflits (partie démographique de P2) , recherche serveur, carte patient avec QR, patients provisoires, décès, sensibilité des dossiers, favoris et périmètre de synchronisation livrés. **S6 terminée côté code** (01/11/2026).
 - S5 : appareils (liste, retrait, perte, effacement à distance) et jetons signés Ed25519 (hors connexion 14 jours, licence) livrés. Configuration versionnée (`config_entry`, brouillon, publication, archivage, restauration) livrée avec les réglages de sécurité des postes. Gestion des utilisateurs livrée (création avec mot de passe temporaire, rôles, désactivation, réinitialisation du mot de passe et de la 2FA, dernier administrateur protégé, politique de mot de passe). Éditeur de rôles livré (grille avec périmètres, duplication, retour au modèle, 2FA des rôles privilégiés). Référentiels livrés (listes de choix avec import CSV, devises, unités, provinces, copie locale sur les postes). Traduction anglaise complète livrée (langue du compte appliquée à la connexion, test de parité et de couverture des messages). Diagnostic complété et base de formation livrée. **S5 terminée.**
 - Thème sombre livré sur toute l'application (demande du porteur du 30/10/2026).
 - Récapitulatif complet de tout ce qui a été fait : `walkthrough.md`.
-- Dernière mise à jour : 05/11/2026
+- Dernière mise à jour : 06/11/2026
 - Version déployée : aucune
 - Branche de travail : `develop`
 
@@ -53,6 +54,16 @@ Environnement de développement constaté sur le poste du porteur du projet : Wi
 
 | Date | Document | Écart | Validé par le porteur du projet |
 | --- | --- | --- | --- |
+| 06/11/2026 | `docs/modules/form.md` | Types tableau, schéma anatomique, image et signature reportés ; brouillon local non synchronisé ; correction par remplacement au lieu de `form_response.correct` ; le serveur contrôle la forme des réponses, pas les obligations (contexte du poste) ; index des champs « reportables », parcours cliniques et modèles de comptes rendus reportés | Oui (06/11/2026) : à intégrer dès qu'un module en a besoin |
+| 06/11/2026 | `docs/modules/form.md` | Un seul modèle de départ livré, « Consultation générale » (décision du porteur au lancement de S9) | Tranché |
+| 06/11/2026 | `docs/modules/dpi.md` section 5 | Catalogue de médicaments et règles d'interaction importés par CSV, aucune liste OMS ni nationale préchargée (décision du porteur au lancement de S9) ; doses maximales en nombres (par prise, par jour, par kilo et par jour) au lieu d'un `jsonb` par âge et poids | Oui (06/11/2026) |
+| 06/11/2026 | `docs/modules/dpi.md` section 5 | Gravité des interactions : majeure et contre-indiquée bloquantes, modérée avertit, mineure informe ; grossesse saisie par une case de la prescription en attendant MAT ; reconnaissance des insuffisances rénale et hépatique par les codes CIM-10 des problèmes actifs (N17 à N19, K70 à K77) | Oui pour la gravité et la grossesse (06/11/2026) ; insuffisances rénale et hépatique : proposition en attente |
+| 06/11/2026 | `docs/modules/dpi.md` section 5 | Le serveur ne refuse pas une ordonnance dont il trouve une alerte bloquante que le poste ne connaissait pas : il la garde et la signale dans le journal de sécurité (aucune perte d'une ordonnance déjà remise) ; il refuse seulement un passage outre sans la permission | Oui (06/11/2026) |
+| 06/11/2026 | `docs/modules/dpi.md` section 5 | Annulation d'une ordonnance entière avec motif (gardé dans `op_log`) ; arrêt d'une ligne et statuts de dispensation reportés à la pharmacie (S12) | Oui (06/11/2026) |
+| 06/11/2026 | `docs/modules/dpi.md` section 4 | Diagnostics : code CIM-10 saisi avec contrôle de format et liste importée par la structure, aucune liste fournie (décision du porteur au lancement de S9) ; note en cinq rubriques fixes en attendant les formulaires de note | Oui (06/11/2026) |
+| 06/11/2026 | `docs/07-ui-ux.md` section 9 | Mise en page de l'ordonnance fixe en attendant les modèles de documents (`document_template`) ; page publique `/verifier` (structure, date, statut) | Oui (06/11/2026) |
+| 06/11/2026 | `docs/08-parcours-acceptation.md` P1 | La demande de goutte épaisse (étape 5) arrive avec le laboratoire (S13) ; le scénario automatisé couvre les étapes 1 et 3 à 6 sans la caisse | Oui (06/11/2026) |
+| 06/11/2026 | `docs/02-offline-sync.md` | Crochet `checkEntity` du moteur serveur : contrôles qui lisent la base (réponse de formulaire contre sa version, permission de passer outre) avant d'appliquer une opération | Oui (06/11/2026) |
 | 29/10/2026 | `docs/07-ui-ux.md` | Accent teal et effets de verre au lieu de bleu sombre sans dégradé | Oui (échange du 29/10/2026), document mis à jour |
 | 29/10/2026 | `docs/03-multitenant-securite.md` section 1 | RLS appliquée par introspection après chaque migration (`ensureRls`, toute table ayant `tenant_id`) plutôt qu'un appel dans chaque migration. Plus sûr : aucune table ne peut être oubliée | À valider |
 | 29/10/2026 | `docs/03-multitenant-securite.md` section 2 | Cookie de session `<tenantId>.<jeton>.<HMAC>` : l'identifiant de structure sert seulement à cibler la recherche sous RLS, l'accès dépend du hachage du jeton trouvé dans cette structure | À valider |
@@ -119,8 +130,9 @@ Variables d'environnement ajoutées en S4 : `MEDHUB_FIELD_MASTER_KEY` devient **
 | `radix-ui` (Slot seulement) | Client | moins de 5 ko | Composition des boutons shadcn |
 | `otplib` | Serveur seulement | sans objet | TOTP (pile imposée) |
 | `qrcode` | Serveur seulement | sans objet | Code QR SVG de configuration de la 2FA |
+| `jsep` 1.6.0 | Client et serveur | environ 6 ko | Analyse des expressions des formulaires (pile imposée par `docs/modules/form.md`), sans dépendance |
 
-Budget mesuré au build du 29/10/2026 : **549 Kio compressés** pour l'ensemble de `.next/static` (budget : 1,5 Mo). Contrôle automatique dans la CI.
+Budget mesuré au build du 06/11/2026 : **1 237 Kio compressés** (S9 ajoute environ 50 Kio : formulaires, constructeur, prescription). Mesure du 29/10/2026 : **549 Kio compressés** pour l'ensemble de `.next/static` (budget : 1,5 Mo). Contrôle automatique dans la CI.
 
 ## Revues de risque de fin de jalon
 
@@ -133,6 +145,42 @@ J0 (en cours) : le risque principal, la synchronisation, est couvert par trois n
 | PC de développement | Windows 11 | Chromium (navigateur intégré) | Connexion, activation du poste, enregistrement patient, synchronisation : OK |
 
 ## Journal des sessions
+
+### 06/11/2026 (S10)
+
+Décisions du porteur au lancement de S10 (après une coupure de courant, questions reposées) :
+- Arrondi des paiements en espèces réglable par devise, **50 CDF par défaut**, USD sans arrondi ; l'écart d'arrondi est une ligne visible.
+- Sans taux du jour : **dernier taux connu, avec avertissement** et date du taux ; le taux appliqué est enregistré dans le paiement ; jamais de blocage hors connexion.
+- La consultation est ajoutée à la facture **à l'ouverture de la visite** (paiement avant les soins possible) ; une visite annulée reçoit un avoir.
+- Remises et avoirs : **tout approuvé par un second utilisateur habilité** (plafond 0 pour le caissier), plafonds réglables par rôle.
+
+S10, tranche 1 (tarification) : `packages/domain/src/fact/pricing.ts` (choix du prix : grille de la couverture, puis du type de patient, puis publique, prix daté ; taux direct ou inverse en arithmétique entière ; arrondi de caisse), migration `0025_s10_pricing` (`service_item`, `price_list`, `price`, `tax` inactive, `exchange_rate` immuable, `tenant_currency`), module serveur `fact`, écran `/app/parametres/finances`, copie des tarifs sur les postes. La démonstration contient la prestation « Consultation générale » et la grille « Public » sans aucun prix (règle 13).
+
+### 06/11/2026 (suite)
+
+Revue S9 par le porteur du projet :
+- Validés : alerte non vue gardée et signalée, gravité des interactions, grossesse par case à cocher, colonnes de doses, annulation de l'ordonnance entière, report de la goutte épaisse (S13) et des éléments de formulaire (à intégrer dès qu'un module en a besoin), choix techniques (rubriques de la note, page de vérification, crochet `checkEntity`).
+- Insuffisances rénale et hépatique : proposition demandée, rédigée ci-dessous, en attente de réponse.
+- Comptes de test : un compte par rôle modèle (ajout de `direction` et `laboratoire`) et section 3.6 de `guide.md`. Le mot de passe n'y est pas écrit (règle 12 de `CLAUDE.md`, guide versionné) : il reste dans `.env.local`, avec la commande pour l'afficher.
+
+Proposition pour les insuffisances rénale et hépatique (alertes de prescription) :
+1. Liste de codes en configuration (règle 8) : `prescription.renal_icd10_prefixes` et `prescription.hepatic_icd10_prefixes`, publiées comme les autres réglages. Valeurs par défaut proposées, tirées de la CIM-10 de l'OMS : rénal N17, N18, N19, I12, I13, E10.2, E11.2, E12.2, E13.2, E14.2 ; hépatique K70 à K77, B18.
+2. Cases « Insuffisance rénale connue » et « Atteinte hépatique connue » dans la prescription, pré-cochées d'après les problèmes actifs et modifiables par le médecin, comme la grossesse ; ce qui est coché est enregistré avec l'ordonnance.
+3. Avec le laboratoire (S13) : un débit de filtration glomérulaire sous un seuil réglable (aucune valeur fournie par défaut, à choisir par la structure) déclenche aussi l'alerte rénale.
+4. Gravité : avertissement (inchangée) ; elle pourra devenir bloquante par médicament si le catalogue importé le précise.
+
+### 06/11/2026
+
+S9, consultation, formulaires et prescription (« démarre S9 ») :
+- Décisions du porteur au lancement : médicaments par import CSV sans liste préchargée ; diagnostics par code saisi et import ; un seul modèle de formulaire, « Consultation générale ».
+- Consultation : `packages/domain/src/dpi/consultation.ts`, migration `0022_s9_consultation` (`clinical_note`, `diagnosis`, `diagnosis_catalog_item`), brouillons chiffrés dans la base locale, écran `/app/consultation` (visites du jour, puis résumé, note, diagnostics, formulaires, prescription), bouton « Consulter » de la fiche, import de la liste des diagnostics dans Paramètres, Clinique. La première note signée passe la visite « en consultation » ; « Terminer la visite » clôt aussi le ticket en cours.
+- Formulaires : paquet `@medhub/forms`, migration `0023_s9_forms`, routes `/api/v1/forms` et `/api/v1/forms/publish`, constructeur `/app/parametres/clinique/formulaires`, carte Formulaires de la consultation, modèle publié par `pnpm db:seed`.
+- Prescription : `packages/domain/src/dpi/prescription.ts` et `prescription-checks.ts`, migration `0024_s9_prescription` (`drug`, `drug_interaction_rule`, `prescription`, `prescription_item`, `medication_statement`, `medication_reconciliation`), imports `/api/v1/drugs/import` et `/api/v1/drug-interactions/import`, cartes Prescription et Traitements habituels.
+- Ordonnance : PDF A5 sur le poste, QR vers `/verifier`, limitation `verify-ip` (30 vérifications par 5 minutes et par adresse).
+- Moteur de synchronisation : crochet `checkEntity` (réponses de formulaire, permission de passer outre) et opération signée transmise à `insertEntity`.
+- Tests : 7 tests de domaine (notes, diagnostics, import), 12 tests de formulaires (expressions malveillantes refusées, conditions, calculs, publication), 11 tests de prescription (chaque alerte, imports, quantité, code de vérification), 11 tests d'intégration PostgreSQL (signature vérifiée, correction, import, publication et version figée, réponses refusées, passage outre refusé, alerte non vue signalée, annulation, traitements habituels, vérification publique), 11 tables ajoutées aux tests d'isolation (227 tests), scénario Playwright P1.
+- Constat : deux commandes Bash à documents intégrés imbriqués ont échoué à l'analyse ; les scripts sont désormais écrits dans des fichiers.
+- Constats Playwright : (1) le scénario « front desk registers a patient offline » a dépassé une fois ses 180 s juste après le banc de 500 opérations, puis a réussi seul et dans les deux passes complètes suivantes ; (2) le scénario du triage quittait la file juste après « Appeler », avant l'écriture locale de l'appel ; plus visible avec le ticket laissé par P1, corrigé en attendant l'état « Appelé ». Passe complète finale : 12 scénarios verts.
 
 ### 30/10/2026
 

@@ -1,7 +1,8 @@
 'use client';
 
 import type { VitalSignCode } from '@medhub/shared';
-import { ArrowLeft, GitMerge, Phone } from 'lucide-react';
+import { ArrowLeft, GitMerge, Phone, Stethoscope } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -52,6 +53,7 @@ function PatientRecord() {
   const id = useSearchParams().get('id') ?? '';
   const { identity } = useRuntime();
   const clinical = identity?.permissions.includes('clinical_record:read') ?? false;
+  const consults = identity?.permissions.includes('clinical_record:sign') ?? false;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 30_000);
@@ -228,6 +230,14 @@ function PatientRecord() {
             <FavoriteToggle patientId={patient.id} favorite={favorite} />
             <SyncBadge state={patient.syncState} />
           </div>
+          {consults && deceasedAtOf(raw) === null && (
+            <Button asChild size="sm">
+              <Link href={`/app/consultation?patient=${patient.id}`}>
+                <Stethoscope />
+                {t('consult')}
+              </Link>
+            </Button>
+          )}
           <PatientCardActions
             patient={patient}
             cardToken={typeof raw.cardToken === 'string' ? raw.cardToken : null}

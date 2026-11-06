@@ -1,3 +1,5 @@
+import type { ExchangeRate, Price, PriceList, ServiceItem } from '../fact/pricing';
+import type { DrugInfo, InteractionRule } from '../dpi/prescription';
 import { ADMIN_AREA_KINDS, type CsvTable } from '@medhub/shared';
 import { z } from 'zod';
 import { optionalText } from './organization';
@@ -236,6 +238,27 @@ export type CatalogSnapshot = {
       high?: number | null;
     }[];
   }[];
+  /** Diagnosis list imported by the structure (S9); none is built in. */
+  diagnoses?: { code: string; label: string; codeSystem: 'ICD10' | 'local' }[];
+  /** Pricing for the offline cash desk (S10). */
+  finance?: {
+    serviceItems: ServiceItem[];
+    priceLists: PriceList[];
+    prices: Price[];
+    exchangeRates: ExchangeRate[];
+    currencies: { currency: string; cashRoundingStep: number; isAccepted: boolean }[];
+  };
+  /** Drug catalogue and interaction rules imported by the structure (S9). */
+  drugs?: (DrugInfo & { id: string })[];
+  interactionRules?: InteractionRule[];
+  /** Published and archived form versions: an old response still reads with its own version. */
+  forms?: {
+    versionId: string;
+    definitionId: string;
+    version: number;
+    status: 'published' | 'archived';
+    definition: Record<string, unknown>;
+  }[];
   /** Chronic care programmes (S8). */
   programs?: {
     id: string;
@@ -246,6 +269,8 @@ export type CatalogSnapshot = {
   }[];
   /** Time zone of the structure: agenda slots are local times there. */
   timeZone?: string;
+  /** Legal mentions of the structure printed on documents (empty by default, never invented). */
+  legalMentions?: string | null;
   /** Active users, for names on screens and practitioner agendas. */
   staff?: { id: string; displayName: string; title: string | null }[];
 };

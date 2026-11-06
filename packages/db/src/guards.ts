@@ -27,6 +27,14 @@ const NO_DELETE = [
   'clinical_event',
   'break_glass_event',
   'program_enrollment',
+  'clinical_note',
+  'diagnosis',
+  'form_response',
+  'prescription',
+  'prescription_item',
+  'medication_statement',
+  'medication_reconciliation',
+  'exchange_rate',
 ];
 const NO_UPDATE = [
   'stock_movement',
@@ -39,8 +47,18 @@ const NO_UPDATE = [
   'patient_field_history',
   'patient_favorite',
   'clinical_event',
+  'medication_reconciliation',
+  'exchange_rate',
 ];
-const STATUS_ONLY_UPDATE = ['vital_sign', 'triage'];
+const STATUS_ONLY_UPDATE = [
+  'vital_sign',
+  'triage',
+  'clinical_note',
+  'diagnosis',
+  'form_response',
+  'prescription',
+  'prescription_item',
+];
 
 export async function ensureGuards(client: pg.ClientBase): Promise<void> {
   // Configuration: drafts are free; a published or archived version may only
@@ -66,10 +84,12 @@ export async function ensureGuards(client: pg.ClientBase): Promise<void> {
       return new;
     end $$;
   `);
-  await client.query('drop trigger if exists medhub_config_guard on "config_entry"');
-  await client.query(
-    'create trigger medhub_config_guard before update or delete on "config_entry" for each row execute function medhub_config_guard()',
-  );
+  for (const table of ['config_entry', 'form_version']) {
+    await client.query(`drop trigger if exists medhub_config_guard on "${table}"`);
+    await client.query(
+      `create trigger medhub_config_guard before update or delete on "${table}" for each row execute function medhub_config_guard()`,
+    );
+  }
 
   await client.query(`
     create or replace function medhub_forbid_change() returns trigger language plpgsql as $$
