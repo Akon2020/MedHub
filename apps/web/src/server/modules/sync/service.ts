@@ -38,6 +38,8 @@ const READ_PERMISSION: Record<string, readonly string[]> = {
   medication_reconciliation: ['clinical_record:read'],
   invoice: ['invoice:read'],
   invoice_line: ['invoice:read'],
+  payment: ['payment:read', 'invoice:read'],
+  cash_session: ['cash_session:open', 'cash_session:review'],
   vital_sign: ['vital_sign:read', 'clinical_record:read'],
   stock_movement: ['stock:read'],
 };

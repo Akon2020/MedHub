@@ -13,7 +13,9 @@ import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/features/shell/page-header';
 import { localDay } from '@/features/visits/visit-helpers';
 import { toInvoiceView, toLineView, totalsOf } from './billing-helpers';
+import { CashSessionBar, paymentOf } from './cash-session';
 import { InvoiceCard, useMoney } from './invoice-card';
+import { PaymentPanel } from './payment-panel';
 import { openInvoice } from './visit-billing';
 
 const nameOf = (d: Record<string, unknown>) =>
@@ -68,6 +70,7 @@ export function CashDeskHome() {
   return (
     <div className="mx-auto max-w-4xl">
       <PageHeader title={t('title')} subtitle={t('subtitle')} />
+      <CashSessionBar />
       <Input
         aria-label={t('filter')}
         placeholder={t('filter')}
@@ -119,7 +122,10 @@ export function PatientBilling({ patientId }: { patientId: string }) {
       const lines = (await store.readEntitiesByPatient('invoice_line', patientId))
         .filter((e) => !e.rejected)
         .map(toLineView);
-      return { patient, invoices, lines };
+      const payments = (await store.readEntitiesByPatient('payment', patientId))
+        .filter((e) => !e.rejected)
+        .map(paymentOf);
+      return { patient, invoices, lines, payments };
     },
     [patientId],
   );
@@ -150,6 +156,7 @@ export function PatientBilling({ patientId }: { patientId: string }) {
 
   if (!data) return null;
   if (!data.patient) return <p className="text-sm text-muted-foreground">{t('notOnDevice')}</p>;
+  const patientName = nameOf(data.patient.data);
   return (
     <div className="mx-auto max-w-4xl">
       <Link
@@ -171,6 +178,7 @@ export function PatientBilling({ patientId }: { patientId: string }) {
           </Button>
         )}
       </div>
+      <CashSessionBar />
       {error && (
         <p role="alert" className="mb-4 text-sm text-danger">
           {error}
@@ -185,7 +193,16 @@ export function PatientBilling({ patientId }: { patientId: string }) {
             key={inv.id}
             invoice={inv}
             lines={data.lines.filter((l) => l.invoiceId === inv.id)}
-          />
+          >
+            {inv.status !== 'voided' && (
+              <PaymentPanel
+                invoice={inv}
+                lines={data.lines.filter((l) => l.invoiceId === inv.id)}
+                payments={data.payments.filter((p) => p.invoiceId === inv.id)}
+                patientName={patientName}
+              />
+            )}
+          </InvoiceCard>
         ))}
       </div>
     </div>

@@ -9,6 +9,7 @@ import {
   type Tx,
 } from '@medhub/db';
 import {
+  expectedCash,
   checkPrescription,
   overridesBlocking,
   type DrugInfo,
@@ -789,6 +790,119 @@ const mappers = {
       };
     },
   },
+  cash_session: {
+    table: schema.cashSession,
+    toState(row: typeof schema.cashSession.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          openedAt: row.openedAt.toISOString(),
+          openingFloat: row.openingFloat,
+          status: row.status,
+          closedAt: row.closedAt?.toISOString(),
+          counted: row.counted,
+          expected: row.expected,
+          serverExpected: row.serverExpected,
+          justification: row.justification,
+          cashierId: row.createdBy,
+          deviceId: row.deviceId,
+        }),
+        fieldMeta: row.fieldMeta,
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.cashSession.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        openedAt: new Date(String(d.openedAt)),
+        openingFloat: numberMap(d.openingFloat) ?? {},
+        status: str(d.status) ?? 'open',
+        closedAt: instant(d.closedAt),
+        counted: numberMap(d.counted),
+        expected: numberMap(d.expected),
+        serverExpected: numberMap(d.serverExpected),
+        justification: str(d.justification),
+        fieldMeta: state.fieldMeta,
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+        updatedAt: new Date(),
+        updatedBy: ctx.userId,
+      };
+    },
+  },
+  payment: {
+    table: schema.payment,
+    toState(row: typeof schema.payment.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          invoiceId: row.invoiceId,
+          cashSessionId: row.cashSessionId,
+          method: row.method,
+          currency: row.currency,
+          amount: row.amount,
+          invoiceCurrency: row.invoiceCurrency,
+          amountInInvoiceCurrency: row.amountInInvoiceCurrency,
+          exchangeRate: row.exchangeRate,
+          exchangeRateDate: row.exchangeRateDate,
+          exchangeRateInverse: row.exchangeRateInverse,
+          roundingAdjustment: row.roundingAdjustment,
+          change: row.change,
+          reference: row.reference,
+          operator: row.operator,
+          receiptNumber: row.receiptNumber,
+          receivedAt: row.receivedAt.toISOString(),
+          status: row.status,
+        }),
+        fieldMeta: {},
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.payment.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        invoiceId: String(d.invoiceId),
+        cashSessionId: String(d.cashSessionId),
+        method: String(d.method),
+        currency: String(d.currency),
+        amount: Number(d.amount),
+        invoiceCurrency: String(d.invoiceCurrency),
+        amountInInvoiceCurrency: Number(d.amountInInvoiceCurrency),
+        exchangeRate: str(d.exchangeRate),
+        exchangeRateDate: str(d.exchangeRateDate),
+        exchangeRateInverse: d.exchangeRateInverse === true,
+        roundingAdjustment: Number(d.roundingAdjustment ?? 0),
+        change: Number(d.change ?? 0),
+        reference: str(d.reference),
+        operator: str(d.operator),
+        receiptNumber: String(d.receiptNumber),
+        receivedAt: new Date(String(d.receivedAt)),
+        status: 'active',
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+      };
+    },
+  },
   invoice: {
     table: schema.invoice,
     toState(row: typeof schema.invoice.$inferSelect): EntityState {
@@ -1310,6 +1424,22 @@ async function getEntity(tx: Tx, entity: EntityName, id: string): Promise<Entity
     }
     case 'prescription':
       return (await prescriptionStates(tx, [id]))[0] ?? null;
+    case 'cash_session': {
+      const [row] = await tx
+        .select()
+        .from(schema.cashSession)
+        .where(eq(schema.cashSession.id, id))
+        .limit(1);
+      return row ? mappers.cash_session.toState(row) : null;
+    }
+    case 'payment': {
+      const [row] = await tx
+        .select()
+        .from(schema.payment)
+        .where(eq(schema.payment.id, id))
+        .limit(1);
+      return row ? mappers.payment.toState(row) : null;
+    }
     case 'invoice': {
       const [row] = await tx
         .select()
@@ -1432,6 +1562,14 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
       ).map((r) => mappers.form_response.toState(r));
     case 'prescription':
       return prescriptionStates(tx, ids);
+    case 'cash_session':
+      return (
+        await tx.select().from(schema.cashSession).where(inArray(schema.cashSession.id, ids))
+      ).map((r) => mappers.cash_session.toState(r));
+    case 'payment':
+      return (await tx.select().from(schema.payment).where(inArray(schema.payment.id, ids))).map(
+        (r) => mappers.payment.toState(r),
+      );
     case 'invoice':
       return (await tx.select().from(schema.invoice).where(inArray(schema.invoice.id, ids))).map(
         (r) => mappers.invoice.toState(r),
@@ -1475,10 +1613,43 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
  */
 async function checkEntity(
   tx: Tx,
+  ctx: Ctx,
   entity: EntityName,
   payload: Record<string, unknown>,
   permissions: ReadonlySet<string>,
 ): Promise<string | null> {
+  if (entity === 'payment') {
+    const [session] = await tx
+      .select({ status: schema.cashSession.status, deviceId: schema.cashSession.deviceId })
+      .from(schema.cashSession)
+      .where(eq(schema.cashSession.id, String(payload.cashSessionId)))
+      .limit(1);
+    if (!session || session.status !== 'open') return 'FACT_SESSION_CLOSED';
+    if (session.deviceId && session.deviceId !== ctx.deviceId) return 'FACT_SESSION_NOT_YOURS';
+    const [invoice] = await tx
+      .select({ currency: schema.invoice.currency, status: schema.invoice.status })
+      .from(schema.invoice)
+      .where(eq(schema.invoice.id, String(payload.invoiceId)))
+      .limit(1);
+    if (!invoice) return 'FACT_INVOICE_NOT_FOUND';
+    if (invoice.status === 'voided') return 'FACT_INVOICE_VOIDED';
+    if (invoice.currency !== payload.invoiceCurrency) return 'FACT_CURRENCY_MISMATCH';
+    if (payload.method === 'mobile_money') {
+      const [dup] = await tx
+        .select({ id: schema.payment.id })
+        .from(schema.payment)
+        .where(
+          and(
+            eq(schema.payment.method, 'mobile_money'),
+            eq(schema.payment.operator, String(payload.operator)),
+            eq(schema.payment.reference, String(payload.reference)),
+          ),
+        )
+        .limit(1);
+      if (dup) return 'FACT_DUPLICATE_REFERENCE';
+    }
+    return null;
+  }
   if (entity === 'invoice_line') {
     const [invoice] = await tx
       .select({ currency: schema.invoice.currency })
@@ -1594,6 +1765,55 @@ async function insertInvoiceLine(tx: Tx, ctx: Ctx, state: EntityState): Promise<
     row.invoiceId = invoiceId;
   }
   await tx.insert(schema.invoiceLine).values(row);
+}
+
+/** Amounts per currency stored as JSON (floats, counts, expected cash). */
+function numberMap(value: unknown): Record<string, number> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(value)) if (typeof v === 'number') out[k] = v;
+  return out;
+}
+
+/**
+ * Closing reconciliation (docs/modules/fact.md section 4): the server
+ * recomputes the expected cash from the payments it received for the session
+ * and keeps it beside the workstation's figure; a difference is reported in
+ * the security journal the same day.
+ */
+async function reconcileSession(
+  tx: Tx,
+  ctx: Ctx,
+  state: EntityState,
+  row: {
+    openingFloat?: Record<string, number>;
+    expected?: Record<string, number> | null;
+    serverExpected?: Record<string, number> | null;
+  },
+): Promise<void> {
+  const payments = await tx
+    .select({
+      method: schema.payment.method,
+      currency: schema.payment.currency,
+      amount: schema.payment.amount,
+    })
+    .from(schema.payment)
+    .where(eq(schema.payment.cashSessionId, state.id));
+  const server = expectedCash(row.openingFloat ?? {}, payments);
+  row.serverExpected = server;
+  const device = row.expected ?? {};
+  const keys = new Set([...Object.keys(server), ...Object.keys(device)]);
+  const differs = [...keys].some((k) => (server[k] ?? 0) !== (device[k] ?? 0));
+  if (differs) {
+    await recordSecurityEvent(tx, {
+      kind: 'cash_reconciliation_mismatch',
+      severity: 'warning',
+      tenantId: ctx.tenantId,
+      userId: state.createdBy || null,
+      ip: null,
+      detail: { cashSessionId: state.id, server, device },
+    });
+  }
 }
 
 /** A prescription and its lines, as the synchronised entity. */
@@ -1870,7 +2090,8 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
       }
     },
     getEntity: (entity, id) => getEntity(tx, entity, id),
-    checkEntity: (entity, payload, permissions) => checkEntity(tx, entity, payload, permissions),
+    checkEntity: (entity, payload, permissions) =>
+      checkEntity(tx, ctx, entity, payload, permissions),
     async insertEntity(entity, state, op) {
       switch (entity) {
         case 'patient':
@@ -1942,6 +2163,12 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
           return;
         case 'invoice':
           await tx.insert(schema.invoice).values(mappers.invoice.toRow(state, ctx));
+          return;
+        case 'cash_session':
+          await tx.insert(schema.cashSession).values(mappers.cash_session.toRow(state, ctx));
+          return;
+        case 'payment':
+          await tx.insert(schema.payment).values(mappers.payment.toRow(state, ctx));
           return;
         case 'invoice_line':
           await insertInvoiceLine(tx, ctx, state);
@@ -2134,6 +2361,20 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
             })
             .where(eq(schema.formResponse.id, state.id));
           return;
+        case 'cash_session': {
+          const {
+            id: _id,
+            tenantId: _t,
+            createdBy: _c,
+            deviceId: _d,
+            ...row
+          } = mappers.cash_session.toRow(state, ctx);
+          if (row.status === 'closed') await reconcileSession(tx, ctx, state, row);
+          await tx.update(schema.cashSession).set(row).where(eq(schema.cashSession.id, state.id));
+          return;
+        }
+        case 'payment':
+          throw new Error('payment rows are immutable');
         case 'invoice': {
           const {
             id: _id,
@@ -2538,6 +2779,10 @@ export async function patientBundles(
     .select()
     .from(schema.invoiceLine)
     .where(inArray(schema.invoiceLine.patientId, ids));
+  const payments = await tx
+    .select()
+    .from(schema.payment)
+    .where(inArray(schema.payment.patientId, ids));
   const statements = await tx
     .select()
     .from(schema.medicationStatement)
@@ -2569,6 +2814,7 @@ export async function patientBundles(
     })),
     ...prescriptions.map((state) => ({ entity: 'prescription' as const, state })),
     ...invoices.map((r) => ({ entity: 'invoice' as const, state: mappers.invoice.toState(r) })),
+    ...payments.map((r) => ({ entity: 'payment' as const, state: mappers.payment.toState(r) })),
     ...invoiceLines.map((r) => ({
       entity: 'invoice_line' as const,
       state: mappers.invoice_line.toState(r),

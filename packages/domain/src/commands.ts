@@ -25,6 +25,11 @@ import { clinicalNotePayload, diagnosisPayload } from './dpi/consultation';
 import { formResponseCompletePayload, formResponseSignPayload } from './dpi/form-responses';
 import { invoiceFinalizePayload, invoiceLinePayload, invoiceOpenPayload } from './fact/invoice';
 import {
+  cashSessionClosePayload,
+  cashSessionOpenPayload,
+  paymentReceivePayload,
+} from './fact/payment';
+import {
   medicationReconciliationPayload,
   medicationStatementAddPayload,
   medicationStatementStopPayload,
@@ -75,7 +80,9 @@ export type EntityName =
   | 'medication_statement'
   | 'medication_reconciliation'
   | 'invoice'
-  | 'invoice_line';
+  | 'invoice_line'
+  | 'cash_session'
+  | 'payment';
 
 export type EntityDefinition = {
   name: EntityName;
@@ -234,6 +241,17 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
     name: 'stock_movement',
     strategy: 'movements',
     scopeKeys: (data) => [`warehouse:${String(data.warehouseId)}`],
+  },
+  cash_session: {
+    name: 'cash_session',
+    strategy: 'field_merge',
+    scopeKeys: (_data, id) => [`cash_session:${id}`],
+  },
+  payment: {
+    name: 'payment',
+    strategy: 'append_only',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
   },
 };
 
@@ -601,6 +619,31 @@ export const COMMANDS = {
     permission: 'invoice:finalize',
     onlineOnly: false,
     transition: { from: ['open'], to: 'finalized' },
+  }),
+  'cash_session.open': define({
+    name: 'cash_session.open',
+    entity: 'cash_session',
+    kind: 'create',
+    payloadSchema: cashSessionOpenPayload,
+    permission: 'cash_session:open',
+    onlineOnly: false,
+  }),
+  'cash_session.close': define({
+    name: 'cash_session.close',
+    entity: 'cash_session',
+    kind: 'update',
+    payloadSchema: cashSessionClosePayload,
+    permission: 'cash_session:close',
+    onlineOnly: false,
+    transition: { from: ['open'], to: 'closed' },
+  }),
+  'payment.receive': define({
+    name: 'payment.receive',
+    entity: 'payment',
+    kind: 'append',
+    payloadSchema: paymentReceivePayload,
+    permission: 'payment:receive',
+    onlineOnly: false,
   }),
   'form_response.sign': define({
     name: 'form_response.sign',

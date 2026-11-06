@@ -37,6 +37,8 @@ const NO_DELETE = [
   'exchange_rate',
   'invoice',
   'invoice_line',
+  'cash_session',
+  'payment',
 ];
 const NO_UPDATE = [
   'stock_movement',
@@ -51,6 +53,7 @@ const NO_UPDATE = [
   'clinical_event',
   'medication_reconciliation',
   'exchange_rate',
+  'payment',
 ];
 const STATUS_ONLY_UPDATE = [
   'vital_sign',
@@ -136,6 +139,26 @@ export async function ensureGuards(client: pg.ClientBase): Promise<void> {
       return new;
     end $$;
   `);
+  // A closed cash session is final: no reopening, no change (docs/modules/fact.md section 4).
+  await client.query(`
+    create or replace function medhub_cash_session_guard() returns trigger language plpgsql as $$
+    begin
+      if old.status = 'closed' then
+        raise exception 'MEDHUB_IMMUTABLE_ROW: a closed cash session cannot change' using errcode = 'P0001';
+      end if;
+      if new.opened_at is distinct from old.opened_at
+         or new.opening_float is distinct from old.opening_float
+         or new.device_id is distinct from old.device_id
+         or new.created_by is distinct from old.created_by then
+        raise exception 'MEDHUB_IMMUTABLE_ROW: the opening of a cash session cannot change' using errcode = 'P0001';
+      end if;
+      return new;
+    end $$;
+  `);
+  await client.query('drop trigger if exists medhub_cash_session_guard on "cash_session"');
+  await client.query(
+    'create trigger medhub_cash_session_guard before update on "cash_session" for each row execute function medhub_cash_session_guard()',
+  );
   await client.query('drop trigger if exists medhub_invoice_guard on "invoice"');
   await client.query(
     'create trigger medhub_invoice_guard before update on "invoice" for each row execute function medhub_invoice_guard()',

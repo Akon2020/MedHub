@@ -808,7 +808,11 @@
     "FACT_CURRENCY_MISMATCH": "The service is not in the invoice currency.",
     "FACT_MANUAL_PRICE_DENIED": "Typing a price needs the permission to manage prices.",
     "FACT_INVOICE_NOT_FOUND": "Invoice not found on the server.",
-    "FACT_LINE_NOT_REPLACEABLE": "Only a line without price can receive a price."
+    "FACT_LINE_NOT_REPLACEABLE": "Only a line without price can receive a price.",
+    "FACT_SESSION_CLOSED": "The cash session is closed: open a new one.",
+    "FACT_SESSION_NOT_YOURS": "This cash session belongs to another workstation.",
+    "FACT_DUPLICATE_REFERENCE": "This mobile money reference was already received.",
+    "FACT_INVOICE_VOIDED": "This invoice is voided."
   },
   "account": {
     "title": "My account",
@@ -2375,6 +2379,73 @@
       "addService": "Add a service",
       "quantity": "Quantity",
       "finalize": "Finalize the invoice"
+    },
+    "session": {
+      "closedTitle": "Cash desk closed",
+      "closedText": "Open your cash session on this workstation to take payments. Give the opening float in each currency.",
+      "float": "Opening float ({currency})",
+      "open": "Open the cash desk",
+      "openTitle": "Cash desk open",
+      "noPayment": "No payment in this session.",
+      "close": "Close the cash desk",
+      "counted": "Cash counted ({currency})",
+      "expected": "expected: {amount}",
+      "variance": "variance: {amount}",
+      "justification": "Reason for the variance (required)",
+      "confirmClose": "Close for good",
+      "cancel": "Cancel",
+      "methods": {
+        "cash": "Cash",
+        "mobile_money": "Mobile money",
+        "card": "Card",
+        "cheque": "Cheque",
+        "transfer": "Transfer"
+      }
+    },
+    "payment": {
+      "balance": "Balance due",
+      "state": {
+        "unpaid": "Unpaid",
+        "partially_paid": "Partly paid",
+        "paid": "Paid"
+      },
+      "pending": "Waiting for synchronisation",
+      "reprint": "Receipt",
+      "openSessionFirst": "Open the cash desk to take payments.",
+      "method": "Method",
+      "currency": "Currency",
+      "received": "Amount received ({currency})",
+      "operator": "Operator",
+      "reference": "Transaction reference",
+      "operators": {
+        "mpesa": "M-Pesa",
+        "orange": "Orange Money",
+        "airtel": "Airtel Money",
+        "africell": "Afrimoney",
+        "other": "Other"
+      },
+      "noRate": "No {from} to {to} rate on this workstation: enter it in Prices and currencies.",
+      "rate": "Rate of {date}: {rate}",
+      "staleRate": "Last known rate, of {date}: {rate}. Enter the rate of the day if you can.",
+      "due": "To pay: {amount}",
+      "rounding": "(rounding {amount})",
+      "settles": "Settles {amount} on the invoice.",
+      "change": "Change to give: {amount}",
+      "receive": "Take the payment and print the receipt"
+    },
+    "receipt": {
+      "title": "Payment receipt",
+      "patient": "Patient",
+      "invoice": "Invoice",
+      "method": "Method",
+      "reference": "Reference",
+      "settled": "Amount settled",
+      "rate": "Rate of {date}",
+      "rounding": "Rounding",
+      "received": "Received",
+      "change": "Change",
+      "remaining": "Balance due",
+      "thanks": "Thank you."
     }
   }
 }

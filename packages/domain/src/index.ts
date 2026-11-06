@@ -37,3 +37,4 @@ export * from './dpi/prescription';
 export * from './dpi/prescription-checks';
 export * from './fact/pricing';
 export * from './fact/invoice';
+export * from './fact/payment';

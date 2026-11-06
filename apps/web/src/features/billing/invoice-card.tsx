@@ -276,8 +276,8 @@ export function InvoiceCard({
               {t('finalize')}
             </Button>
           )}
-          {children}
         </div>
+        {children}
       </CardContent>
     </Card>
   );

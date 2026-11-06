@@ -20,6 +20,7 @@ import {
   diagnosisCatalogItem,
   drug,
   billingRule,
+  cashSession,
   exchangeRate,
   invoice,
   invoiceLine,
@@ -32,6 +33,7 @@ import {
   formDefinition,
   medicationReconciliation,
   medicationStatement,
+  payment,
   prescription,
   prescriptionItem,
   formResponse,
@@ -299,6 +301,30 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       label: 'Paludisme simple',
       certainty: 'suspected',
       diagnosedAt: new Date(),
+    });
+  },
+  cash_session: async (tx, tenantId) => {
+    await tx.insert(cashSession).values({
+      id: uuidv7(),
+      tenantId,
+      openedAt: new Date(),
+      openingFloat: { CDF: 0 },
+    });
+  },
+  payment: async (tx, tenantId) => {
+    await tx.insert(payment).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      invoiceId: uuidv7(),
+      cashSessionId: uuidv7(),
+      method: 'cash',
+      currency: 'USD',
+      amount: 1000,
+      invoiceCurrency: 'USD',
+      amountInInvoiceCurrency: 1000,
+      receiptNumber: `REC-${uuidv7().slice(-12)}`,
+      receivedAt: new Date(),
     });
   },
   invoice: async (tx, tenantId) => {
