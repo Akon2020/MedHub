@@ -1057,6 +1057,49 @@ const mappers = {
       };
     },
   },
+  patient_coverage: {
+    table: schema.patientCoverage,
+    toState(row: typeof schema.patientCoverage.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          contractId: row.contractId,
+          beneficiaryId: row.beneficiaryId,
+          linkedAt: row.linkedAt.toISOString(),
+          status: row.status,
+          unlinkReason: row.unlinkReason,
+        }),
+        fieldMeta: row.fieldMeta,
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.patientCoverage.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        contractId: String(d.contractId),
+        beneficiaryId: String(d.beneficiaryId),
+        linkedAt: new Date(String(d.linkedAt)),
+        status: str(d.status) ?? 'active',
+        unlinkReason: str(d.unlinkReason),
+        fieldMeta: state.fieldMeta,
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+        updatedAt: new Date(),
+        updatedBy: ctx.userId,
+      };
+    },
+  },
   invoice: {
     table: schema.invoice,
     toState(row: typeof schema.invoice.$inferSelect): EntityState {
@@ -1602,6 +1645,14 @@ async function getEntity(tx: Tx, entity: EntityName, id: string): Promise<Entity
         .limit(1);
       return row ? mappers.credit_note.toState(row) : null;
     }
+    case 'patient_coverage': {
+      const [row] = await tx
+        .select()
+        .from(schema.patientCoverage)
+        .where(eq(schema.patientCoverage.id, id))
+        .limit(1);
+      return row ? mappers.patient_coverage.toState(row) : null;
+    }
     case 'cash_session': {
       const [row] = await tx
         .select()
@@ -1755,6 +1806,13 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
       return (
         await tx.select().from(schema.creditNote).where(inArray(schema.creditNote.id, ids))
       ).map((r) => mappers.credit_note.toState(r));
+    case 'patient_coverage':
+      return (
+        await tx
+          .select()
+          .from(schema.patientCoverage)
+          .where(inArray(schema.patientCoverage.id, ids))
+      ).map((r) => mappers.patient_coverage.toState(r));
     case 'cash_session':
       return (
         await tx.select().from(schema.cashSession).where(inArray(schema.cashSession.id, ids))
@@ -1811,6 +1869,20 @@ async function checkEntity(
   payload: Record<string, unknown>,
   permissions: ReadonlySet<string>,
 ): Promise<string | null> {
+  if (entity === 'patient_coverage') {
+    const [member] = await tx
+      .select({ contractId: schema.beneficiary.contractId, status: schema.beneficiary.status })
+      .from(schema.beneficiary)
+      .where(eq(schema.beneficiary.id, String(payload.beneficiaryId)))
+      .limit(1);
+    if (!member || member.contractId !== payload.contractId) return 'CONV_BENEFICIARY_UNKNOWN';
+    const [agreement] = await tx
+      .select({ status: schema.contract.status })
+      .from(schema.contract)
+      .where(eq(schema.contract.id, String(payload.contractId)))
+      .limit(1);
+    return agreement?.status === 'active' ? null : 'CONV_CONTRACT_NOT_ACTIVE';
+  }
   if (entity === 'approval_request') {
     const [invoice] = await tx
       .select({ currency: schema.invoice.currency, status: schema.invoice.status })
@@ -2571,6 +2643,11 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         case 'discount_grant':
         case 'credit_note':
           throw new Error(`${entity} rows are written by the server`);
+        case 'patient_coverage':
+          await tx
+            .insert(schema.patientCoverage)
+            .values(mappers.patient_coverage.toRow(state, ctx));
+          return;
         case 'cash_session':
           await tx.insert(schema.cashSession).values(mappers.cash_session.toRow(state, ctx));
           return;
@@ -2782,6 +2859,19 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         }
         case 'payment':
           throw new Error('payment rows are immutable');
+        case 'patient_coverage': {
+          const {
+            id: _id,
+            tenantId: _t,
+            createdBy: _c,
+            ...row
+          } = mappers.patient_coverage.toRow(state, ctx);
+          await tx
+            .update(schema.patientCoverage)
+            .set(row)
+            .where(eq(schema.patientCoverage.id, state.id));
+          return;
+        }
         case 'approval_request':
         case 'discount_grant':
         case 'credit_note':
@@ -3194,6 +3284,10 @@ export async function patientBundles(
     .select()
     .from(schema.payment)
     .where(inArray(schema.payment.patientId, ids));
+  const coverages = await tx
+    .select()
+    .from(schema.patientCoverage)
+    .where(inArray(schema.patientCoverage.patientId, ids));
   const requests = await tx
     .select()
     .from(schema.approvalRequest)
@@ -3238,6 +3332,10 @@ export async function patientBundles(
     ...prescriptions.map((state) => ({ entity: 'prescription' as const, state })),
     ...invoices.map((r) => ({ entity: 'invoice' as const, state: mappers.invoice.toState(r) })),
     ...payments.map((r) => ({ entity: 'payment' as const, state: mappers.payment.toState(r) })),
+    ...coverages.map((r) => ({
+      entity: 'patient_coverage' as const,
+      state: mappers.patient_coverage.toState(r),
+    })),
     ...requests.map((r) => ({
       entity: 'approval_request' as const,
       state: mappers.approval_request.toState(r),

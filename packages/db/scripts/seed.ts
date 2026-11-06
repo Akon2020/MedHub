@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { DEMO_SERVICES, OPEN_CLINIC_PLANS, planRules } from '@medhub/conventions';
 import { consultationGeneral } from '@medhub/forms';
 import { ROLE_TEMPLATES, uuidv7 } from '@medhub/shared';
 import { and, eq } from 'drizzle-orm';
@@ -8,9 +9,13 @@ import { withSystem, withTenant } from '../src/context';
 import { hashPassword } from '../src/password';
 import {
   appointmentType,
+  beneficiary,
+  contract,
+  contractPlan,
   department,
   formDefinition,
   formVersion,
+  payer,
   priceList,
   serviceItem,
   queue,
@@ -230,16 +235,12 @@ export async function seedDemo(
 
       // Billing nomenclature of the demo: a consultation and a public list, without any price
       // (prices are the structure's data, never invented: import them in Prices and currencies).
-      await tx
-        .insert(serviceItem)
-        .values({
-          id: uuidv7(),
-          tenantId,
-          code: 'CONS-GEN',
-          name: 'Consultation générale',
-          category: 'consultation',
-        })
-        .onConflictDoNothing();
+      for (const service of DEMO_SERVICES) {
+        await tx
+          .insert(serviceItem)
+          .values({ id: uuidv7(), tenantId, ...service })
+          .onConflictDoNothing();
+      }
       await tx
         .insert(priceList)
         .values({
@@ -251,6 +252,65 @@ export async function seedDemo(
           currency: 'USD',
         })
         .onConflictDoNothing();
+
+      // Demonstration contract after the Open Clinic plans A to D (owner decision S11):
+      // a fictitious company, its four plans published and two fictitious families.
+      const [demoPayer] = await tx
+        .select({ id: payer.id })
+        .from(payer)
+        .where(eq(payer.code, 'ENT-DEMO'));
+      if (!demoPayer) {
+        const payerId = uuidv7();
+        const contractId = uuidv7();
+        await tx.insert(payer).values({
+          id: payerId,
+          tenantId,
+          code: 'ENT-DEMO',
+          name: 'Entreprise Démo SARL',
+          kind: 'company',
+        });
+        await tx.insert(contract).values({
+          id: contractId,
+          tenantId,
+          payerId,
+          code: 'ENT-DEMO-2026',
+          name: 'Convention Entreprise Démo',
+          status: 'active',
+          currency: 'USD',
+          validFrom: '2026-01-01',
+        });
+        for (const plan of OPEN_CLINIC_PLANS) {
+          await tx.insert(contractPlan).values({
+            id: uuidv7(),
+            tenantId,
+            contractId,
+            code: plan.code,
+            version: 1,
+            rules: planRules.parse(plan) as unknown as Record<string, unknown>,
+            status: 'published',
+            publishedAt: new Date(),
+          });
+        }
+        const members = [
+          ['ED-001', 'ED-001', 'Kalombo Jean', 'holder', 'B'],
+          ['ED-001-1', 'ED-001', 'Kalombo Rose', 'spouse', 'B'],
+          ['ED-001-2', 'ED-001', 'Kalombo Daniel', 'child', 'B'],
+          ['ED-002', 'ED-002', 'Lusamba Claire', 'holder', 'A'],
+        ] as const;
+        for (const [memberNumber, familyNumber, fullName, role, planCode] of members) {
+          await tx.insert(beneficiary).values({
+            id: uuidv7(),
+            tenantId,
+            contractId,
+            planCode,
+            memberNumber,
+            familyNumber,
+            fullName,
+            role,
+            validFrom: '2026-01-01',
+          });
+        }
+      }
 
       // The general consultation template, published, so a consultation can be filled at once.
       const [form] = await tx

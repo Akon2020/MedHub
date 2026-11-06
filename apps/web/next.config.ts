@@ -29,6 +29,7 @@ const nextConfig: NextConfig = {
     '@medhub/shared',
     '@medhub/domain',
     '@medhub/forms',
+    '@medhub/conventions',
     '@medhub/sync',
     '@medhub/local-db',
     '@medhub/db',

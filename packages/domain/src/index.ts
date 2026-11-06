@@ -39,3 +39,4 @@ export * from './fact/pricing';
 export * from './fact/invoice';
 export * from './fact/payment';
 export * from './fact/adjustments';
+export * from './conv/contracts';

@@ -822,7 +822,17 @@
     "FACT_ADJUSTMENT_TOO_HIGH": "Montant supérieur à ce qui reste facturé.",
     "FACT_SAME_APPROVER": "Une autre personne que le demandeur doit décider.",
     "FACT_ALREADY_DECIDED": "Cette demande est déjà décidée.",
-    "FACT_REFUND_REASON_REQUIRED": "Indiquez le motif du remboursement."
+    "FACT_REFUND_REASON_REQUIRED": "Indiquez le motif du remboursement.",
+    "CONV_CODE_TAKEN": "Ce code est déjà utilisé.",
+    "CONV_PLAN_INVALID": "Le plan est incomplet : publiez au moins un plan valide.",
+    "CONV_CONTRACT_NOT_ACTIVE": "Cette convention n’est pas active.",
+    "CONV_BENEFICIARY_UNKNOWN": "Bénéficiaire inconnu de cette convention.",
+    "CONV_IMPORT_COLUMNS": "Colonnes matricule, nom, plan et debut introuvables.",
+    "CONV_IMPORT_MISSING": "valeur obligatoire manquante",
+    "CONV_IMPORT_VALUE": "valeur invalide (rôle ou date)",
+    "CONV_IMPORT_UNKNOWN_PLAN": "plan inconnu de cette convention",
+    "CONV_IMPORT_DUPLICATE": "matricule en double",
+    "CONV_IMPORT_NO_HOLDER": "titulaire absent du fichier"
   },
   "account": {
     "title": "Mon compte",
@@ -939,6 +949,10 @@
       "finance": {
         "title": "Tarifs et devises",
         "text": "Prestations, grilles de prix, taux de change, arrondi de caisse."
+      },
+      "conventions": {
+        "title": "Conventions",
+        "text": "Tiers payants, plans de couverture, bénéficiaires."
       }
     },
     "organization": {
@@ -2503,5 +2517,136 @@
       "ownRequest": "Votre propre demande : une autre personne doit la décider."
     },
     "approvalsLink": "Approbations en attente"
+  },
+  "conventions": {
+    "title": "Conventions et tiers payants",
+    "subtitle": "Tiers payants, conventions, plans et bénéficiaires ; les postes appliquent les plans publiés hors connexion.",
+    "offline": "Les conventions se règlent en ligne.",
+    "saved": "Enregistré.",
+    "cancel": "Annuler",
+    "code": "Code",
+    "name": "Nom",
+    "payers": {
+      "title": "Tiers payants",
+      "kind": "Type",
+      "add": "Ajouter le tiers",
+      "kinds": {
+        "company": "Entreprise",
+        "insurer": "Assureur",
+        "mutual": "Mutuelle",
+        "ngo": "ONG",
+        "public_program": "Programme public"
+      }
+    },
+    "contracts": {
+      "title": "Conventions",
+      "payer": "Tiers payant",
+      "currency": "Devise",
+      "from": "Début",
+      "invoiceDay": "Jour de facturation",
+      "add": "Créer la convention",
+      "status": {
+        "draft": "Brouillon",
+        "active": "Active",
+        "suspended": "Suspendue",
+        "terminated": "Résiliée"
+      },
+      "summary": "{beneficiaries, plural, =0 {Aucun bénéficiaire} one {# bénéficiaire} other {# bénéficiaires}} · facture au tiers le {day} du mois · {currency}",
+      "activate": "Activer",
+      "suspend": "Suspendre",
+      "terminate": "Résilier"
+    },
+    "plans": {
+      "title": "Plans (modèles de forfait)",
+      "published": "Publiée v{version}",
+      "draft": "Brouillon v{version}",
+      "edit": "Modifier",
+      "publish": "Publier",
+      "add": "Nouveau plan",
+      "newName": "Nouveau plan",
+      "saveDraft": "Enregistrer le brouillon",
+      "draftSaved": "Brouillon du plan enregistré."
+    },
+    "plan": {
+      "fromModel": "Partir d’un modèle :",
+      "code": "Code du plan",
+      "name": "Nom commercial",
+      "billing": "Facturation",
+      "billings": {
+        "per_act": "À l’acte",
+        "family_monthly_package": "Forfait mensuel par famille",
+        "per_case_package": "Forfait par cas"
+      },
+      "price": "Prix du forfait ({currency})",
+      "guarantee": "Garantie par travailleur ({currency})",
+      "packageDays": "Jours d’hospitalisation forfaitaires",
+      "voucherRequired": "Bon d’envoi exigé",
+      "graceHours": "Délai de régularisation (heures)",
+      "default": "Acte sans règle",
+      "defaults": {
+        "excluded_warn": "Exclu, avertir",
+        "excluded_block": "Exclu, bloquer",
+        "included_warn": "Inclus"
+      },
+      "rule": "Règle",
+      "services": "Codes des prestations",
+      "category": "Catégorie",
+      "coverage": "Couverture",
+      "coverages": {
+        "included": "Inclus",
+        "excluded": "Exclu",
+        "percent": "Pourcentage",
+        "capped": "Plafonné"
+      },
+      "percent": "% tiers",
+      "priorAuthorization": "Accord préalable",
+      "action": "Si non couvert",
+      "actions": {
+        "warn": "Avertir",
+        "block": "Bloquer"
+      },
+      "up": "Monter",
+      "down": "Descendre",
+      "remove": "Retirer",
+      "addRule": "Ajouter une règle",
+      "errors": {
+        "invalid": "valeur invalide",
+        "CONV_MATCH_EMPTY": "indiquez des codes de prestation ou une catégorie",
+        "CONV_PERCENT_REQUIRED": "indiquez le pourcentage",
+        "CONV_CAP_REQUIRED": "indiquez le plafond"
+      }
+    },
+    "beneficiaries": {
+      "import": "Importer la liste des bénéficiaires",
+      "hint": "Fichier CSV : matricule, famille (matricule du titulaire, vide pour le titulaire), nom, role (titulaire, conjoint, enfant, autre), plan, naissance, debut, fin, journalier (oui ou non). Le fichier est comparé à la liste actuelle avant tout enregistrement.",
+      "chooseFile": "Choisir un fichier",
+      "paste": "Ou collez le contenu du fichier ici",
+      "complete": "Liste complète : les absents du fichier sortent",
+      "effectiveOn": "Date d’effet",
+      "check": "Comparer à la liste actuelle",
+      "checked": "Fichier comparé.",
+      "report": "{entries} entrée(s), {changes} changement(s), {exits} sortie(s), {errors} erreur(s).",
+      "error": "Ligne {line} : {problem}",
+      "apply": "Appliquer les mouvements",
+      "applied": "Liste des bénéficiaires mise à jour."
+    },
+    "coverage": {
+      "title": "Couverture",
+      "none": "Aucune convention rattachée. Recherchez le bénéficiaire (nom ou matricule).",
+      "search": "Nom ou matricule du bénéficiaire",
+      "unknownContract": "Convention absente de ce poste",
+      "plan": "Plan {code} · {name}",
+      "roles": {
+        "holder": "Titulaire",
+        "spouse": "Conjoint",
+        "child": "Enfant",
+        "dependent": "Autre ayant droit"
+      },
+      "dayLaborer": "Journalier",
+      "pending": "En attente de synchronisation",
+      "end": "Mettre fin au rattachement",
+      "reason": "Motif",
+      "confirmEnd": "Confirmer"
+    }
   }
 }

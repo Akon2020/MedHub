@@ -5,6 +5,7 @@ import {
   CalendarClock,
   ChevronRight,
   ClipboardList,
+  Handshake,
   HandCoins,
   Database,
   GraduationCap,
@@ -62,6 +63,12 @@ const ENTRIES: Entry[] = [
     icon: HandCoins,
     href: '/app/parametres/finances',
     permission: 'price:read',
+  },
+  {
+    key: 'conventions',
+    icon: Handshake,
+    href: '/app/parametres/conventions',
+    permission: 'contract:read',
   },
   {
     key: 'forms',

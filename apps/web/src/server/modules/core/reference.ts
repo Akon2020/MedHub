@@ -23,6 +23,7 @@ import {
   effectiveVitalDefinitions,
   interactionRules,
 } from '../dpi';
+import { conventionsCatalog } from '../conv';
 import { financeCatalog } from '../fact';
 import { publishedFormVersions } from '../form';
 
@@ -438,10 +439,12 @@ export async function catalogSnapshot(ctx: RequestContext): Promise<CatalogSnaps
     }));
     const diagnoses = await activeDiagnoses(tx);
     const forms = await publishedFormVersions(tx);
+    const conventions = await conventionsCatalog(tx);
     const finance = await financeCatalog(tx, new Date().toISOString().slice(0, 10));
     const drugs = await activeDrugs(tx);
     const rules = await interactionRules(tx);
     const body = {
+      conventions,
       finance,
       drugs,
       interactionRules: rules,

@@ -13,6 +13,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@medhub/conventions": "workspace:*",
     "@medhub/db": "workspace:*",
     "@medhub/domain": "workspace:*",
     "@medhub/forms": "workspace:*",

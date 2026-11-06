@@ -41,6 +41,7 @@ import { ProgramsCard } from '@/features/record/programs-card';
 import { EmergencyBanner, LockedRecord, toGrant } from '@/features/record/break-glass';
 import { VitalsSummary } from '@/features/record/vitals-summary';
 import { GROWTH_MAX_AGE_YEARS, GrowthCard } from '@/features/record/growth-card';
+import { CoverageCard } from '@/features/conventions/coverage-card';
 import { ArrivalPanel } from '@/features/visits/arrival-panel';
 import { TriagePanel } from '@/features/visits/triage-panel';
 import { currentTriage, openVisitOfToday, todayTickets } from '@/features/visits/visit-helpers';
@@ -295,6 +296,7 @@ function PatientRecord() {
         </div>
         <div className="grid content-start gap-6">
           <ArrivalPanel patientId={patient.id} deceased={deceasedAtOf(raw) !== null} />
+          <CoverageCard patientId={patient.id} />
           <PatientAppointments patientId={patient.id} />
           <VitalsSummary vitals={vitals} sex={patient.sex} birthDate={patient.birthDate} />
           {patient.birthDate &&

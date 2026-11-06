@@ -42,6 +42,8 @@ const NO_DELETE = [
   'approval_request',
   'discount_grant',
   'credit_note',
+  'beneficiary_movement',
+  'patient_coverage',
 ];
 const NO_UPDATE = [
   'stock_movement',
@@ -59,6 +61,7 @@ const NO_UPDATE = [
   'payment',
   'discount_grant',
   'credit_note',
+  'beneficiary_movement',
 ];
 const STATUS_ONLY_UPDATE = [
   'vital_sign',
@@ -95,7 +98,7 @@ export async function ensureGuards(client: pg.ClientBase): Promise<void> {
       return new;
     end $$;
   `);
-  for (const table of ['config_entry', 'form_version']) {
+  for (const table of ['config_entry', 'form_version', 'contract_plan']) {
     await client.query(`drop trigger if exists medhub_config_guard on "${table}"`);
     await client.query(
       `create trigger medhub_config_guard before update or delete on "${table}" for each row execute function medhub_config_guard()`,

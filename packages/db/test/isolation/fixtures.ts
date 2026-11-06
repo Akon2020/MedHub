@@ -20,6 +20,12 @@ import {
   diagnosisCatalogItem,
   drug,
   approvalRequest,
+  beneficiary,
+  beneficiaryMovement,
+  contract,
+  contractPlan,
+  patientCoverage,
+  payer,
   approvalThreshold,
   billingRule,
   creditNote,
@@ -305,6 +311,65 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       label: 'Paludisme simple',
       certainty: 'suspected',
       diagnosedAt: new Date(),
+    });
+  },
+  payer: async (tx, tenantId) => {
+    await tx
+      .insert(payer)
+      .values({ id: uuidv7(), tenantId, code: 'P', name: 'Tiers de test', kind: 'company' });
+  },
+  contract: async (tx, tenantId) => {
+    await tx.insert(contract).values({
+      id: uuidv7(),
+      tenantId,
+      payerId: uuidv7(),
+      code: 'C',
+      name: 'Convention de test',
+      currency: 'USD',
+      validFrom: '2026-01-01',
+    });
+  },
+  contract_plan: async (tx, tenantId) => {
+    await tx.insert(contractPlan).values({
+      id: uuidv7(),
+      tenantId,
+      contractId: uuidv7(),
+      code: 'A',
+      version: 1,
+      rules: { code: 'A' },
+    });
+  },
+  beneficiary: async (tx, tenantId) => {
+    await tx.insert(beneficiary).values({
+      id: uuidv7(),
+      tenantId,
+      contractId: uuidv7(),
+      planCode: 'A',
+      memberNumber: 'M1',
+      familyNumber: 'M1',
+      fullName: 'Agent de test',
+      role: 'holder',
+      validFrom: '2026-01-01',
+    });
+  },
+  beneficiary_movement: async (tx, tenantId) => {
+    await tx.insert(beneficiaryMovement).values({
+      id: uuidv7(),
+      tenantId,
+      beneficiaryId: uuidv7(),
+      kind: 'entry',
+      effectiveOn: '2026-01-01',
+      source: 'manual',
+    });
+  },
+  patient_coverage: async (tx, tenantId) => {
+    await tx.insert(patientCoverage).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      contractId: uuidv7(),
+      beneficiaryId: uuidv7(),
+      linkedAt: new Date(),
     });
   },
   approval_request: async (tx, tenantId) => {

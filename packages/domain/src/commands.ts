@@ -24,6 +24,7 @@ import { breakGlassPayload } from './dpi/break-glass';
 import { clinicalNotePayload, diagnosisPayload } from './dpi/consultation';
 import { formResponseCompletePayload, formResponseSignPayload } from './dpi/form-responses';
 import { invoiceFinalizePayload, invoiceLinePayload, invoiceOpenPayload } from './fact/invoice';
+import { patientCoverageEndPayload, patientCoverageLinkPayload } from './conv/contracts';
 import { creditNoteRequestPayload, discountRequestPayload } from './fact/adjustments';
 import {
   cashSessionClosePayload,
@@ -86,7 +87,8 @@ export type EntityName =
   | 'payment'
   | 'approval_request'
   | 'discount_grant'
-  | 'credit_note';
+  | 'credit_note'
+  | 'patient_coverage';
 
 export type EntityDefinition = {
   name: EntityName;
@@ -266,6 +268,12 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
   credit_note: {
     name: 'credit_note',
     strategy: 'append_only',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  patient_coverage: {
+    name: 'patient_coverage',
+    strategy: 'field_merge',
     scopeKeys: (data) => [`patient:${String(data.patientId)}`],
     patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
   },
@@ -676,6 +684,23 @@ export const COMMANDS = {
     permission: 'payment:refund',
     onlineOnly: false,
     check: (p) => (p.amount > 0 ? 'FACT_REFUND_NOT_ALLOWED' : null),
+  }),
+  'patient_coverage.link': define({
+    name: 'patient_coverage.link',
+    entity: 'patient_coverage',
+    kind: 'create',
+    payloadSchema: patientCoverageLinkPayload,
+    permission: 'beneficiary:read',
+    onlineOnly: false,
+  }),
+  'patient_coverage.end': define({
+    name: 'patient_coverage.end',
+    entity: 'patient_coverage',
+    kind: 'update',
+    payloadSchema: patientCoverageEndPayload,
+    permission: 'beneficiary:read',
+    onlineOnly: false,
+    transition: { from: ['active'], to: 'ended' },
   }),
   'discount.request': define({
     name: 'discount.request',

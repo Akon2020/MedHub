@@ -241,6 +241,39 @@ export type CatalogSnapshot = {
   }[];
   /** Diagnosis list imported by the structure (S9); none is built in. */
   diagnoses?: { code: string; label: string; codeSystem: 'ICD10' | 'local' }[];
+  /** Contracts applied offline at the desk and the cash desk (S11). */
+  conventions?: {
+    contracts: {
+      id: string;
+      code: string;
+      name: string;
+      payerName: string;
+      currency: string;
+      priceListId: string | null;
+      validFrom: string;
+      validUntil: string | null;
+    }[];
+    plans: {
+      id: string;
+      contractId: string;
+      code: string;
+      version: number;
+      rules: Record<string, unknown>;
+    }[];
+    beneficiaries: {
+      id: string;
+      contractId: string;
+      planCode: string;
+      memberNumber: string;
+      familyNumber: string;
+      fullName: string;
+      role: string;
+      validFrom: string;
+      validUntil: string | null;
+      status: string;
+      isDayLaborer: boolean;
+    }[];
+  };
   /** Pricing for the offline cash desk (S10). */
   finance?: {
     serviceItems: ServiceItem[];

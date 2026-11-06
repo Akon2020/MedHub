@@ -817,7 +817,17 @@
     "FACT_ADJUSTMENT_TOO_HIGH": "Amount above what is still billed.",
     "FACT_SAME_APPROVER": "Someone other than the requester must decide.",
     "FACT_ALREADY_DECIDED": "This request is already decided.",
-    "FACT_REFUND_REASON_REQUIRED": "Give the reason for the refund."
+    "FACT_REFUND_REASON_REQUIRED": "Give the reason for the refund.",
+    "CONV_CODE_TAKEN": "This code is already used.",
+    "CONV_PLAN_INVALID": "The plan is incomplete: publish at least one valid plan.",
+    "CONV_CONTRACT_NOT_ACTIVE": "This contract is not active.",
+    "CONV_BENEFICIARY_UNKNOWN": "Beneficiary unknown in this contract.",
+    "CONV_IMPORT_COLUMNS": "Columns matricule, nom, plan and debut not found.",
+    "CONV_IMPORT_MISSING": "required value missing",
+    "CONV_IMPORT_VALUE": "invalid value (role or date)",
+    "CONV_IMPORT_UNKNOWN_PLAN": "plan unknown in this contract",
+    "CONV_IMPORT_DUPLICATE": "member number repeated",
+    "CONV_IMPORT_NO_HOLDER": "holder missing from the file"
   },
   "account": {
     "title": "My account",
@@ -934,6 +944,10 @@
       "finance": {
         "title": "Prices and currencies",
         "text": "Services, price lists, exchange rates, cash rounding."
+      },
+      "conventions": {
+        "title": "Contracts",
+        "text": "Third-party payers, coverage plans, beneficiaries."
       }
     },
     "organization": {
@@ -2498,5 +2512,136 @@
       "ownRequest": "Your own request: another person must decide it."
     },
     "approvalsLink": "Pending approvals"
+  },
+  "conventions": {
+    "title": "Contracts and third-party payers",
+    "subtitle": "Payers, contracts, plans and beneficiaries; workstations apply the published plans offline.",
+    "offline": "Contracts are set online.",
+    "saved": "Saved.",
+    "cancel": "Cancel",
+    "code": "Code",
+    "name": "Name",
+    "payers": {
+      "title": "Third-party payers",
+      "kind": "Type",
+      "add": "Add the payer",
+      "kinds": {
+        "company": "Company",
+        "insurer": "Insurer",
+        "mutual": "Mutual",
+        "ngo": "NGO",
+        "public_program": "Public programme"
+      }
+    },
+    "contracts": {
+      "title": "Contracts",
+      "payer": "Payer",
+      "currency": "Currency",
+      "from": "Start",
+      "invoiceDay": "Invoicing day",
+      "add": "Create the contract",
+      "status": {
+        "draft": "Draft",
+        "active": "Active",
+        "suspended": "Suspended",
+        "terminated": "Terminated"
+      },
+      "summary": "{beneficiaries, plural, =0 {No beneficiary} one {# beneficiary} other {# beneficiaries}} · payer invoice on day {day} · {currency}",
+      "activate": "Activate",
+      "suspend": "Suspend",
+      "terminate": "Terminate"
+    },
+    "plans": {
+      "title": "Plans (package models)",
+      "published": "Published v{version}",
+      "draft": "Draft v{version}",
+      "edit": "Edit",
+      "publish": "Publish",
+      "add": "New plan",
+      "newName": "New plan",
+      "saveDraft": "Save the draft",
+      "draftSaved": "Draft of the plan saved."
+    },
+    "plan": {
+      "fromModel": "Start from a model:",
+      "code": "Plan code",
+      "name": "Commercial name",
+      "billing": "Billing",
+      "billings": {
+        "per_act": "Per act",
+        "family_monthly_package": "Monthly package per family",
+        "per_case_package": "Package per case"
+      },
+      "price": "Package price ({currency})",
+      "guarantee": "Guarantee per worker ({currency})",
+      "packageDays": "Hospital days in the package",
+      "voucherRequired": "Referral voucher required",
+      "graceHours": "Regularisation delay (hours)",
+      "default": "Act without rule",
+      "defaults": {
+        "excluded_warn": "Excluded, warn",
+        "excluded_block": "Excluded, block",
+        "included_warn": "Included"
+      },
+      "rule": "Rule",
+      "services": "Service codes",
+      "category": "Category",
+      "coverage": "Coverage",
+      "coverages": {
+        "included": "Included",
+        "excluded": "Excluded",
+        "percent": "Percentage",
+        "capped": "Capped"
+      },
+      "percent": "Payer %",
+      "priorAuthorization": "Prior authorization",
+      "action": "If not covered",
+      "actions": {
+        "warn": "Warn",
+        "block": "Block"
+      },
+      "up": "Move up",
+      "down": "Move down",
+      "remove": "Remove",
+      "addRule": "Add a rule",
+      "errors": {
+        "invalid": "invalid value",
+        "CONV_MATCH_EMPTY": "give service codes or a category",
+        "CONV_PERCENT_REQUIRED": "give the percentage",
+        "CONV_CAP_REQUIRED": "give the cap"
+      }
+    },
+    "beneficiaries": {
+      "import": "Import the list of beneficiaries",
+      "hint": "CSV file: matricule, famille (holder number, empty for the holder), nom, role (titulaire, conjoint, enfant, autre), plan, naissance, debut, fin, journalier (oui or non). The file is compared with the current list before anything is saved.",
+      "chooseFile": "Choose a file",
+      "paste": "Or paste the file content here",
+      "complete": "Complete list: members absent from the file leave",
+      "effectiveOn": "Effective date",
+      "check": "Compare with the current list",
+      "checked": "File compared.",
+      "report": "{entries} entries, {changes} changes, {exits} exits, {errors} errors.",
+      "error": "Line {line}: {problem}",
+      "apply": "Apply the movements",
+      "applied": "List of beneficiaries updated."
+    },
+    "coverage": {
+      "title": "Coverage",
+      "none": "No contract linked. Search the beneficiary (name or member number).",
+      "search": "Name or member number of the beneficiary",
+      "unknownContract": "Contract missing on this workstation",
+      "plan": "Plan {code} · {name}",
+      "roles": {
+        "holder": "Holder",
+        "spouse": "Spouse",
+        "child": "Child",
+        "dependent": "Other dependant"
+      },
+      "dayLaborer": "Day laborer",
+      "pending": "Waiting for synchronisation",
+      "end": "End the link",
+      "reason": "Reason",
+      "confirmEnd": "Confirm"
+    }
   }
 }

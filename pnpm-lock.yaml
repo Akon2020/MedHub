@@ -190,6 +190,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@medhub/conventions':
+        specifier: workspace:*
+        version: link:../../packages/conventions
       '@medhub/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -425,6 +428,9 @@ importers:
       '@medhub/config':
         specifier: workspace:*
         version: link:../config
+      '@medhub/conventions':
+        specifier: workspace:*
+        version: link:../conventions
       '@medhub/domain':
         specifier: workspace:*
         version: link:../domain
