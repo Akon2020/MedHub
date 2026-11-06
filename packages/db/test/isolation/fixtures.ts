@@ -2,8 +2,11 @@ import { uuidv7 } from '@medhub/shared';
 import type { Tx } from '../../src/client';
 import { appendAudit } from '../../src/audit';
 import {
+  allergy,
   appointment,
+  clinicalEvent,
   appointmentType,
+  breakGlassEvent,
   changeLog,
   choiceItem,
   choiceList,
@@ -13,6 +16,7 @@ import {
   device,
   devicePatient,
   encounter,
+  medicalHistory,
   duplicateCandidate,
   mfaRecoveryCode,
   numberSeries,
@@ -21,6 +25,9 @@ import {
   patientFavorite,
   patientFieldHistory,
   patientMerge,
+  problem,
+  program,
+  programEnrollment,
   queue,
   queueTicket,
   role,
@@ -36,6 +43,7 @@ import {
   userAccount,
   userRole,
   vitalSign,
+  vitalSignDefinition,
 } from '../../src/schema';
 
 /**
@@ -170,6 +178,85 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       startsAt: new Date('2026-12-01T08:00:00Z'),
       endsAt: new Date('2026-12-01T08:15:00Z'),
       status: 'booked',
+    });
+  },
+  allergy: async (tx, tenantId) => {
+    await tx.insert(allergy).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      notedAt: new Date(),
+      substance: 'Amoxicilline',
+      severity: 'severe',
+    });
+  },
+  medical_history: async (tx, tenantId) => {
+    await tx.insert(medicalHistory).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      notedAt: new Date(),
+      category: 'surgical',
+      label: 'Appendicectomie',
+    });
+  },
+  problem: async (tx, tenantId) => {
+    await tx.insert(problem).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      notedAt: new Date(),
+      label: 'Hypertension',
+    });
+  },
+  clinical_event: async (tx, tenantId) => {
+    await tx.insert(clinicalEvent).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      kind: 'problem',
+      refTable: 'problem',
+      refId: uuidv7(),
+      occurredAt: new Date(),
+    });
+  },
+  vital_sign_definition: async (tx, tenantId) => {
+    await tx.insert(vitalSignDefinition).values({
+      id: uuidv7(),
+      tenantId,
+      code: 'pulse',
+      plausibleMin: 20,
+      plausibleMax: 250,
+    });
+  },
+  break_glass_event: async (tx, tenantId) => {
+    await tx.insert(breakGlassEvent).values({
+      id: uuidv7(),
+      tenantId,
+      userId: uuidv7(),
+      patientId: uuidv7(),
+      reasonCode: 'life_threatening',
+      reasonText: 'Urgence vitale',
+      startedAt: new Date(),
+      endsAt: new Date(Date.now() + 3_600_000),
+    });
+  },
+  program: async (tx, tenantId) => {
+    await tx.insert(program).values({
+      id: uuidv7(),
+      tenantId,
+      code: 'HTA',
+      name: 'Hypertension',
+      followUpIntervalDays: 30,
+    });
+  },
+  program_enrollment: async (tx, tenantId) => {
+    await tx.insert(programEnrollment).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      programId: uuidv7(),
+      enrolledAt: new Date(),
     });
   },
   queue: async (tx, tenantId) => {

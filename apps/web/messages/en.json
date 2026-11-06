@@ -139,12 +139,7 @@
         "tab": "Laboratory",
         "title": "Laboratory",
         "text": "Orders, specimen collection, result entry and validation, critical values flagged immediately.",
-        "points": [
-          "Labels and specimens",
-          "Two-level validation",
-          "Reference ranges",
-          "Reports"
-        ]
+        "points": ["Labels and specimens", "Two-level validation", "Reference ranges", "Reports"]
       }
     },
     "why": {
@@ -344,7 +339,8 @@
       "collapse": "Collapse menu",
       "expand": "Expand menu",
       "soon": "soon",
-      "queues": "Waiting queues"
+      "queues": "Waiting queues",
+      "programs": "Chronic programmes"
     },
     "header": {
       "search": "Search a patient (name, phone, record)…",
@@ -534,7 +530,9 @@
       "hint": "Patients of the facility not on this device.",
       "badge": "Not on this device",
       "open": "Open on this device",
-      "error": "The record could not be downloaded. Check the connection."
+      "error": "The record could not be downloaded. Check the connection.",
+      "protected": "Protected record",
+      "emergency": "Emergency access"
     },
     "provisional": {
       "mode": "Registration type",
@@ -778,10 +776,11 @@
     "PAT_PROVISIONAL_KIND": "Specify the kind of provisional record.",
     "PAT_NOT_FOUND": "This patient cannot be found on the server.",
     "PAT_ALREADY_MERGED": "One of the two records was already merged.",
-    "PAT_SENSITIVE": "This record is protected: your role cannot open it.",
+    "PAT_SENSITIVE": "This record is protected: open an emergency access if the situation requires it.",
     "RDV_TRANSITION_NOT_ALLOWED": "This ticket has already changed: the screen will refresh.",
     "RDV_SLOT_TAKEN": "This slot was just taken on another workstation: choose another one.",
-    "RDV_SLOT_UNAVAILABLE": "This slot no longer exists in the agenda."
+    "RDV_SLOT_UNAVAILABLE": "This slot no longer exists in the agenda.",
+    "DPI_BREAK_GLASS_DURATION": "Invalid emergency access duration."
   },
   "account": {
     "title": "My account",
@@ -886,6 +885,10 @@
       "rdv": {
         "title": "Reception, queues and agendas",
         "text": "Waiting queues and ticket prefixes, appointment types, opening hours and absences."
+      },
+      "clinical": {
+        "title": "Clinical",
+        "text": "Vital signs (plausibility, trend, normal ranges) and chronic programmes."
       }
     },
     "organization": {
@@ -985,7 +988,8 @@
         "mfa_reset": "Two-factor authentication reset",
         "user_disabled": "Account disabled",
         "user_enabled": "Account enabled",
-        "role_privileges_changed": "Administration rights of a role changed"
+        "role_privileges_changed": "Administration rights of a role changed",
+        "break_glass": "Emergency access"
       },
       "anomalies": {
         "new_device": "new device",
@@ -1514,6 +1518,65 @@
           "extra": "Extra hours"
         }
       }
+    },
+    "clinical": {
+      "title": "Clinical",
+      "subtitle": "Clinical settings shared by every workstation."
+    },
+    "vitals": {
+      "title": "Vital signs",
+      "subtitle": "Plausibility bounds only catch typing errors. Normal ranges are clinical references chosen by the structure: none is provided by default, and nothing is flagged until they are set.",
+      "plausible": "plausible from {min} to {max} {unit}",
+      "ranges": "{count, plural, one {# normal range} other {# normal ranges}}",
+      "noRange": "no normal range",
+      "custom": "set by the structure",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Saved. Workstations receive the new settings with their catalogs.",
+      "min": "Plausible minimum",
+      "max": "Plausible maximum",
+      "margin": "Stability margin (empty: 2 %)",
+      "rangesHint": "Normal ranges: sex (or both), age in years, low and high bounds. The most specific range applies.",
+      "sex": "Sex",
+      "anySex": "Both",
+      "male": "Male",
+      "female": "Female",
+      "ageMin": "Min age",
+      "ageMax": "Max age",
+      "low": "Low",
+      "high": "High",
+      "addRange": "Add a range",
+      "removeRange": "Remove the range"
+    },
+    "breakGlass": {
+      "title": "Emergency accesses to review",
+      "subtitle": "Every emergency access is reviewed: justified, or to investigate with the person concerned.",
+      "empty": "No emergency access.",
+      "error": "List unavailable.",
+      "comment": "Review comment",
+      "justified": "Justified",
+      "investigate": "To investigate",
+      "window": "from {from} to {to}",
+      "outcomes": {
+        "justified": "Justified",
+        "to_investigate": "To investigate"
+      }
+    },
+    "programs": {
+      "title": "Chronic programmes",
+      "subtitle": "Follow-up rhythm of each programme: beyond the interval plus the grace period, the patient is lost to follow-up.",
+      "empty": "No programme.",
+      "rhythm": "follow-up every {interval} days, grace {grace} days",
+      "inactive": "Inactive",
+      "edit": "Edit",
+      "name": "Name",
+      "code": "Code",
+      "interval": "Interval (days)",
+      "grace": "Grace (days)",
+      "active": "Active",
+      "save": "Save",
+      "cancel": "Cancel"
     }
   },
   "visits": {
@@ -1641,5 +1704,174 @@
     "take": "Book an appointment",
     "noneUpcoming": "No upcoming appointment.",
     "missed": "{count, plural, one {# missed appointment} other {# missed appointments}}"
+  },
+  "record": {
+    "add": "Add",
+    "save": "Save",
+    "cancel": "Cancel",
+    "retract": "Retract",
+    "retractReason": "Reason for retracting",
+    "pending": "to send",
+    "showOld": "{count, plural, one {Show # retracted or resolved item} other {Show # retracted or resolved items}}",
+    "hideOld": "Hide retracted items",
+    "statuses": {
+      "active": "Active",
+      "retracted": "Retracted",
+      "resolved": "Resolved",
+      "inactive": "Inactive"
+    },
+    "allergies": {
+      "title": "Allergies",
+      "banner": "Allergies:",
+      "unknown": "Allergies not recorded.",
+      "noneKnown": "No known allergy.",
+      "noneKnownOn": "No known allergy (stated on {date}).",
+      "setNoneKnown": "No known allergy",
+      "substance": "Substance or drug",
+      "reaction": "Reaction",
+      "category": "Category",
+      "severity": "Severity",
+      "suspected": "Suspected allergy, not confirmed",
+      "categories": {
+        "drug": "Drug",
+        "food": "Food",
+        "environment": "Environment",
+        "other": "Other"
+      },
+      "severities": {
+        "mild": "Mild",
+        "moderate": "Moderate",
+        "severe": "Severe",
+        "life_threatening": "Life-threatening"
+      }
+    },
+    "history": {
+      "title": "Medical history",
+      "empty": "No history recorded.",
+      "label": "History item",
+      "category": "Category",
+      "icd10": "ICD-10 code (optional)",
+      "startDate": "Start",
+      "categories": {
+        "medical": "Medical",
+        "surgical": "Surgical",
+        "obstetric": "Obstetric",
+        "family": "Family",
+        "social": "Lifestyle",
+        "other": "Other"
+      }
+    },
+    "problems": {
+      "title": "Active problems",
+      "empty": "No active problem.",
+      "label": "Problem",
+      "icd10": "ICD-10 code (optional)",
+      "onsetDate": "Onset",
+      "resolve": "Resolved"
+    },
+    "vitals": {
+      "title": "Vital signs and curves",
+      "empty": "No vital sign recorded.",
+      "curve": "Curve to show",
+      "notEnough": "At least two measurements are needed for a curve.",
+      "trend": {
+        "up": "rising",
+        "down": "falling",
+        "stable": "stable"
+      },
+      "flag": {
+        "low": "below normal",
+        "high": "above normal"
+      },
+      "bmi": "BMI {value} kg/m²",
+      "bsa": "Body surface area {value} m²",
+      "news2": "NEWS2 {score}",
+      "risk": {
+        "low": "low risk",
+        "low_medium": "one critical parameter",
+        "medium": "medium risk",
+        "high": "high risk"
+      },
+      "partial": "partial (consciousness and oxygen not recorded)"
+    },
+    "breakGlass": {
+      "reason": "Reason for emergency access",
+      "details": "Details (required)",
+      "reasons": {
+        "life_threatening": "Life-threatening emergency",
+        "unconscious_patient": "Patient unconscious or unable to answer",
+        "continuity_of_care": "Continuity of care",
+        "other": "Other reason"
+      },
+      "open": "Open emergency access ({hours, plural, one {# hour} other {# hours}})",
+      "hint": "Works offline for a record present on this workstation. The access is logged, reported to the person in charge and reviewed afterwards.",
+      "notAllowed": "Your role does not allow emergency access. Ask a physician or the person in charge.",
+      "lockedTitle": "Protected record",
+      "lockedText": "This record is reserved to some roles. In an emergency you can open it for a limited time by giving the reason.",
+      "active": "Emergency access running until {time}: every opening is reviewed.",
+      "protectedName": "Protected record"
+    },
+    "access": {
+      "title": "Access journal",
+      "show": "Show",
+      "hint": "Who opened this record, when and from which workstation.",
+      "offline": "Available online.",
+      "empty": "No access recorded.",
+      "error": "Journal unavailable.",
+      "emergency": "emergency access",
+      "device": "workstation {code}"
+    },
+    "programs": {
+      "title": "Chronic programmes",
+      "none": "Not enrolled in any programme.",
+      "choose": "Programme",
+      "enroll": "Enrol",
+      "discharge": "Discharge",
+      "reason": "Reason for discharge",
+      "confirmDischarge": "Confirm discharge",
+      "cancel": "Cancel",
+      "due": "next follow-up expected on {date}",
+      "lost": "{days, plural, one {lost to follow-up, # day late} other {lost to follow-up, # days late}}"
+    },
+    "followUp": {
+      "title": "Programme follow-up",
+      "subtitle": "Patients enrolled in chronic programmes, lost to follow-up first: the team's call list. Available online.",
+      "offline": "List available online.",
+      "error": "List unavailable.",
+      "empty": "No patient enrolled.",
+      "last": "last contact on {date}",
+      "due": "expected on {date}",
+      "lost": "{days, plural, one {lost to follow-up (# day)} other {lost to follow-up (# days)}}"
+    },
+    "growth": {
+      "title": "Growth (WHO)",
+      "weightForAge": "Weight-for-age",
+      "heightForAge": "Height-for-age",
+      "weightForLength": "Weight-for-length",
+      "weightForHeight": "Weight-for-height",
+      "bmiForAge": "BMI-for-age",
+      "headForAge": "Head circumference-for-age",
+      "z": "Z = {z} ({p}th percentile)",
+      "noMeasure": "Enter weight and height to place the child on the curves.",
+      "curve": "Curve",
+      "months": "months",
+      "charts": {
+        "weight_for_age": "Weight-for-age",
+        "height_for_age": "Height-for-age",
+        "head_for_age": "Head circumference-for-age",
+        "bmi_for_age": "BMI-for-age"
+      },
+      "alerts": {
+        "severe_wasting": "Severe wasting (Z < -3)",
+        "wasting": "Wasting (Z < -2)",
+        "severe_stunting": "Severe stunting (Z < -3)",
+        "stunting": "Stunting (Z < -2)",
+        "severe_underweight": "Severe underweight (Z < -3)",
+        "underweight": "Underweight (Z < -2)",
+        "muac_severe": "Mid-upper arm circumference < 115 mm",
+        "muac_moderate": "Mid-upper arm circumference < 125 mm"
+      },
+      "source": "References: WHO Child Growth Standards (2006) from 0 to 5 years, WHO Growth Reference (2007) from 5 to 19 years."
+    }
   }
 }

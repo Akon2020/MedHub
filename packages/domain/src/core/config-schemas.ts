@@ -33,6 +33,12 @@ export const CONFIG_DEFINITIONS = {
     default: 15,
     unit: 'minutes',
   },
+  'security.break_glass_hours': {
+    domain: 'security',
+    schema: z.number().int().min(1).max(24),
+    default: 4,
+    unit: 'hours',
+  },
   'security.password_min_length': {
     domain: 'security',
     schema: z.number().int().min(PASSWORD_MIN_LENGTH).max(64),
@@ -80,6 +86,8 @@ export type DeviceConfig = {
   autoLockMinutes: number;
   pinMaxAttempts: number;
   duplicateAlertScore: number;
+  /** Length of an emergency access; devices without it use 4 hours. */
+  breakGlassHours?: number;
 };
 
 export function deviceConfig(values: ConfigValues): DeviceConfig {
@@ -87,5 +95,6 @@ export function deviceConfig(values: ConfigValues): DeviceConfig {
     autoLockMinutes: values['security.auto_lock_minutes'],
     pinMaxAttempts: values['security.pin_max_attempts'],
     duplicateAlertScore: values['patient.duplicate_alert_score'],
+    breakGlassHours: values['security.break_glass_hours'],
   };
 }

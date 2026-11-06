@@ -1,87 +1,50 @@
 import 'server-only';
 import { withTenant } from '@medhub/db';
-import {
-  ENTITIES,
-  sensitivityAllowed,
-  type EntityName,
-  type PatientScopeRule,
-} from '@medhub/domain';
-import { AppError, type PatientSensitivity } from '@medhub/shared';
+import type { PatientScopeRule } from '@medhub/domain';
+import { AppError } from '@medhub/shared';
 import {
   MAX_PUSH_BYTES,
   SUPPORTED_SCHEMA_VERSIONS,
   SYNC_SCHEMA_VERSION,
-  type ChangeRecord,
   type PullResponse,
   type PushResponse,
   type SyncStatusResponse,
 } from '@medhub/sync';
 import { processPull, processPush } from '@medhub/sync/server';
 import { database } from '../../platform/db';
-import { loadPermissions, loadSensitivityMax } from '../../platform/permissions';
+import { loadPermissions } from '../../platform/permissions';
 import type { RequestContext } from '../../platform/tenant';
-import {
-  endDeviceSessions,
-  loadDevice,
-  patientSensitivities,
-  pgSyncStore,
-  touchDevice,
-} from './repository';
+import { endDeviceSessions, loadDevice, pgSyncStore, touchDevice } from './repository';
 import { applyPatientScope, loadPatientScope } from './scope';
 
 /** Entities a user may receive on pull, by read permission. */
 const READ_PERMISSION: Record<string, readonly string[]> = {
   patient: ['patient:read'],
   patient_favorite: ['patient:read'],
+  break_glass: ['clinical_record:break_glass'],
   encounter: ['encounter:read'],
   queue_ticket: ['queue:read'],
   triage: ['triage:read', 'clinical_record:read'],
   appointment: ['appointment:read'],
+  allergy: ['clinical_record:read'],
+  medical_history: ['clinical_record:read'],
+  problem: ['clinical_record:read'],
+  program_enrollment: ['clinical_record:read'],
   vital_sign: ['vital_sign:read', 'clinical_record:read'],
   stock_movement: ['stock:read'],
 };
 
-async function accessOf(ctx: RequestContext): Promise<{
-  permissions: Set<string>;
-  sensitivityMax: PatientSensitivity;
-  scope: PatientScopeRule;
-}> {
+async function accessOf(
+  ctx: RequestContext,
+): Promise<{ permissions: Set<string>; scope: PatientScopeRule }> {
   return withTenant(database().db, { tenantId: ctx.tenantId, userId: ctx.userId }, async (tx) => ({
     permissions: await loadPermissions(tx, ctx.userId),
-    sensitivityMax: await loadSensitivityMax(tx, ctx.userId),
     scope: await loadPatientScope(tx, ctx.userId),
   }));
 }
 
-const ownerOf = (change: ChangeRecord): string | null =>
-  ENTITIES[change.entity as EntityName]?.patientIdOf?.(change.data ?? {}, change.entityId) ?? null;
-
-/**
- * A patient above the user's level never reaches the device: a change to such
- * a record tells the device to drop it (it may hold an older copy, from before
- * the record was marked), and the rows attached to it are not sent.
- */
-async function applySensitivity(
-  ctx: RequestContext & { deviceId: string },
-  changes: ChangeRecord[],
-  max: PatientSensitivity,
-): Promise<ChangeRecord[]> {
-  if (max === 'restricted') return changes;
-  const owners = changes
-    .filter((c) => c.entity !== 'patient')
-    .map(ownerOf)
-    .filter((id): id is string => id !== null);
-  const levels = await patientSensitivities(database().db, ctx, [...new Set(owners)]);
-  return changes.flatMap((change): ChangeRecord[] => {
-    if (change.entity === 'patient') {
-      if (!change.data || sensitivityAllowed(change.data.sensitivity, max)) return [change];
-      return [{ ...change, data: null, evict: true }];
-    }
-    const owner = ownerOf(change);
-    const level = owner ? levels.get(owner) : undefined;
-    return level === undefined || sensitivityAllowed(level, max) ? [change] : [];
-  });
-}
+/** Personal rows travel back to their owner only. */
+const PERSONAL = new Set(['patient_favorite', 'break_glass']);
 
 /**
  * A retired device may send its pending operations once (final push) when the
@@ -130,7 +93,7 @@ export async function pull(
   input: { deviceId: string; cursor: number; limit: number; lookback: boolean },
 ): Promise<PullResponse> {
   const device = await activeDevice(ctx, input.deviceId, 'pull');
-  const { permissions, sensitivityMax, scope } = await accessOf(ctx);
+  const { permissions, scope } = await accessOf(ctx);
   const store = pgSyncStore(database().db, { ...ctx, deviceId: device.id });
   const now = Date.now();
   const response = await processPull(store, {
@@ -144,10 +107,11 @@ export async function pull(
   const readable = response.changes.filter(
     (change) =>
       (READ_PERMISSION[change.entity] ?? []).some((key) => permissions.has(key)) &&
-      // Favourites are personal: only their owner receives them.
-      (change.entity !== 'patient_favorite' || change.data?.userId === ctx.userId),
+      (!PERSONAL.has(change.entity) || change.data?.userId === ctx.userId),
   );
-  const allowed = await applySensitivity({ ...ctx, deviceId: device.id }, readable, sensitivityMax);
+  // Sensitive records travel too, encrypted on the device and locked behind an
+  // emergency access there, so that break glass works offline (P10).
+  const allowed = readable;
   response.changes = await withTenant(
     database().db,
     { tenantId: ctx.tenantId, userId: ctx.userId, deviceId: device.id },

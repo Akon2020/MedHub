@@ -10,7 +10,13 @@ import {
 } from '@medhub/db';
 import { assessSignIn, deviceLabel, passwordProblems } from '@medhub/domain';
 import { hashPassword, verifyPassword } from '@medhub/db/password';
-import { AppError, normalizeTenantCode, uuidv7, type DeviceKind } from '@medhub/shared';
+import {
+  AppError,
+  normalizeTenantCode,
+  uuidv7,
+  type DeviceKind,
+  type PatientSensitivity,
+} from '@medhub/shared';
 import { and, desc, eq, gt, isNull, ne, or, sql } from 'drizzle-orm';
 import { database } from '../../platform/db';
 import {
@@ -26,7 +32,7 @@ import {
   sealSecret,
   type ChallengePurpose,
 } from '../../platform/mfa';
-import { loadPermissions, requirePermission } from '../../platform/permissions';
+import { loadPermissions, loadSensitivityMax, requirePermission } from '../../platform/permissions';
 import { enforceRateLimit, RATE_LIMITS, securityEvent } from '../../platform/security';
 import { createSession, rotateSession } from '../../platform/session';
 import { loadConfig } from './configuration';
@@ -59,6 +65,8 @@ export type Profile = {
   tenant: { id: string; code: string; displayName: string; isTraining: boolean; status: string };
   site: { id: string; code: string } | null;
   permissions: string[];
+  /** Most protected records the user opens without an emergency access. */
+  sensitivityMax: PatientSensitivity;
 };
 
 type TenantRow = typeof schema.tenant.$inferSelect;
@@ -134,6 +142,7 @@ async function buildProfile(tx: Tx, tenant: TenantRow, user: UserRow): Promise<P
     },
     site: await siteOf(tx, user.defaultSiteId),
     permissions: [...permissions].sort(),
+    sensitivityMax: await loadSensitivityMax(tx, user.id),
   };
 }
 

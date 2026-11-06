@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { useRecordVisibility } from '@/features/record/break-glass';
 import { todayTickets, type TicketView } from './visit-helpers';
 
 const QUEUE_KEY = 'medhub.queue';
@@ -54,6 +55,8 @@ export function QueueBoard() {
   const [now, setNow] = useState(() => new Date());
   const current = queues.find((q) => q.id === queueId) ?? queues[0];
   const canCall = identity?.permissions.includes('queue:call') ?? false;
+  const visible = useRecordVisibility();
+  const protectedName = useTranslations('record.breakGlass')('protectedName');
 
   useEffect(() => {
     // The workstation's last queue and room are read once the page runs in the browser.
@@ -76,13 +79,15 @@ export function QueueBoard() {
         const d = patient?.data ?? {};
         rows.push({
           ...ticket,
-          patientName: patient
-            ? patientFullName({
-                familyName: String(d.familyName ?? ''),
-                middleName: typeof d.middleName === 'string' ? d.middleName : null,
-                givenName: typeof d.givenName === 'string' ? d.givenName : null,
-              })
-            : '',
+          patientName: !visible(d)
+            ? protectedName
+            : patient
+              ? patientFullName({
+                  familyName: String(d.familyName ?? ''),
+                  middleName: typeof d.middleName === 'string' ? d.middleName : null,
+                  givenName: typeof d.givenName === 'string' ? d.givenName : null,
+                })
+              : '',
         });
       }
       return rows;

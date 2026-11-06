@@ -21,6 +21,12 @@ const NO_DELETE = [
   'queue_ticket',
   'triage',
   'appointment',
+  'allergy',
+  'medical_history',
+  'problem',
+  'clinical_event',
+  'break_glass_event',
+  'program_enrollment',
 ];
 const NO_UPDATE = [
   'stock_movement',
@@ -32,6 +38,7 @@ const NO_UPDATE = [
   'security_event',
   'patient_field_history',
   'patient_favorite',
+  'clinical_event',
 ];
 const STATUS_ONLY_UPDATE = ['vital_sign', 'triage'];
 

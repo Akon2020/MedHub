@@ -344,7 +344,8 @@
       "collapse": "Réduire le menu",
       "expand": "Déplier le menu",
       "soon": "bientôt",
-      "queues": "Files d'attente"
+      "queues": "Files d'attente",
+      "programs": "Programmes chroniques"
     },
     "header": {
       "search": "Rechercher un patient (nom, téléphone, dossier)…",
@@ -534,7 +535,9 @@
       "hint": "Patients de la structure absents de ce poste.",
       "badge": "Hors de ce poste",
       "open": "Ouvrir sur ce poste",
-      "error": "Le dossier n'a pas pu être téléchargé. Vérifiez la connexion."
+      "error": "Le dossier n'a pas pu être téléchargé. Vérifiez la connexion.",
+      "protected": "Dossier protégé",
+      "emergency": "Accès d'urgence"
     },
     "provisional": {
       "mode": "Type d'enregistrement",
@@ -778,10 +781,11 @@
     "PAT_PROVISIONAL_KIND": "Précisez le type de dossier provisoire.",
     "PAT_NOT_FOUND": "Ce patient est introuvable sur le serveur.",
     "PAT_ALREADY_MERGED": "L'un des deux dossiers a déjà été fusionné.",
-    "PAT_SENSITIVE": "Ce dossier est protégé : votre rôle ne permet pas de l'ouvrir.",
+    "PAT_SENSITIVE": "Ce dossier est protégé : ouvrez un accès d'urgence si la situation l'exige.",
     "RDV_TRANSITION_NOT_ALLOWED": "Ce ticket a déjà changé d'état : l'écran va se mettre à jour.",
     "RDV_SLOT_TAKEN": "Ce créneau vient d'être pris sur un autre poste : choisissez-en un autre.",
-    "RDV_SLOT_UNAVAILABLE": "Ce créneau n'existe plus dans l'agenda."
+    "RDV_SLOT_UNAVAILABLE": "Ce créneau n'existe plus dans l'agenda.",
+    "DPI_BREAK_GLASS_DURATION": "Durée d'accès d'urgence invalide."
   },
   "account": {
     "title": "Mon compte",
@@ -886,6 +890,10 @@
       "rdv": {
         "title": "Accueil, files et agendas",
         "text": "Files d'attente et préfixes des tickets, types de rendez-vous, horaires et absences."
+      },
+      "clinical": {
+        "title": "Clinique",
+        "text": "Constantes (plausibilité, tendance, plages normales) et programmes chroniques."
       }
     },
     "organization": {
@@ -985,7 +993,8 @@
         "mfa_reset": "Double authentification réinitialisée",
         "user_disabled": "Compte désactivé",
         "user_enabled": "Compte réactivé",
-        "role_privileges_changed": "Droits d'administration d'un rôle modifiés"
+        "role_privileges_changed": "Droits d'administration d'un rôle modifiés",
+        "break_glass": "Accès d'urgence"
       },
       "anomalies": {
         "new_device": "nouvel appareil",
@@ -1514,6 +1523,65 @@
           "extra": "Plage supplémentaire"
         }
       }
+    },
+    "clinical": {
+      "title": "Clinique",
+      "subtitle": "Réglages cliniques partagés par tous les postes."
+    },
+    "vitals": {
+      "title": "Constantes",
+      "subtitle": "Les bornes de plausibilité ne repèrent que les erreurs de saisie. Les plages normales sont des références cliniques choisies par la structure : aucune n'est fournie par défaut, et rien n'est signalé hors normes tant qu'elles ne sont pas renseignées.",
+      "plausible": "plausible de {min} à {max} {unit}",
+      "ranges": "{count, plural, one {# plage normale} other {# plages normales}}",
+      "noRange": "aucune plage normale",
+      "custom": "réglé par la structure",
+      "edit": "Modifier",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "saved": "Enregistré. Les postes reçoivent les nouveaux réglages avec leurs catalogues.",
+      "min": "Minimum plausible",
+      "max": "Maximum plausible",
+      "margin": "Marge de stabilité (vide : 2 %)",
+      "rangesHint": "Plages normales : sexe (ou les deux), âge en années, borne basse et borne haute. La plage la plus précise s'applique.",
+      "sex": "Sexe",
+      "anySex": "Les deux",
+      "male": "Homme",
+      "female": "Femme",
+      "ageMin": "Âge min",
+      "ageMax": "Âge max",
+      "low": "Basse",
+      "high": "Haute",
+      "addRange": "Ajouter une plage",
+      "removeRange": "Retirer la plage"
+    },
+    "breakGlass": {
+      "title": "Accès d'urgence à revoir",
+      "subtitle": "Chaque accès d'urgence est revu : justifié, ou à examiner avec la personne concernée.",
+      "empty": "Aucun accès d'urgence.",
+      "error": "Liste indisponible.",
+      "comment": "Commentaire de revue",
+      "justified": "Justifié",
+      "investigate": "À examiner",
+      "window": "du {from} à {to}",
+      "outcomes": {
+        "justified": "Justifié",
+        "to_investigate": "À examiner"
+      }
+    },
+    "programs": {
+      "title": "Programmes chroniques",
+      "subtitle": "Rythme de suivi de chaque programme : au-delà de l'intervalle plus le délai de grâce, le patient est perdu de vue.",
+      "empty": "Aucun programme.",
+      "rhythm": "suivi tous les {interval} jours, grâce {grace} jours",
+      "inactive": "Inactif",
+      "edit": "Modifier",
+      "name": "Nom",
+      "code": "Code",
+      "interval": "Intervalle (jours)",
+      "grace": "Grâce (jours)",
+      "active": "Actif",
+      "save": "Enregistrer",
+      "cancel": "Annuler"
     }
   },
   "visits": {
@@ -1641,5 +1709,174 @@
     "take": "Prendre rendez-vous",
     "noneUpcoming": "Aucun rendez-vous à venir.",
     "missed": "{count, plural, one {# rendez-vous manqué} other {# rendez-vous manqués}}"
+  },
+  "record": {
+    "add": "Ajouter",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "retract": "Retirer",
+    "retractReason": "Motif du retrait",
+    "pending": "à envoyer",
+    "showOld": "{count, plural, one {Afficher # élément retiré ou résolu} other {Afficher # éléments retirés ou résolus}}",
+    "hideOld": "Masquer les éléments retirés",
+    "statuses": {
+      "active": "Actif",
+      "retracted": "Retiré",
+      "resolved": "Résolu",
+      "inactive": "Inactif"
+    },
+    "allergies": {
+      "title": "Allergies",
+      "banner": "Allergies :",
+      "unknown": "Allergies non renseignées.",
+      "noneKnown": "Aucune allergie connue.",
+      "noneKnownOn": "Aucune allergie connue (déclaré le {date}).",
+      "setNoneKnown": "Aucune allergie connue",
+      "substance": "Substance ou médicament",
+      "reaction": "Réaction",
+      "category": "Catégorie",
+      "severity": "Gravité",
+      "suspected": "Allergie suspectée, non confirmée",
+      "categories": {
+        "drug": "Médicament",
+        "food": "Aliment",
+        "environment": "Environnement",
+        "other": "Autre"
+      },
+      "severities": {
+        "mild": "Légère",
+        "moderate": "Modérée",
+        "severe": "Sévère",
+        "life_threatening": "Menace vitale"
+      }
+    },
+    "history": {
+      "title": "Antécédents",
+      "empty": "Aucun antécédent renseigné.",
+      "label": "Antécédent",
+      "category": "Catégorie",
+      "icd10": "Code CIM-10 (facultatif)",
+      "startDate": "Début",
+      "categories": {
+        "medical": "Médical",
+        "surgical": "Chirurgical",
+        "obstetric": "Obstétrical",
+        "family": "Familial",
+        "social": "Mode de vie",
+        "other": "Autre"
+      }
+    },
+    "problems": {
+      "title": "Problèmes actifs",
+      "empty": "Aucun problème actif.",
+      "label": "Problème",
+      "icd10": "Code CIM-10 (facultatif)",
+      "onsetDate": "Début",
+      "resolve": "Résolu"
+    },
+    "vitals": {
+      "title": "Constantes et courbes",
+      "empty": "Aucune constante enregistrée.",
+      "curve": "Courbe à afficher",
+      "notEnough": "Au moins deux mesures sont nécessaires pour une courbe.",
+      "trend": {
+        "up": "en hausse",
+        "down": "en baisse",
+        "stable": "stable"
+      },
+      "flag": {
+        "low": "sous la normale",
+        "high": "au-dessus de la normale"
+      },
+      "bmi": "IMC {value} kg/m²",
+      "bsa": "Surface corporelle {value} m²",
+      "news2": "NEWS2 {score}",
+      "risk": {
+        "low": "risque faible",
+        "low_medium": "un paramètre critique",
+        "medium": "risque moyen",
+        "high": "risque élevé"
+      },
+      "partial": "partiel (conscience et oxygène non saisis)"
+    },
+    "breakGlass": {
+      "reason": "Motif de l'accès d'urgence",
+      "details": "Précisions (obligatoire)",
+      "reasons": {
+        "life_threatening": "Urgence vitale",
+        "unconscious_patient": "Patient inconscient ou incapable de répondre",
+        "continuity_of_care": "Continuité des soins",
+        "other": "Autre motif"
+      },
+      "open": "Ouvrir l'accès d'urgence ({hours, plural, one {# heure} other {# heures}})",
+      "hint": "Fonctionne hors connexion pour un dossier présent sur ce poste. L'accès est journalisé, signalé au responsable et revu ensuite.",
+      "notAllowed": "Votre rôle ne permet pas l'accès d'urgence. Adressez-vous à un médecin ou au responsable.",
+      "lockedTitle": "Dossier protégé",
+      "lockedText": "Ce dossier est réservé à certains rôles. En cas d'urgence, vous pouvez l'ouvrir pour une durée limitée en indiquant le motif.",
+      "active": "Accès d'urgence en cours jusqu'à {time} : chaque ouverture est revue.",
+      "protectedName": "Dossier protégé"
+    },
+    "access": {
+      "title": "Journal des accès",
+      "show": "Afficher",
+      "hint": "Qui a ouvert ce dossier, quand et depuis quel poste.",
+      "offline": "Consultable en ligne.",
+      "empty": "Aucun accès enregistré.",
+      "error": "Journal indisponible.",
+      "emergency": "accès d'urgence",
+      "device": "poste {code}"
+    },
+    "programs": {
+      "title": "Programmes chroniques",
+      "none": "Inscrit à aucun programme.",
+      "choose": "Programme",
+      "enroll": "Inscrire",
+      "discharge": "Sortie du programme",
+      "reason": "Motif de la sortie",
+      "confirmDischarge": "Confirmer la sortie",
+      "cancel": "Annuler",
+      "due": "prochain suivi attendu le {date}",
+      "lost": "{days, plural, one {perdu de vue, # jour de retard} other {perdu de vue, # jours de retard}}"
+    },
+    "followUp": {
+      "title": "Suivi des programmes",
+      "subtitle": "Patients inscrits aux programmes chroniques, les perdus de vue en tête : la liste d'appels de l'équipe. Disponible en ligne.",
+      "offline": "Liste disponible en ligne.",
+      "error": "Liste indisponible.",
+      "empty": "Aucun patient inscrit.",
+      "last": "dernier contact le {date}",
+      "due": "attendu le {date}",
+      "lost": "{days, plural, one {perdu de vue (# jour)} other {perdu de vue (# jours)}}"
+    },
+    "growth": {
+      "title": "Croissance (OMS)",
+      "weightForAge": "Poids pour l'âge",
+      "heightForAge": "Taille pour l'âge",
+      "weightForLength": "Poids pour la taille couchée",
+      "weightForHeight": "Poids pour la taille",
+      "bmiForAge": "IMC pour l'âge",
+      "headForAge": "Périmètre crânien pour l'âge",
+      "z": "Z = {z} ({p}e percentile)",
+      "noMeasure": "Saisissez le poids et la taille pour situer l'enfant sur les courbes.",
+      "curve": "Courbe",
+      "months": "mois",
+      "charts": {
+        "weight_for_age": "Poids pour l'âge",
+        "height_for_age": "Taille pour l'âge",
+        "head_for_age": "Périmètre crânien pour l'âge",
+        "bmi_for_age": "IMC pour l'âge"
+      },
+      "alerts": {
+        "severe_wasting": "Émaciation sévère (Z < -3)",
+        "wasting": "Émaciation (Z < -2)",
+        "severe_stunting": "Retard de croissance sévère (Z < -3)",
+        "stunting": "Retard de croissance (Z < -2)",
+        "severe_underweight": "Insuffisance pondérale sévère (Z < -3)",
+        "underweight": "Insuffisance pondérale (Z < -2)",
+        "muac_severe": "Périmètre brachial < 115 mm",
+        "muac_moderate": "Périmètre brachial < 125 mm"
+      },
+      "source": "Références : standards de croissance de l'OMS (2006) de 0 à 5 ans, référence OMS (2007) de 5 à 19 ans."
+    }
   }
 }

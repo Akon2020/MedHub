@@ -58,7 +58,7 @@ export function VitalsPanel({
   const tc = useTranslations('common');
   const tp = useTranslations('patients.state');
   const format = useFormatter();
-  const { dispatch } = useRuntime();
+  const { dispatch, catalogs } = useRuntime();
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState<VitalSignCode>('temp');
   const [value, setValue] = useState('');
@@ -69,7 +69,9 @@ export function VitalsPanel({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const definition = DEFAULT_VITAL_SIGN_DEFINITIONS.find((d) => d.code === code);
+  // The structure's own bounds when it set them, the built-in ones otherwise.
+  const definitions = catalogs?.snapshot.vitalDefinitions ?? DEFAULT_VITAL_SIGN_DEFINITIONS;
+  const definition = definitions.find((d) => d.code === code);
 
   function startCorrection(vital: VitalView) {
     setSupersedes(vital);
@@ -94,11 +96,14 @@ export function VitalsPanel({
     const numeric = Number(value.replace(',', '.'));
     if (!Number.isFinite(numeric) || value.trim() === '')
       return setError(tErr('VALIDATION_FAILED'));
-    const plausibility = checkVitalPlausibility({
-      code,
-      value: numeric,
-      plausibilityOverrideReason: reason.trim() || null,
-    });
+    const plausibility = checkVitalPlausibility(
+      {
+        code,
+        value: numeric,
+        plausibilityOverrideReason: reason.trim() || null,
+      },
+      definitions as typeof DEFAULT_VITAL_SIGN_DEFINITIONS,
+    );
     if (!plausibility.ok) {
       setNeedsReason(true);
       return setError(tErr('DPI_VITAL_IMPLAUSIBLE'));

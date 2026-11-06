@@ -68,6 +68,14 @@ Chaque ouverture écrit le journal d'accès.
 - Rendez-vous récurrents (RDV), renouvellement d'ordonnance, courbes ciblées.
 - **Perdu de vue** : si aucun contact dans `follow_up_interval_days + délai de grâce` (14 jours par défaut), le patient passe en « perdu de vue » (job), liste d'appels pour l'équipe, rappel SMS sans information médicale.
 
+## Mise en œuvre (S8)
+
+- Allergies, antécédents, problèmes et inscriptions aux programmes en union ; retrait avec motif ; « aucune allergie connue » datée.
+- `clinical_event` écrit par le serveur pour chaque fait clinique ; ouverture d'un dossier journalisée hors connexion (`record_access.log`).
+- Plages normales réglées par la structure (aucune fournie) ; NEWS2 partiel tant que conscience et oxygène ne sont pas saisis.
+- Tables de croissance OMS officielles (mensuelles, interpolées) dans `packages/domain/src/dpi/who-growth/`, avec leur source.
+- Dossiers sensibles présents sur les postes mais verrouillés derrière l'accès d'urgence (décision du 02/11/2026).
+
 ## 7. Confidentialité
 
 - Niveaux de sensibilité par catégorie de données (VIH, santé mentale, violences, IVG...) configurables : ces données sont chiffrées côté serveur et masquées sans permission `clinical_record:read_sensitive` ou bris de glace.

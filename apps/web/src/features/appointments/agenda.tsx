@@ -38,6 +38,7 @@ import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { isMerged } from '@/features/patients/patient-helpers';
+import { useRecordVisibility } from '@/features/record/break-glass';
 import { localDay } from '@/features/visits/visit-helpers';
 
 type Appointment = {
@@ -100,6 +101,8 @@ export function Agenda() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const can = (key: string) => identity?.permissions.includes(key) ?? false;
+  const visible = useRecordVisibility();
+  const protectedName = useTranslations('record.breakGlass')('protectedName');
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 60_000);
@@ -113,10 +116,11 @@ export function Agenda() {
       );
       const rows: Appointment[] = [];
       for (const a of all) {
+        const person = await store.readEntity('patient', String(a.data.patientId));
         rows.push({
           id: a.id,
           patientId: String(a.data.patientId),
-          patientName: nameOf(await store.readEntity('patient', String(a.data.patientId))),
+          patientName: person && !visible(person.data) ? protectedName : nameOf(person),
           startsAt: String(a.data.startsAt),
           endsAt: String(a.data.endsAt),
           status: String(a.data.status),

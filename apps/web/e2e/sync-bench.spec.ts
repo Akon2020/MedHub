@@ -635,3 +635,66 @@ test('arrival, call and triage offline across two workstations, then an appointm
   expect(booked).toEqual(['booked']);
   await desk.context.close();
 });
+
+test('scenario P10: a physician opens a restricted record offline through an emergency access', async ({
+  browser,
+}) => {
+  test.setTimeout(3 * 60_000);
+  // A restricted record, as if marked on another workstation.
+  const patientId = await withServer(async (client) => {
+    const id = (await client.query<{ id: string }>('select gen_random_uuid() as id')).rows[0]
+      ?.id as string;
+    await client.query(
+      'insert into patient (id, tenant_id, mrn, family_name, given_name, sex, birth_date, ' +
+        "sensitivity, search_text, phonetic_key) values ($1, current_setting('app.tenant_id')::uuid, " +
+        "'E2E-P10-1', 'Bokele', 'Restreint', 'M', '1960-05-05', 'restricted', 'bokele restreint e2e p10 1', 'bkl')",
+      [id],
+    );
+    await client.query(
+      "insert into change_log (tenant_id, entity, entity_id, version, scope_keys) values (current_setting('app.tenant_id')::uuid, 'patient', $1, 1, $2)",
+      [id, [`patient:${id}`]],
+    );
+    return id;
+  });
+
+  const doctor = await openDevice(browser, 'medecin');
+  const deviceId = await doctor.page.evaluate(() => window.__medhubTest!.deviceId);
+  await expect
+    .poll(() => doctor.page.evaluate(() => window.__medhubTest!.sync()), { timeout: 20_000 })
+    .toBeNull();
+  await doctor.page.goto(`/app/patients/fiche?id=${patientId}`);
+  await unlock(doctor.page);
+  await expect(doctor.page.getByRole('heading', { name: 'Dossier protégé' })).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(doctor.page.getByText('Bokele')).toHaveCount(0);
+
+  // The record is on the device: the emergency access works without network.
+  await doctor.context.setOffline(true);
+  await doctor.page.getByLabel("Motif de l'accès d'urgence").selectOption('unconscious_patient');
+  await doctor.page.getByLabel('Précisions (obligatoire)').fill('Arrivé inconscient aux urgences');
+  await doctor.page.getByRole('button', { name: /Ouvrir l'accès d'urgence/ }).click();
+  await expect(doctor.page.getByText(/Accès d'urgence en cours jusqu'à/)).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(doctor.page.getByRole('heading', { name: /Bokele Restreint/ })).toBeVisible();
+  await doctor.context.setOffline(false);
+  await expect
+    .poll(() => doctor.page.evaluate(() => window.__medhubTest!.sync()), { timeout: 20_000 })
+    .toBeNull();
+
+  const server = await withServer(async (client) => {
+    const events = await client.query<{ reason: string; device: string }>(
+      'select reason_code as reason, device_id as device from break_glass_event where patient_id = $1',
+      [patientId],
+    );
+    const access = await client.query<{ screen: string }>(
+      'select screen from data_access_log where patient_id = $1',
+      [patientId],
+    );
+    return { events: events.rows, screens: access.rows.map((r) => r.screen) };
+  });
+  expect(server.events).toEqual([{ reason: 'unconscious_patient', device: deviceId }]);
+  expect(server.screens).toContain('break_glass');
+  await doctor.context.close();
+});

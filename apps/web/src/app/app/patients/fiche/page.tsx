@@ -2,13 +2,11 @@
 
 import type { VitalSignCode } from '@medhub/shared';
 import { ArrowLeft, GitMerge, Phone } from 'lucide-react';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useFormatter, useTranslations } from 'next-intl';
-import { Suspense, useEffect } from 'react';
-import { useLocalQuery } from '@/client/runtime';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslations } from 'next-intl';
+import { Suspense, useEffect, useState } from 'react';
+import { useLocalQuery, useRuntime } from '@/client/runtime';
 import { FieldHistory, IdentityCard } from '@/features/patients/identity-card';
 import { PatientCardActions } from '@/features/patients/patient-card';
 import {
@@ -25,22 +23,40 @@ import {
   isMerged,
   toPatientView,
 } from '@/features/patients/patient-helpers';
-import { mergeClosure, mergeTarget } from '@medhub/domain';
+import { activeBreakGlass, mergeClosure, mergeTarget, recordAccess } from '@medhub/domain';
 import { SyncBadge } from '@/features/patients/sync-badge';
 import { VitalsPanel, type VitalView } from '@/features/patients/vitals-panel';
 import { PatientAppointments } from '@/features/appointments/patient-appointments';
+import {
+  AllergiesCard,
+  AllergyBanner,
+  HistoryCard,
+  ProblemsCard,
+  toAllergyView,
+} from '@/features/record/record-lists';
+import { useRecordAccess } from '@/features/record/use-record-access';
+import { AccessJournal } from '@/features/record/access-journal';
+import { ProgramsCard } from '@/features/record/programs-card';
+import { EmergencyBanner, LockedRecord, toGrant } from '@/features/record/break-glass';
+import { VitalsSummary } from '@/features/record/vitals-summary';
+import { GROWTH_MAX_AGE_YEARS, GrowthCard } from '@/features/record/growth-card';
 import { ArrivalPanel } from '@/features/visits/arrival-panel';
 import { TriagePanel } from '@/features/visits/triage-panel';
 import { currentTriage, openVisitOfToday, todayTickets } from '@/features/visits/visit-helpers';
-
-const TrendChart = dynamic(() => import('@/features/charts/trend-chart'), { ssr: false });
 
 function PatientRecord() {
   const t = useTranslations('patient');
   const tp = useTranslations('patients');
   const tc = useTranslations('common');
-  const format = useFormatter();
+
   const id = useSearchParams().get('id') ?? '';
+  const { identity } = useRuntime();
+  const clinical = identity?.permissions.includes('clinical_record:read') ?? false;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
 
   const { data, loading } = useLocalQuery(
     async (store) => {
@@ -82,7 +98,25 @@ function PatientRecord() {
         ? currentTriage(await store.readEntitiesByPatient('triage', id), visitId)
         : null;
       const tickets = todayTickets(await store.readEntitiesByPatient('queue_ticket', id));
+      // Facts recorded under a merged record belong to this patient too.
+      const gather = async (entity: string) =>
+        (await Promise.all(ids.map((pid) => store.readEntitiesByPatient(entity, pid)))).flat();
+      const allergies = (await gather('allergy')).map(toAllergyView);
+      const history = await gather('medical_history');
+      const problems = await gather('problem');
+      const grants = (await store.readEntitiesByPatient('break_glass', id)).map(toGrant);
+      const enrollments = await gather('program_enrollment');
+      // Last contact known on the device: a visit, a measurement or a triage.
+      const contacts = [
+        ...(await gather('encounter')).map((e) => String(e.data.startedAt ?? '')),
+        ...vitals.map((v) => v.measuredAt),
+        ...(await gather('triage')).map((e) => String(e.data.triagedAt ?? '')),
+      ].filter(Boolean);
+      const lastContact = contacts.sort().at(-1) ?? null;
       return {
+        grants,
+        enrollments,
+        lastContact,
         patient: toPatientView(entity),
         raw: entity.data,
         vitals,
@@ -90,6 +124,9 @@ function PatientRecord() {
         visitId,
         triage,
         tickets,
+        allergies,
+        history,
+        problems,
         mergedCount: ids.length - 1,
       };
     },
@@ -104,6 +141,18 @@ function PatientRecord() {
     }
   }, [redirect, id, router]);
   const mergedFrom = useSearchParams().get('merged');
+  const loaded = data && !('redirect' in data) ? data : null;
+  const grant = loaded
+    ? activeBreakGlass(loaded.grants, identity?.userId ?? '', id, new Date(now))
+    : null;
+  const access = loaded
+    ? recordAccess(loaded.raw.sensitivity, identity?.sensitivityMax ?? 'normal', grant)
+    : null;
+  useRecordAccess(
+    id,
+    access === 'emergency' ? 'break_glass' : 'patient_record',
+    access === 'open' || access === 'emergency',
+  );
 
   if (loading && !data) return <p className="text-sm text-muted-foreground">{tc('loading')}</p>;
   if (!data || 'redirect' in data) {
@@ -120,20 +169,23 @@ function PatientRecord() {
     );
   }
 
-  const { patient, raw, vitals, favorite, visitId, triage, tickets, mergedCount } = data;
-  const temperature = vitals
-    .filter((v) => v.code === 'temp' && v.status === 'active')
-    .slice(0, 12)
-    .reverse()
-    .map((v) => ({
-      label: format.dateTime(new Date(v.measuredAt), {
-        day: '2-digit',
-        month: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-      value: v.value,
-    }));
+  if (access === 'locked') return <LockedRecord patientId={id} mrn={data.patient.mrn} />;
+
+  const {
+    patient,
+    raw,
+    vitals,
+    favorite,
+    visitId,
+    triage,
+    tickets,
+    allergies,
+    history,
+    problems,
+    enrollments,
+    lastContact,
+    mergedCount,
+  } = data;
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -185,7 +237,9 @@ function PatientRecord() {
         </div>
       </section>
 
+      {grant && <EmergencyBanner endsAt={grant.endsAt} />}
       {raw.isProvisional === true && <ProvisionalPanel patientId={patient.id} />}
+      {clinical && <AllergyBanner rows={allergies} />}
 
       {(mergedFrom || mergedCount > 0) && (
         <p
@@ -216,26 +270,32 @@ function PatientRecord() {
             deceasedAt={deceasedAtOf(raw)}
             encounterId={visitId}
           />
+          {clinical && (
+            <>
+              <AllergiesCard patientId={patient.id} rows={allergies} />
+              <ProblemsCard patientId={patient.id} rows={problems} />
+              <ProgramsCard
+                patientId={patient.id}
+                enrollments={enrollments}
+                lastContact={lastContact}
+              />
+              <HistoryCard patientId={patient.id} rows={history} />
+            </>
+          )}
         </div>
         <div className="grid content-start gap-6">
           <ArrivalPanel patientId={patient.id} deceased={deceasedAtOf(raw) !== null} />
           <PatientAppointments patientId={patient.id} />
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('trend')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {temperature.length >= 2 ? (
-                <TrendChart data={temperature} unit="°C" />
-              ) : (
-                <p className="py-10 text-center text-sm text-muted-foreground">
-                  {t('vitals.empty')}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <VitalsSummary vitals={vitals} sex={patient.sex} birthDate={patient.birthDate} />
+          {patient.birthDate &&
+            patient.sex !== 'U' &&
+            patient.age !== null &&
+            patient.age < GROWTH_MAX_AGE_YEARS && (
+              <GrowthCard sex={patient.sex} birthDate={patient.birthDate} vitals={vitals} />
+            )}
           <IdentityCard key={patient.id} patientId={patient.id} data={raw} />
           <FieldHistory patientId={patient.id} />
+          <AccessJournal patientId={patient.id} />
         </div>
       </div>
     </div>

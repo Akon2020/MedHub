@@ -16,7 +16,8 @@ Le jalon **J0 Fondations** est construit :
 - début de J1 (S4) : double authentification TOTP avec codes de secours, limitation de débit en base, règles d'IP, politique CSP à nonce, écran « Mon compte » (2FA, sessions ouvertes, apparence), mesure de la durée des requêtes, organisation de la structure ;
 - S5 (en cours) : appareils et effacement à distance, jetons signés, configuration versionnée, gestion des utilisateurs, éditeur de rôles, référentiels, traduction anglaise complète, diagnostic et base de formation (S5 terminée) ;
 - S6 (terminée) : détection des doublons de patients (alerte à la saisie, file des doublons), fusion supervisée et réversible, identité complète avec historique et revue des conflits, recherche serveur, carte patient avec QR, patients provisoires, décès, sensibilité des dossiers, favoris et périmètre de synchronisation.
-- S7 (terminée côté code) : files d'attente et tickets, écran d'appel, triage, rendez-vous et agendas.
+- S7 (terminée) : files d'attente et tickets, écran d'appel, triage, rendez-vous et agendas.
+- S8 (terminée côté code) : allergies, antécédents, problèmes, journal des accès, constantes (plages normales, tendances, IMC, NEWS2), accès d'urgence, programmes chroniques, courbes de croissance OMS.
 
 Le journal complet de tout ce qui a été fait se trouve dans `walkthrough.md`.
 
@@ -383,6 +384,35 @@ Menu **Paramètres** (permission `configuration:read`, administrateur de structu
 - **Réinitialiser** : la base actuelle est archivée (rien n'est supprimé), ses postes effacent leurs données de formation à leur prochain contact, et une nouvelle base est créée sous le même code avec la configuration du jour.
 - Aucun SMS ni courriel réel ne doit partir d'une base de formation : règle à appliquer par le module de notifications quand il arrivera (aucun envoi n'existe aujourd'hui).
 
+### Allergies, antécédents et problèmes (S8)
+
+- Rôles cliniques (lecture du dossier médical) : sous l'en-tête de la fiche, les **allergies en rouge** ; sinon « Aucune allergie connue (déclaré le ...) » ou « Allergies non renseignées ».
+- Cartes **Allergies** (substance, catégorie, gravité, réaction, suspectée ou confirmée ; bouton « Aucune allergie connue »), **Problèmes actifs** (bouton « Résolu ») et **Antécédents** (catégorie, code CIM-10 facultatif, début). Tout fonctionne hors connexion ; deux postes qui ajoutent chacun un élément les gardent tous les deux.
+- Rien ne s'efface : la croix **Retirer** demande un motif ; « Afficher les éléments retirés ou résolus » les montre barrés.
+
+### Constantes : plages normales, tendances, IMC et NEWS2 (S8)
+
+- La carte **Constantes et courbes** montre la dernière valeur de chaque constante, une flèche de tendance, et la marque « au-dessus de la normale » ou « sous la normale » lorsque la structure a réglé des plages normales. Elle affiche aussi l'IMC, la surface corporelle et, pour les adultes, le score **NEWS2** (marqué « partiel » tant que la conscience et l'oxygène ne sont pas saisis), avec une courbe pour n'importe quelle constante sur tout le dossier.
+- **Paramètres, Clinique, Constantes** : bornes de plausibilité, marge de stabilité de la tendance et **plages normales par sexe et âge**. Aucune plage normale n'est fournie : ce sont des références cliniques que la structure choisit.
+
+### Accès d'urgence (bris de glace) (S8)
+
+- Un dossier au-dessus de votre niveau s'affiche « Dossier protégé ». Si votre rôle le permet (Médecin par défaut), choisissez le motif, précisez-le, puis **Ouvrir l'accès d'urgence** : le dossier s'ouvre pour 4 heures (réglage `security.break_glass_hours`), même hors connexion, avec un bandeau rouge rappelant l'heure de fin.
+- Depuis la recherche « Sur le serveur », un dossier protégé propose aussi **Accès d'urgence**.
+- Chaque accès est journalisé, signalé dans le journal de sécurité et doit être revu : **Paramètres, Sécurité, Accès d'urgence à revoir** (« Justifié » ou « À examiner », avec commentaire).
+- La carte **Journal des accès** de la fiche (rôles d'audit) montre qui a ouvert le dossier, quand et depuis quel poste.
+
+### Programmes chroniques (S8)
+
+- **Paramètres, Clinique, Programmes chroniques** : nom, intervalle de suivi et délai de grâce (14 jours par défaut).
+- Sur la fiche, carte **Programmes chroniques** : inscription, sortie avec motif, date du prochain suivi attendu ou « perdu de vue ».
+- **Programmes chroniques** (menu Clinique, en ligne) : la liste d'appels de l'équipe, les perdus de vue en tête, avec le téléphone.
+
+### Courbes de croissance OMS (S8)
+
+- Pour un patient de moins de 19 ans, la carte **Croissance (OMS)** donne les Z-scores et percentiles (poids, taille, poids pour la taille, IMC, périmètre crânien), les alertes (émaciation, retard de croissance, insuffisance pondérale, périmètre brachial sous 115 ou 125 mm) et la courbe de l'enfant entre les lignes de l'OMS. Calcul sur le poste, hors connexion compris.
+- Sources : standards de croissance de l'OMS (2006) et référence OMS (2007), tables officielles téléchargées le 05/11/2026.
+
 ### Accueil, files et agendas : réglages (S7)
 
 - **Paramètres, Accueil, files et agendas** (en ligne, double authentification récente) :
@@ -428,7 +458,7 @@ Menu **Paramètres** (permission `configuration:read`, administrateur de structu
 
 - Permission `patient:mark_sensitive`. Sur la fiche, **Sensibilité du dossier** : Normal, Membre du personnel, Personnalité, Accès restreint, avec un motif.
 - Un dossier sensible n'est ouvert qu'aux rôles dont le niveau le permet. Réglage dans **Paramètres, Rôles**, champ « Dossiers sensibles accessibles ». Par défaut, un rôle n'ouvre que les dossiers normaux, sauf s'il peut lui-même marquer la sensibilité (il les ouvre alors tous).
-- Les postes des utilisateurs qui n'ont pas le niveau retirent le dossier et ses constantes à leur prochaine synchronisation ; la recherche serveur ne le montre pas. L'accès d'urgence (bris de glace) viendra avec le dossier médical (S8).
+- Depuis S8 (décision du 02/11/2026), le dossier reste sur les postes, chiffré, mais **verrouillé** pour les utilisateurs qui n'ont pas le niveau : la fiche affiche « Dossier protégé » et son numéro seulement, les listes, files et agendas masquent le nom. L'ouverture passe par l'**accès d'urgence** (voir plus bas), qui fonctionne hors connexion. La recherche serveur montre le dossier masqué.
 
 ### Favoris et patients gardés sur les postes (S6)
 

@@ -16,6 +16,7 @@ import {
   toPatientView,
 } from '@/features/patients/patient-helpers';
 import { PatientStatusBadges } from '@/features/patients/patient-status';
+import { useRecordVisibility } from '@/features/record/break-glass';
 import { RegisterForm } from '@/features/patients/register-form';
 import { ServerResults } from '@/features/patients/server-results';
 import { SyncBadge } from '@/features/patients/sync-badge';
@@ -32,6 +33,8 @@ function PatientsScreen() {
   const deferred = useDeferredValue(query.trim());
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const { store } = useRuntime();
+  const visible = useRecordVisibility();
+  const tb = useTranslations('record.breakGlass');
 
   // A card scanner types the opaque token: the matching record opens directly.
   useEffect(() => {
@@ -60,7 +63,11 @@ function PatientsScreen() {
       const entities = (
         deferred ? await store.searchPatients(deferred, 50) : await store.readEntities('patient')
       ).filter((e) => !isMerged(e) && (!onlyFavorites || favorites.has(e.id)));
-      const views = entities.map((e) => toPatientView(e));
+      const views = entities.map((e) =>
+        visible(e.data)
+          ? toPatientView(e)
+          : { ...toPatientView(e), name: tb('protectedName'), phone: null, age: null },
+      );
       if (!deferred) views.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
       return views.slice(0, 100);
     },

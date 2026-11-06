@@ -2,16 +2,24 @@
 
 import type { EntityName } from '@medhub/domain';
 import { applyRemote } from '@medhub/sync/client';
-import { CloudDownload, Loader2, Server } from 'lucide-react';
+import { CloudDownload, Loader2, Server, Siren } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
-import { apiFetch } from '@/client/api';
+import { ApiError, apiFetch } from '@/client/api';
 import { useOnline } from '@/client/browser-state';
 import { useRuntime } from '@/client/runtime';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { BreakGlassForm } from '@/features/record/break-glass';
+
+type StateResponse = {
+  id: string;
+  version: number;
+  data: Record<string, unknown>;
+  rows: { entity: EntityName; entityId: string; version: number; data: Record<string, unknown> }[];
+};
 
 type Hit = {
   id: string;
@@ -22,6 +30,7 @@ type Hit = {
   birthDateEstimated: boolean;
   phone: string | null;
   place: string | null;
+  protected: boolean;
 };
 
 /**
@@ -34,7 +43,8 @@ export function ServerResults({ query }: { query: string }) {
   const tp = useTranslations('patients');
   const online = useOnline();
   const router = useRouter();
-  const { store } = useRuntime();
+  const { store, syncNow } = useRuntime();
+  const [glass, setGlass] = useState<string | null>(null);
   const [hits, setHits] = useState<Hit[]>([]);
   const [loading, setLoading] = useState(false);
   const [opening, setOpening] = useState<string | null>(null);
@@ -72,17 +82,22 @@ export function ServerResults({ query }: { query: string }) {
     setOpening(hit.id);
     setError(null);
     try {
-      const state = await apiFetch<{
-        id: string;
-        version: number;
-        data: Record<string, unknown>;
-        rows: {
-          entity: EntityName;
-          entityId: string;
-          version: number;
-          data: Record<string, unknown>;
-        }[];
-      }>(`/api/v1/patients/state?id=${hit.id}`);
+      // After an emergency access, the server sees it once the device has sent it.
+      let attempts = hit.protected ? 5 : 1;
+      if (hit.protected) syncNow();
+      const fetchState = async (): Promise<StateResponse> => {
+        try {
+          return await apiFetch<StateResponse>(`/api/v1/patients/state?id=${hit.id}`);
+        } catch (err) {
+          attempts -= 1;
+          if (attempts <= 0 || !(err instanceof ApiError) || err.code !== 'PAT_SENSITIVE')
+            throw err;
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+          return fetchState();
+        }
+      };
+      const state = await fetchState();
+      if (state.id !== hit.id) return;
       // The whole record comes down: the patient now belongs to this device's scope.
       await store.transaction(async (tx) => {
         await applyRemote(tx, 'patient', state.id, state.version, state.data);
@@ -116,7 +131,7 @@ export function ServerResults({ query }: { query: string }) {
         {outside.map((hit) => (
           <li key={hit.id} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
             <span className="min-w-0 flex-1">
-              <span className="block font-medium">{hit.name}</span>
+              <span className="block font-medium">{hit.protected ? t('protected') : hit.name}</span>
               <span className="block text-xs text-muted-foreground">
                 {hit.mrn} · {tp(`sex.${hit.sex === 'M' || hit.sex === 'F' ? hit.sex : 'U'}`)}
                 {hit.birthDate
@@ -126,15 +141,34 @@ export function ServerResults({ query }: { query: string }) {
               </span>
             </span>
             <Badge variant="info">{t('badge')}</Badge>
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={opening !== null}
-              onClick={() => void open(hit)}
-            >
-              {opening === hit.id ? <Loader2 className="animate-spin" /> : <CloudDownload />}
-              {t('open')}
-            </Button>
+            {hit.protected && glass !== hit.id && (
+              <Button size="sm" variant="destructive" onClick={() => setGlass(hit.id)}>
+                <Siren />
+                {t('emergency')}
+              </Button>
+            )}
+            {glass === hit.id && (
+              <div className="basis-full">
+                <BreakGlassForm
+                  patientId={hit.id}
+                  onStarted={() => {
+                    setGlass(null);
+                    void open(hit);
+                  }}
+                />
+              </div>
+            )}
+            {!hit.protected && (
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={opening !== null}
+                onClick={() => void open(hit)}
+              >
+                {opening === hit.id ? <Loader2 className="animate-spin" /> : <CloudDownload />}
+                {t('open')}
+              </Button>
+            )}
           </li>
         ))}
       </ul>

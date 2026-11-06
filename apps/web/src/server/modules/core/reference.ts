@@ -16,6 +16,7 @@ import { database } from '../../platform/db';
 import { loadPermissions, requirePermission } from '../../platform/permissions';
 import type { RequestContext } from '../../platform/tenant';
 import { requireRecentStepUp } from './configuration';
+import { activePrograms, effectiveVitalDefinitions } from '../dpi';
 
 type Client = { ip: string | null };
 
@@ -417,7 +418,19 @@ export async function catalogSnapshot(ctx: RequestContext): Promise<CatalogSnaps
       .select({ timeZone: schema.tenant.timezone })
       .from(schema.tenant)
       .where(eq(schema.tenant.id, ctx.tenantId));
+    const vitalDefinitions = (await effectiveVitalDefinitions(tx)).map(
+      ({ configured: _c, ...d }) => d,
+    );
+    const programs = (await activePrograms(tx)).map((p) => ({
+      id: p.id,
+      code: p.code,
+      name: p.name,
+      followUpIntervalDays: p.followUpIntervalDays,
+      graceDays: p.graceDays,
+    }));
     const body = {
+      programs,
+      vitalDefinitions,
       timeZone: tenant?.timeZone ?? 'Africa/Kinshasa',
       currencies,
       units,

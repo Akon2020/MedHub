@@ -127,6 +127,34 @@
       "when": 1793559006284,
       "tag": "0017_s7_appointments",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793572904078,
+      "tag": "0018_s8_record",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793573538430,
+      "tag": "0019_s8_vital_definitions",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793574358454,
+      "tag": "0020_s8_break_glass",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793575514445,
+      "tag": "0021_s8_programs",
+      "breakpoints": true
     }
   ]
 }

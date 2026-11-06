@@ -19,6 +19,17 @@ import {
   appointmentReschedulePayload,
 } from './rdv/appointments';
 import { triageRecordPayload } from './rdv/triage';
+import { recordAccessPayload } from './dpi/access-log';
+import { breakGlassPayload } from './dpi/break-glass';
+import { programDischargePayload, programEnrollPayload } from './dpi/programs';
+import {
+  allergyAddPayload,
+  allergyNoneKnownPayload,
+  historyAddPayload,
+  problemAddPayload,
+  problemResolvePayload,
+  retractPayload,
+} from './dpi/record';
 import {
   OPEN_ENCOUNTER_STATUSES,
   TICKET_TRANSITIONS,
@@ -40,7 +51,13 @@ export type EntityName =
   | 'encounter'
   | 'queue_ticket'
   | 'triage'
-  | 'appointment';
+  | 'appointment'
+  | 'allergy'
+  | 'medical_history'
+  | 'problem'
+  | 'record_access'
+  | 'break_glass'
+  | 'program_enrollment';
 
 export type EntityDefinition = {
   name: EntityName;
@@ -101,6 +118,44 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
       `patient:${String(data.patientId)}`,
       `resource:${String(data.resourceId)}`,
     ],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  allergy: {
+    name: 'allergy',
+    strategy: 'union',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  medical_history: {
+    name: 'medical_history',
+    strategy: 'union',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  problem: {
+    name: 'problem',
+    strategy: 'union',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  program_enrollment: {
+    name: 'program_enrollment',
+    strategy: 'union',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  break_glass: {
+    name: 'break_glass',
+    strategy: 'append_only',
+    // Only the user who opened the access receives it back (pull filter on userId).
+    scopeKeys: (data) => [`user:${String(data.userId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  record_access: {
+    name: 'record_access',
+    strategy: 'append_only',
+    // Kept on the server only: no device downloads the access journal.
+    scopeKeys: () => [],
     patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
   },
   triage: {
@@ -310,6 +365,112 @@ export const COMMANDS = {
     onlineOnly: false,
     transientFields: ['at'],
     transition: { from: UPCOMING_STATUSES, to: 'no_show' },
+  }),
+  'allergy.add': define({
+    name: 'allergy.add',
+    entity: 'allergy',
+    kind: 'create',
+    payloadSchema: allergyAddPayload,
+    permission: 'clinical_record:create',
+    onlineOnly: false,
+    patientAct: (p) => ({ patientId: p.patientId, at: p.notedAt }),
+  }),
+  'allergy.set_none_known': define({
+    name: 'allergy.set_none_known',
+    entity: 'allergy',
+    kind: 'create',
+    payloadSchema: allergyNoneKnownPayload,
+    permission: 'clinical_record:create',
+    onlineOnly: false,
+    patientAct: (p) => ({ patientId: p.patientId, at: p.notedAt }),
+  }),
+  'allergy.retract': define({
+    name: 'allergy.retract',
+    entity: 'allergy',
+    kind: 'update',
+    payloadSchema: retractPayload,
+    permission: 'clinical_record:create',
+    onlineOnly: false,
+    transition: { from: ['active'], to: 'retracted' },
+  }),
+  'medical_history.add': define({
+    name: 'medical_history.add',
+    entity: 'medical_history',
+    kind: 'create',
+    payloadSchema: historyAddPayload,
+    permission: 'clinical_record:create',
+    onlineOnly: false,
+    patientAct: (p) => ({ patientId: p.patientId, at: p.notedAt }),
+  }),
+  'medical_history.retract': define({
+    name: 'medical_history.retract',
+    entity: 'medical_history',
+    kind: 'update',
+    payloadSchema: retractPayload,
+    permission: 'clinical_record:create',
+    onlineOnly: false,
+    transition: { from: ['active'], to: 'retracted' },
+  }),
+  'problem.add': define({
+    name: 'problem.add',
+    entity: 'problem',
+    kind: 'create',
+    payloadSchema: problemAddPayload,
+    permission: 'clinical_record:create',
+    onlineOnly: false,
+    patientAct: (p) => ({ patientId: p.patientId, at: p.notedAt }),
+  }),
+  'problem.resolve': define({
+    name: 'problem.resolve',
+    entity: 'problem',
+    kind: 'update',
+    payloadSchema: problemResolvePayload,
+    permission: 'clinical_record:create',
+    onlineOnly: false,
+    transition: { from: ['active'], to: 'resolved' },
+  }),
+  'problem.retract': define({
+    name: 'problem.retract',
+    entity: 'problem',
+    kind: 'update',
+    payloadSchema: retractPayload,
+    permission: 'clinical_record:create',
+    onlineOnly: false,
+    transition: { from: ['active', 'resolved'], to: 'retracted' },
+  }),
+  'program_enrollment.enroll': define({
+    name: 'program_enrollment.enroll',
+    entity: 'program_enrollment',
+    kind: 'create',
+    payloadSchema: programEnrollPayload,
+    permission: 'clinical_record:create',
+    onlineOnly: false,
+    patientAct: (p) => ({ patientId: p.patientId, at: p.enrolledAt }),
+  }),
+  'program_enrollment.discharge': define({
+    name: 'program_enrollment.discharge',
+    entity: 'program_enrollment',
+    kind: 'update',
+    payloadSchema: programDischargePayload,
+    permission: 'clinical_record:create',
+    onlineOnly: false,
+    transition: { from: ['active'], to: 'discharged' },
+  }),
+  'break_glass.start': define({
+    name: 'break_glass.start',
+    entity: 'break_glass',
+    kind: 'append',
+    payloadSchema: breakGlassPayload,
+    permission: 'clinical_record:break_glass',
+    onlineOnly: false,
+  }),
+  'record_access.log': define({
+    name: 'record_access.log',
+    entity: 'record_access',
+    kind: 'append',
+    payloadSchema: recordAccessPayload,
+    permission: 'patient:read',
+    onlineOnly: false,
   }),
   'triage.record': define({
     name: 'triage.record',

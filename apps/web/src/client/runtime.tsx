@@ -33,6 +33,9 @@ import {
 } from 'react';
 import { apiFetch } from './api';
 import { refreshCatalogs } from './catalogs';
+
+/** Emergency access length until the structure's own setting reaches the device (docs/03 section 4). */
+const DEFAULT_BREAK_GLASS_HOURS = 4;
 import { exportJournal } from './diagnostic-export';
 import { refreshTokens, tokensDue, tokenStatus, type TokenStatus } from './device-tokens';
 import { installTestHook } from './e2e-hook';
@@ -66,6 +69,8 @@ type RuntimeValue = {
   catalogs: StoredCatalogs | null;
   /** Similarity score from which registration shows the patients that look alike. */
   duplicateAlertScore: number;
+  /** Length of an emergency access, from the structure's published settings. */
+  breakGlassHours: number;
   /** Downloads the catalogs now, without waiting for the next check. */
   reloadCatalogs: () => Promise<void>;
   /** Diagnostic journal sealed for support (no patient data, readable by support only). */
@@ -138,6 +143,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
   const [catalogs, setCatalogs] = useState<StoredCatalogs | null>(null);
   const [autoLockMs, setAutoLockMs] = useState(DEFAULT_AUTO_LOCK_MINUTES * 60_000);
   const [duplicateAlertScore, setDuplicateAlertScore] = useState(DUPLICATE_ALERT_SCORE);
+  const [breakGlassHours, setBreakGlassHours] = useState(DEFAULT_BREAK_GLASS_HOURS);
   const dbRef = useRef<MedHubLocalDb | null>(null);
 
   useEffect(() => {
@@ -251,6 +257,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
       if (stored?.config?.duplicateAlertScore) {
         setDuplicateAlertScore(stored.config.duplicateAlertScore);
       }
+      if (stored?.config?.breakGlassHours) setBreakGlassHours(stored.config.breakGlassHours);
       const next = await startSession(identity, unlocked, {
         afterSync: async (deviceId) => {
           if (await refreshCatalogs(unlocked.db, unlocked.keys.dataKey)) {
@@ -338,6 +345,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
       tokens,
       catalogs,
       duplicateAlertScore,
+      breakGlassHours,
       reloadCatalogs: async () => {
         if (!session) return;
         await refreshCatalogs(session.unlocked.db, session.unlocked.keys.dataKey, Date.now(), true);
@@ -380,6 +388,7 @@ export function RuntimeProvider({ children }: { children: ReactNode }) {
       tokens,
       catalogs,
       duplicateAlertScore,
+      breakGlassHours,
       revision,
       unlock,
       recover,

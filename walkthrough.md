@@ -94,6 +94,13 @@ Consignes reçues et appliquées pendant les sessions :
 | `38d90c2` | 02/11/2026 | `feat(rdv)` : visites et tickets hors connexion, transitions « premier arrivé gagne », écran des files et écran d'appel |
 | `1bf01af` | 02/11/2026 | `feat(rdv)` : triage avec orientation vers une autre file |
 | `5b89e37` | 02/11/2026 | `feat(rdv)` : rendez-vous (créneaux dans le fuseau de la structure, surréservation, conflit tranché à l'arrivée au serveur, agenda du jour) |
+| `de43d21` | 02/11/2026 | `feat(rdv)` : visites et rendez-vous dans le périmètre de synchronisation, copie des catalogues chiffrée sur les postes |
+| `933776d` | 02/11/2026 | `docs(rdv)` : S7 dans les documents |
+| `7b432e0` | 02/11/2026 | `feat(dpi)` : allergies, antécédents, problèmes (union, retrait avec motif), index chronologique `clinical_event`, journal des ouvertures de dossier hors connexion |
+| `8b21478` | 02/11/2026 | `feat(dpi)` : réglages des constantes, tendances, IMC, surface corporelle, NEWS2, courbe de chaque constante |
+| `eb2154f` | 02/11/2026 | `feat(dpi)` : accès d'urgence hors connexion, dossiers sensibles verrouillés sur le poste, tableau de revue, journal des accès |
+| `8f38822` | 02/11/2026 | `feat(dpi)` : programmes chroniques et liste d'appels des perdus de vue |
+| `8b147ad` | 05/11/2026 | `feat(dpi)` : courbes de croissance OMS (tables officielles), Z-scores et alertes de malnutrition |
 
 ---
 
@@ -201,7 +208,7 @@ Code pur, sans Node.js, DOM ni Dexie, utilisé à l'identique par le client et l
 
 ## 8. `packages/db` : base PostgreSQL, sécurité et migrations
 
-### 8.1 Schéma (48 tables)
+### 8.1 Schéma (56 tables)
 
 | Domaine | Tables |
 | --- | --- |
@@ -571,6 +578,16 @@ Chaque document reçoit une CSP avec **nonce neuf** (`src/proxy.ts`) : `script-s
 - Le décès refuse aussi l'ouverture d'une visite et un triage postérieurs.
 - Périmètre de synchronisation : une visite récente compte comme activité, un rendez-vous d'hier aux sept prochains jours fait entrer le patient.
 
+### 13.23 Dossier longitudinal (S8)
+
+- Entités synchronisées en union (`allergy`, `medical_history`, `problem`, `program_enrollment`) : tous les ajouts sont gardés, retrait ou résolution par une transition « premier arrivé gagne » avec motif ; « aucune allergie connue » est une ligne datée.
+- `clinical_event` : une ligne par fait clinique (constante, triage, visite, allergie, antécédent, problème), écrite par le serveur ; `origin_tenant_id` prépare les copies d'autres structures (SHARE).
+- `record_access.log` : l'ouverture d'un dossier est mise en file sur le poste, même hors connexion (une entrée par patient et par utilisateur toutes les dix minutes), puis stockée dans `data_access_log` et dans le journal d'audit chaîné avec l'action `read`.
+- Constantes : `vital_sign_definition` par structure (plausibilité, marge de tendance, plages normales par sexe et âge, aucune plage clinique fournie), calculs partagés (IMC, Mosteller, âge exact, tendance, NEWS2 du Royal College of Physicians, 2017).
+- Accès d'urgence : `break_glass.start` (motif, durée bornée à 24 h, 4 h par défaut), `break_glass_event`, événement de sécurité et audit `break_glass`, revue unique (`audit:review`). Les dossiers sensibles sont désormais envoyés à tous les lecteurs et verrouillés sur le poste (décision du porteur du 02/11/2026, à la place du retrait de S6) ; la lecture serveur et l'historique les ouvrent pendant un accès en cours.
+- Programmes chroniques : `program` (intervalle, grâce), inscriptions, statut de suivi partagé (`followUpStatus`), liste d'appels en ligne.
+- Croissance : tables LMS officielles de l'OMS (22 fichiers, 2006 et 2007) converties en JSON avec leur source, entrée `@medhub/domain/who-growth` chargée à la demande ; Z-scores avec la correction de l'OMS au-delà de 3 ET pour les indicateurs de poids, percentiles, alertes de malnutrition.
+
 ### 13.9 Mesure de la durée des requêtes
 
 Réponse au point ouvert de J0 (une connexion restée 20 s sans réponse) : chaque route renvoie `Server-Timing: app;dur=N`, la métrique `http.duration_ms` est émise, et toute requête plus lente que `MEDHUB_SLOW_REQUEST_MS` (2 s par défaut) est journalisée avec l'état du pool (`total`, `idle`, `waiting`) pour distinguer pool saturé, requête lente ou verrou.
@@ -724,6 +741,6 @@ Commandes de contrôle avant chaque commit : `pnpm typecheck`, `pnpm lint`, `pnp
 
 S4 est terminée (`docs/11-feuille-de-route.md`) : authentification complète avec 2FA, structures, sites et services, RLS sur toutes les tables, rôles et permissions vérifiés côté serveur, audit chaîné, coquille PWA, mise en page, indicateur de synchronisation, protections de la plateforme. Les salles, horaires d'ouverture et jours fériés de `docs/modules/core.md` arrivent avec les rendez-vous et files (S7).
 
-S5 et S6 sont terminées. En S6 : la détection des doublons, la fusion supervisée et réversible, l'identité complète avec historique, la revue des conflits (partie démographique de P2), la recherche serveur, la carte patient avec QR, les patients provisoires, le décès, la sensibilité des dossiers, les favoris et le périmètre de synchronisation ont été livrés. S7 (rendez-vous, files, triage) est terminée côté code.
+S5 et S6 sont terminées. En S6 : la détection des doublons, la fusion supervisée et réversible, l'identité complète avec historique, la revue des conflits (partie démographique de P2), la recherche serveur, la carte patient avec QR, les patients provisoires, le décès, la sensibilité des dossiers, les favoris et le périmètre de synchronisation ont été livrés. S7 (rendez-vous, files, triage) est terminée, S8 (dossier longitudinal) est terminée côté code.
 
-S8 : dossier longitudinal (chronologie, résumé, antécédents, allergies, problèmes, bris de glace). Puis S9 jusqu'au critère de sortie de J1 : un patient parcourt accueil, triage et consultation hors connexion et se synchronise sans erreur.
+S9 : consultation, notes signées, diagnostics codés, formulaires (FORM), prescription avec alertes, ordonnance avec QR, jusqu'au critère de sortie de J1 : un patient parcourt accueil, triage et consultation hors connexion et se synchronise sans erreur.

@@ -7,6 +7,7 @@ import {
   LayoutGrid,
   ListOrdered,
   Pill,
+  Repeat,
   Settings,
   Stethoscope,
   Users,
@@ -36,6 +37,12 @@ export const NAVIGATION: NavGroup[] = [
         href: '/app/rendez-vous',
         icon: CalendarClock,
         permission: 'appointment:read',
+      },
+      {
+        key: 'programs',
+        href: '/app/programmes',
+        icon: Repeat,
+        permission: 'clinical_record:read',
       },
       {
         key: 'consultations',

@@ -1,5 +1,13 @@
 import 'server-only';
-import { appendAudit, enqueue, schema, withTenant, type Db, type Tx } from '@medhub/db';
+import {
+  appendAudit,
+  enqueue,
+  recordSecurityEvent,
+  schema,
+  withTenant,
+  type Db,
+  type Tx,
+} from '@medhub/db';
 import {
   ENTITIES,
   SLOT_HOLDING_STATUSES,
@@ -430,6 +438,285 @@ const mappers = {
       };
     },
   },
+  allergy: {
+    table: schema.allergy,
+    toState(row: typeof schema.allergy.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          notedAt: row.notedAt.toISOString(),
+          status: row.status,
+          retractReason: row.retractReason,
+          retractedAt: row.retractedAt?.toISOString(),
+          substance: row.substance,
+          atcCode: row.atcCode,
+          category: row.category,
+          reaction: row.reaction,
+          severity: row.severity,
+          certainty: row.certainty,
+          noneKnown: row.noneKnown,
+        }),
+        fieldMeta: row.fieldMeta,
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.allergy.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        notedAt: new Date(String(d.notedAt)),
+        status: str(d.status) ?? 'active',
+        retractReason: str(d.retractReason),
+        retractedAt: instant(d.retractedAt),
+        substance: str(d.substance),
+        atcCode: str(d.atcCode),
+        category: str(d.category),
+        reaction: str(d.reaction),
+        severity: str(d.severity),
+        certainty: str(d.certainty),
+        noneKnown: d.noneKnown === true,
+        fieldMeta: state.fieldMeta,
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+        updatedAt: new Date(),
+        updatedBy: ctx.userId,
+      };
+    },
+  },
+  medical_history: {
+    table: schema.medicalHistory,
+    toState(row: typeof schema.medicalHistory.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          notedAt: row.notedAt.toISOString(),
+          status: row.status,
+          retractReason: row.retractReason,
+          retractedAt: row.retractedAt?.toISOString(),
+          category: row.category,
+          label: row.label,
+          icd10: row.icd10,
+          startDate: row.startDate,
+          endDate: row.endDate,
+          source: row.source,
+        }),
+        fieldMeta: row.fieldMeta,
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.medicalHistory.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        notedAt: new Date(String(d.notedAt)),
+        status: str(d.status) ?? 'active',
+        retractReason: str(d.retractReason),
+        retractedAt: instant(d.retractedAt),
+        category: String(d.category),
+        label: String(d.label),
+        icd10: str(d.icd10),
+        startDate: str(d.startDate),
+        endDate: str(d.endDate),
+        source: str(d.source) ?? 'patient',
+        fieldMeta: state.fieldMeta,
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+        updatedAt: new Date(),
+        updatedBy: ctx.userId,
+      };
+    },
+  },
+  problem: {
+    table: schema.problem,
+    toState(row: typeof schema.problem.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          notedAt: row.notedAt.toISOString(),
+          status: row.status,
+          retractReason: row.retractReason,
+          retractedAt: row.retractedAt?.toISOString(),
+          label: row.label,
+          icd10: row.icd10,
+          onsetDate: row.onsetDate,
+          resolvedDate: row.resolvedDate,
+          sourceEncounterId: row.sourceEncounterId,
+        }),
+        fieldMeta: row.fieldMeta,
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.problem.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        notedAt: new Date(String(d.notedAt)),
+        status: str(d.status) ?? 'active',
+        retractReason: str(d.retractReason),
+        retractedAt: instant(d.retractedAt),
+        label: String(d.label),
+        icd10: str(d.icd10),
+        onsetDate: str(d.onsetDate),
+        resolvedDate: str(d.resolvedDate),
+        sourceEncounterId: str(d.sourceEncounterId),
+        fieldMeta: state.fieldMeta,
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+        updatedAt: new Date(),
+        updatedBy: ctx.userId,
+      };
+    },
+  },
+  program_enrollment: {
+    table: schema.programEnrollment,
+    toState(row: typeof schema.programEnrollment.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          programId: row.programId,
+          enrolledAt: row.enrolledAt.toISOString(),
+          status: row.status,
+          dischargedAt: row.dischargedAt?.toISOString(),
+          dischargeReason: row.dischargeReason,
+        }),
+        fieldMeta: row.fieldMeta,
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.programEnrollment.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        programId: String(d.programId),
+        enrolledAt: new Date(String(d.enrolledAt)),
+        status: str(d.status) ?? 'active',
+        dischargedAt: instant(d.dischargedAt),
+        dischargeReason: str(d.dischargeReason),
+        fieldMeta: state.fieldMeta,
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+        updatedAt: new Date(),
+        updatedBy: ctx.userId,
+      };
+    },
+  },
+  break_glass: {
+    table: schema.breakGlassEvent,
+    toState(row: typeof schema.breakGlassEvent.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          userId: row.userId,
+          reasonCode: row.reasonCode,
+          reasonText: row.reasonText,
+          startedAt: row.startedAt.toISOString(),
+          endsAt: row.endsAt.toISOString(),
+          status: row.status,
+        }),
+        fieldMeta: {},
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.breakGlassEvent.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        // The user who breaks the glass is the author of the operation.
+        userId: state.createdBy,
+        patientId: String(d.patientId),
+        reasonCode: String(d.reasonCode),
+        reasonText: String(d.reasonText),
+        startedAt: new Date(String(d.startedAt)),
+        endsAt: new Date(String(d.endsAt)),
+        status: str(d.status) ?? 'active',
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+      };
+    },
+  },
+  record_access: {
+    table: schema.dataAccessLog,
+    toState(row: typeof schema.dataAccessLog.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: 1,
+        data: compact({
+          patientId: row.patientId,
+          screen: row.screen,
+          at: row.at.toISOString(),
+          reason: row.reason,
+        }),
+        fieldMeta: {},
+        hlc: '',
+        opId: '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.userId,
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.dataAccessLog.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        at: new Date(String(d.at)),
+        // The reader is the author of the operation, never a value of the payload.
+        userId: state.createdBy,
+        deviceId: state.deviceId || null,
+        patientId: String(d.patientId),
+        screen: String(d.screen),
+        reason: str(d.reason),
+      };
+    },
+  },
   patient_favorite: {
     table: schema.patientFavorite,
     toState(row: typeof schema.patientFavorite.$inferSelect): EntityState {
@@ -512,6 +799,42 @@ const mappers = {
   },
 } as const;
 
+/** Kind and instant of each clinical fact in the single timeline of the record. */
+const TIMELINE: Partial<Record<EntityName, { kind: string; table: string; at: string }>> = {
+  vital_sign: { kind: 'vital_sign', table: 'vital_sign', at: 'measuredAt' },
+  triage: { kind: 'triage', table: 'triage', at: 'triagedAt' },
+  encounter: { kind: 'encounter', table: 'encounter', at: 'startedAt' },
+  allergy: { kind: 'allergy', table: 'allergy', at: 'notedAt' },
+  medical_history: { kind: 'history', table: 'medical_history', at: 'notedAt' },
+  problem: { kind: 'problem', table: 'problem', at: 'notedAt' },
+};
+
+async function recordClinicalEvent(
+  tx: Tx,
+  ctx: Ctx,
+  entity: EntityName,
+  state: EntityState,
+): Promise<void> {
+  const entry = TIMELINE[entity];
+  const patientId = str(state.data.patientId);
+  if (!entry || !patientId) return;
+  await tx.insert(schema.clinicalEvent).values({
+    id: uuidv7(),
+    tenantId: ctx.tenantId,
+    patientId,
+    encounterId: str(state.data.encounterId),
+    kind: entry.kind,
+    refTable: entry.table,
+    refId: state.id,
+    occurredAt: new Date(String(state.data[entry.at] ?? new Date().toISOString())),
+    authorId: state.createdBy || null,
+    deviceId: state.deviceId || null,
+    hlc: state.hlc || null,
+    opId: state.opId || null,
+    createdBy: state.createdBy || null,
+  });
+}
+
 async function getEntity(tx: Tx, entity: EntityName, id: string): Promise<EntityState | null> {
   switch (entity) {
     case 'patient': {
@@ -574,6 +897,54 @@ async function getEntity(tx: Tx, entity: EntityName, id: string): Promise<Entity
         .limit(1);
       return row ? mappers.appointment.toState(row) : null;
     }
+    case 'allergy': {
+      const [row] = await tx
+        .select()
+        .from(schema.allergy)
+        .where(eq(schema.allergy.id, id))
+        .limit(1);
+      return row ? mappers.allergy.toState(row) : null;
+    }
+    case 'medical_history': {
+      const [row] = await tx
+        .select()
+        .from(schema.medicalHistory)
+        .where(eq(schema.medicalHistory.id, id))
+        .limit(1);
+      return row ? mappers.medical_history.toState(row) : null;
+    }
+    case 'problem': {
+      const [row] = await tx
+        .select()
+        .from(schema.problem)
+        .where(eq(schema.problem.id, id))
+        .limit(1);
+      return row ? mappers.problem.toState(row) : null;
+    }
+    case 'program_enrollment': {
+      const [row] = await tx
+        .select()
+        .from(schema.programEnrollment)
+        .where(eq(schema.programEnrollment.id, id))
+        .limit(1);
+      return row ? mappers.program_enrollment.toState(row) : null;
+    }
+    case 'break_glass': {
+      const [row] = await tx
+        .select()
+        .from(schema.breakGlassEvent)
+        .where(eq(schema.breakGlassEvent.id, id))
+        .limit(1);
+      return row ? mappers.break_glass.toState(row) : null;
+    }
+    case 'record_access': {
+      const [row] = await tx
+        .select()
+        .from(schema.dataAccessLog)
+        .where(eq(schema.dataAccessLog.id, id))
+        .limit(1);
+      return row ? mappers.record_access.toState(row) : null;
+    }
   }
 }
 
@@ -615,6 +986,36 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
       return (
         await tx.select().from(schema.appointment).where(inArray(schema.appointment.id, ids))
       ).map((r) => mappers.appointment.toState(r));
+    case 'allergy':
+      return (await tx.select().from(schema.allergy).where(inArray(schema.allergy.id, ids))).map(
+        (r) => mappers.allergy.toState(r),
+      );
+    case 'medical_history':
+      return (
+        await tx.select().from(schema.medicalHistory).where(inArray(schema.medicalHistory.id, ids))
+      ).map((r) => mappers.medical_history.toState(r));
+    case 'problem':
+      return (await tx.select().from(schema.problem).where(inArray(schema.problem.id, ids))).map(
+        (r) => mappers.problem.toState(r),
+      );
+    case 'program_enrollment':
+      return (
+        await tx
+          .select()
+          .from(schema.programEnrollment)
+          .where(inArray(schema.programEnrollment.id, ids))
+      ).map((r) => mappers.program_enrollment.toState(r));
+    case 'break_glass':
+      return (
+        await tx
+          .select()
+          .from(schema.breakGlassEvent)
+          .where(inArray(schema.breakGlassEvent.id, ids))
+      ).map((r) => mappers.break_glass.toState(r));
+    case 'record_access':
+      return (
+        await tx.select().from(schema.dataAccessLog).where(inArray(schema.dataAccessLog.id, ids))
+      ).map((r) => mappers.record_access.toState(r));
   }
 }
 
@@ -670,7 +1071,12 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
           tenantId: ctx.tenantId,
           userId: op.userId,
           deviceId: op.deviceId,
-          action: AUDIT_ACTION[kind] ?? 'update',
+          action:
+            op.command === 'record_access.log'
+              ? 'read'
+              : op.command === 'break_glass.start'
+                ? 'break_glass'
+                : (AUDIT_ACTION[kind] ?? 'update'),
           entity: op.entity,
           entityId: op.entityId,
           patientId:
@@ -700,6 +1106,7 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
           return;
         case 'vital_sign':
           await tx.insert(schema.vitalSign).values(mappers.vital_sign.toRow(state, ctx));
+          await recordClinicalEvent(tx, ctx, 'vital_sign', state);
           return;
         case 'stock_movement':
           await tx.insert(schema.stockMovement).values(mappers.stock_movement.toRow(state, ctx));
@@ -711,15 +1118,50 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
           return;
         case 'encounter':
           await tx.insert(schema.encounter).values(mappers.encounter.toRow(state, ctx));
+          await recordClinicalEvent(tx, ctx, 'encounter', state);
           return;
         case 'queue_ticket':
           await tx.insert(schema.queueTicket).values(mappers.queue_ticket.toRow(state, ctx));
           return;
         case 'triage':
           await tx.insert(schema.triage).values(mappers.triage.toRow(state, ctx));
+          await recordClinicalEvent(tx, ctx, 'triage', state);
           return;
         case 'appointment':
           await tx.insert(schema.appointment).values(mappers.appointment.toRow(state, ctx));
+          return;
+        case 'allergy':
+          await tx.insert(schema.allergy).values(mappers.allergy.toRow(state, ctx));
+          await recordClinicalEvent(tx, ctx, 'allergy', state);
+          return;
+        case 'medical_history':
+          await tx.insert(schema.medicalHistory).values(mappers.medical_history.toRow(state, ctx));
+          await recordClinicalEvent(tx, ctx, 'medical_history', state);
+          return;
+        case 'problem':
+          await tx.insert(schema.problem).values(mappers.problem.toRow(state, ctx));
+          await recordClinicalEvent(tx, ctx, 'problem', state);
+          return;
+        case 'program_enrollment':
+          await tx
+            .insert(schema.programEnrollment)
+            .values(mappers.program_enrollment.toRow(state, ctx));
+          return;
+        case 'break_glass':
+          await tx.insert(schema.breakGlassEvent).values(mappers.break_glass.toRow(state, ctx));
+          // The person in charge sees it in the security journal and the review board.
+          await recordSecurityEvent(tx, {
+            kind: 'break_glass',
+            severity: 'warning',
+            tenantId: ctx.tenantId,
+            userId: state.createdBy || null,
+            ip: null,
+            detail: { breakGlassId: state.id, reason: String(state.data.reasonCode) },
+          });
+          return;
+        case 'record_access':
+          await tx.insert(schema.dataAccessLog).values(mappers.record_access.toRow(state, ctx));
+          await recordClinicalEvent(tx, ctx, 'record_access', state);
           return;
       }
     },
@@ -807,8 +1249,56 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
             })
             .where(eq(schema.triage.id, state.id));
           return;
+        case 'allergy': {
+          const {
+            id: _id,
+            tenantId: _t,
+            createdBy: _c,
+            ...row
+          } = mappers.allergy.toRow(state, ctx);
+          await tx.update(schema.allergy).set(row).where(eq(schema.allergy.id, state.id));
+          return;
+        }
+        case 'medical_history': {
+          const {
+            id: _id,
+            tenantId: _t,
+            createdBy: _c,
+            ...row
+          } = mappers.medical_history.toRow(state, ctx);
+          await tx
+            .update(schema.medicalHistory)
+            .set(row)
+            .where(eq(schema.medicalHistory.id, state.id));
+          return;
+        }
+        case 'problem': {
+          const {
+            id: _id,
+            tenantId: _t,
+            createdBy: _c,
+            ...row
+          } = mappers.problem.toRow(state, ctx);
+          await tx.update(schema.problem).set(row).where(eq(schema.problem.id, state.id));
+          return;
+        }
         case 'stock_movement':
         case 'patient_favorite':
+        case 'program_enrollment': {
+          const {
+            id: _id,
+            tenantId: _t,
+            createdBy: _c,
+            ...row
+          } = mappers.program_enrollment.toRow(state, ctx);
+          await tx
+            .update(schema.programEnrollment)
+            .set(row)
+            .where(eq(schema.programEnrollment.id, state.id));
+          return;
+        }
+        case 'break_glass':
+        case 'record_access':
           throw new Error(`${entity} rows are immutable`);
       }
     },
@@ -1067,25 +1557,6 @@ export async function patientState(tx: Tx, patientId: string): Promise<EntitySta
   return getEntity(tx, 'patient', patientId);
 }
 
-/** Access level of each listed patient, for the pull filter. */
-export async function patientSensitivities(
-  db: Db,
-  ctx: Ctx,
-  ids: readonly string[],
-): Promise<Map<string, string>> {
-  if (ids.length === 0) return new Map();
-  const rows = await withTenant(
-    db,
-    { tenantId: ctx.tenantId, userId: ctx.userId, deviceId: ctx.deviceId },
-    (tx) =>
-      tx
-        .select({ id: schema.patient.id, sensitivity: schema.patient.sensitivity })
-        .from(schema.patient)
-        .where(inArray(schema.patient.id, [...ids])),
-  );
-  return new Map(rows.map((r) => [r.id, r.sensitivity]));
-}
-
 /**
  * Every row a device needs for these patients: the record itself, its vital
  * signs and the user's own favourite toggles, as pull changes.
@@ -1127,9 +1598,35 @@ export async function patientBundles(
     .select()
     .from(schema.appointment)
     .where(inArray(schema.appointment.patientId, ids));
+  const allergies = await tx
+    .select()
+    .from(schema.allergy)
+    .where(inArray(schema.allergy.patientId, ids));
+  const histories = await tx
+    .select()
+    .from(schema.medicalHistory)
+    .where(inArray(schema.medicalHistory.patientId, ids));
+  const problems = await tx
+    .select()
+    .from(schema.problem)
+    .where(inArray(schema.problem.patientId, ids));
+  const enrollments = await tx
+    .select()
+    .from(schema.programEnrollment)
+    .where(inArray(schema.programEnrollment.patientId, ids));
   return [
     ...patients.map((r) => ({ entity: 'patient' as const, state: mappers.patient.toState(r) })),
     ...triages.map((r) => ({ entity: 'triage' as const, state: mappers.triage.toState(r) })),
+    ...allergies.map((r) => ({ entity: 'allergy' as const, state: mappers.allergy.toState(r) })),
+    ...histories.map((r) => ({
+      entity: 'medical_history' as const,
+      state: mappers.medical_history.toState(r),
+    })),
+    ...problems.map((r) => ({ entity: 'problem' as const, state: mappers.problem.toState(r) })),
+    ...enrollments.map((r) => ({
+      entity: 'program_enrollment' as const,
+      state: mappers.program_enrollment.toState(r),
+    })),
     ...appointments.map((r) => ({
       entity: 'appointment' as const,
       state: mappers.appointment.toState(r),

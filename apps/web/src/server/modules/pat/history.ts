@@ -3,12 +3,8 @@ import { appendAudit, schema, withTenant } from '@medhub/db';
 import { AppError, uuidv7 } from '@medhub/shared';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { database } from '../../platform/db';
-import {
-  loadPermissions,
-  loadSensitivityMax,
-  requirePermission,
-  requireSensitivity,
-} from '../../platform/permissions';
+import { loadPermissions, requirePermission } from '../../platform/permissions';
+import { requireRecordAccess } from '../dpi';
 import type { RequestContext } from '../../platform/tenant';
 import { updateServerPatient } from '../sync';
 
@@ -52,7 +48,7 @@ export async function patientHistory(
       .where(eq(schema.patient.id, patientId))
       .limit(1);
     if (!patient) throw new AppError('NOT_FOUND', 404);
-    requireSensitivity(patient.sensitivity, await loadSensitivityMax(tx, ctx.userId));
+    await requireRecordAccess(tx, ctx.userId, patientId, patient.sensitivity);
     await tx.insert(schema.dataAccessLog).values({
       id: uuidv7(),
       tenantId: ctx.tenantId,

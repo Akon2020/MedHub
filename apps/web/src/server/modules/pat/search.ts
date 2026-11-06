@@ -2,16 +2,12 @@ import 'server-only';
 import { schema, type Tx, withTenant } from '@medhub/db';
 import { allowedSensitivities, parsePatientQuery } from '@medhub/domain';
 import { AppError } from '@medhub/shared';
-import { and, asc, inArray, isNull, sql, type SQL } from 'drizzle-orm';
+import { and, asc, isNull, sql, type SQL } from 'drizzle-orm';
 import { database } from '../../platform/db';
 import { env } from '../../platform/env';
-import {
-  loadPermissions,
-  loadSensitivityMax,
-  requirePermission,
-  requireSensitivity,
-} from '../../platform/permissions';
+import { loadPermissions, loadSensitivityMax, requirePermission } from '../../platform/permissions';
 import type { RequestContext } from '../../platform/tenant';
+import { requireRecordAccess } from '../dpi';
 import { patientBundles, patientState, pinPatient } from '../sync';
 
 export const SEARCH_PAGE_SIZE = 20;
@@ -25,6 +21,8 @@ export type PatientHit = {
   birthDateEstimated: boolean;
   phone: string | null;
   place: string | null;
+  /** Above the user's level: shown masked, opened only through an emergency access. */
+  protected: boolean;
 };
 
 let trigramAvailable: boolean | null = null;
@@ -57,9 +55,8 @@ export async function searchPatients(
   return withTenant(database().db, { tenantId: ctx.tenantId, userId: ctx.userId }, async (tx) => {
     requirePermission(await loadPermissions(tx, ctx.userId), 'patient:read');
     const p = schema.patient;
-    // A record above the user's level is not even shown as a hit.
-    const levels = allowedSensitivities(await loadSensitivityMax(tx, ctx.userId));
-    const where: SQL[] = [inArray(p.sensitivity, levels)];
+    const levels: string[] = allowedSensitivities(await loadSensitivityMax(tx, ctx.userId));
+    const where: SQL[] = [];
     let rank: SQL | null = null;
     if (query.cardToken) where.push(sql`${p.cardToken} = ${query.cardToken}`);
     if (query.mrn) {
@@ -102,7 +99,22 @@ export async function searchPatients(
     return {
       hits: rows.slice(0, SEARCH_PAGE_SIZE).map((r) => {
         const address = r.address ?? {};
+        if (!levels.includes(r.sensitivity)) {
+          // Only the record number: enough to request an emergency access, nothing more.
+          return {
+            id: r.id,
+            mrn: r.mrn,
+            name: '',
+            sex: 'U',
+            birthDate: null,
+            birthDateEstimated: false,
+            phone: null,
+            place: null,
+            protected: true,
+          };
+        }
         return {
+          protected: false,
           id: r.id,
           mrn: r.mrn,
           name: [r.familyName, r.middleName, r.givenName].filter(Boolean).join(' '),
@@ -135,7 +147,7 @@ export async function fetchPatient(
     requirePermission(await loadPermissions(tx, ctx.userId), 'patient:read');
     const state = await patientState(tx, id);
     if (!state) throw new AppError('NOT_FOUND', 404);
-    requireSensitivity(state.data.sensitivity, await loadSensitivityMax(tx, ctx.userId));
+    await requireRecordAccess(tx, ctx.userId, id, state.data.sensitivity);
     // Opened on a device, the patient stays in that device's scope.
     if (ctx.deviceId) await pinPatient(tx, { tenantId: ctx.tenantId, deviceId: ctx.deviceId }, id);
     const rows = (await patientBundles(tx, [id], ctx.userId))
