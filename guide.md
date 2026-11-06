@@ -18,6 +18,7 @@ Le jalon **J0 Fondations** est construit :
 - S6 (terminée) : détection des doublons de patients (alerte à la saisie, file des doublons), fusion supervisée et réversible, identité complète avec historique et revue des conflits, recherche serveur, carte patient avec QR, patients provisoires, décès, sensibilité des dossiers, favoris et périmètre de synchronisation.
 - S7 (terminée) : files d'attente et tickets, écran d'appel, triage, rendez-vous et agendas.
 - S8 (terminée côté code) : allergies, antécédents, problèmes, journal des accès, constantes (plages normales, tendances, IMC, NEWS2), accès d'urgence, programmes chroniques, courbes de croissance OMS.
+- S9 (terminée côté code) : consultation, note signée, diagnostics codés, formulaires cliniques, prescription avec alertes, ordonnance avec QR ; critère de sortie de J1 atteint en test automatisé (scénario P1).
 
 Le journal complet de tout ce qui a été fait se trouve dans `walkthrough.md`.
 
@@ -138,18 +139,41 @@ pnpm db:migrate
 pnpm db:seed
 ```
 
-`db:migrate` applique les migrations SQL, force la RLS sur toute table qui possède `tenant_id`, installe les triggers d'ajout seul et charge le catalogue des permissions. `db:seed` crée la structure fictive **Hôpital Pilote Démo**, code **HOP-DEM-0001**, site `KIN`, les rôles modèles et six comptes :
+`db:migrate` applique les migrations SQL, force la RLS sur toute table qui possède `tenant_id`, installe les triggers d'ajout seul et charge le catalogue des permissions. `db:seed` crée la structure fictive **Hôpital Pilote Démo**, les rôles modèles, le modèle de formulaire « Consultation générale » publié et un compte par rôle (section 3.6).
 
-| Identifiant | Rôle |
+### 3.6 Comptes de test
+
+Pour se connecter : **Accéder à ma structure**, puis le code de structure, l'identifiant et le mot de passe. Au premier passage sur un navigateur, le poste est activé (code PIN d'au moins 6 chiffres, nom du poste) ; le PIN sert ensuite à déverrouiller l'écran.
+
+| Élément | Valeur |
 | --- | --- |
-| `admin` | Administrateur de structure et direction |
-| `accueil` | Accueil |
-| `infirmier` | Infirmier |
-| `medecin` | Médecin |
-| `pharmacie` | Pharmacien |
-| `caisse` | Caissier |
+| Code de structure | `HOP-DEM-0001` (Hôpital Pilote Démo, site `KIN`) |
+| Mot de passe de tous les comptes | valeur de `MEDHUB_SEED_PASSWORD` dans votre `.env.local` (voir ci-dessous) |
+| Base de formation | code `FOR-DEM-0001` une fois créée dans Paramètres, Base de formation ; mêmes comptes et mêmes mots de passe |
 
-Le mot de passe de ces comptes est la valeur `MEDHUB_SEED_PASSWORD` de votre `.env.local`. Relancer `pnpm db:seed` est sans danger : il ne crée rien en double et remet ce mot de passe.
+| Identifiant | Nom affiché | Rôle | Double authentification | Pour tester |
+| --- | --- | --- | --- | --- |
+| `admin` | Administrateur Démo | Administrateur de structure et Direction | Obligatoire (configurée à la première connexion) | Paramètres, utilisateurs, rôles, imports (diagnostics, médicaments), formulaires, sécurité, appareils |
+| `direction` | Sagesse Direction | Direction | Obligatoire | Tableaux de bord et lecture des finances (au fil de J2) |
+| `accueil` | Bienvenu Accueil | Accueil | Non | Enregistrement et recherche des patients, visites, tickets, rendez-vous |
+| `infirmier` | Espérance Soins | Infirmier | Non | Files d'attente, appel, triage, constantes |
+| `medecin` | Dr Dieudonné Kasongo | Médecin | Non | Consultation, note signée, diagnostics, formulaires, prescription (peut passer outre une alerte), décès, accès d'urgence |
+| `laboratoire` | Tech. Fidèle Analyses | Technicien de laboratoire | Non | Laboratoire (S13) |
+| `pharmacie` | Ph. Patience Lukusa | Pharmacien | Non | Pharmacie et stock (S12) |
+| `caisse` | Héritier Mwamba | Caissier | Non | Facturation et caisse (S10 et S11) |
+
+**Pourquoi le mot de passe n'est pas écrit ici** : ce guide est versionné et poussé sur GitHub ; la règle 12 de `CLAUDE.md` interdit tout secret dans le dépôt, et ces comptes ouvrent une vraie base de développement. Le mot de passe reste donc seulement dans `.env.local` (non versionné). Pour l'afficher sur votre poste :
+
+```bash
+grep MEDHUB_SEED_PASSWORD .env.local
+```
+
+Pour le changer : modifiez la ligne dans `.env.local`, puis relancez `pnpm db:seed` (il ne crée rien en double et applique le nouveau mot de passe à tous ces comptes).
+
+Autres codes utiles :
+- **Double authentification** des comptes `admin` et `direction` : à la première connexion, scannez le QR avec une application d'authentification et notez les 10 codes de secours. Téléphone perdu : un autre administrateur réinitialise la 2FA dans Paramètres, Utilisateurs.
+- **Code PIN** : choisi par vous à l'activation de chaque poste ; oublié, utilisez le code de récupération affiché à l'activation, ou reconnectez-vous en ligne.
+- **Structures de test** `TST-BNC-NNNN` : créées par `pnpm test:e2e` avec les mêmes identifiants et le même mot de passe.
 
 ## 4. Lancer l'application
 
@@ -162,7 +186,7 @@ Ouvrez http://localhost:3000.
 Parcours de démonstration :
 
 1. Page publique : présentation, modules, avantages, tarifs indicatifs.
-2. « Accéder à ma structure » : code `HOP-DEM-0001`, identifiant `accueil`, mot de passe `MEDHUB_SEED_PASSWORD`.
+2. « Accéder à ma structure » : code `HOP-DEM-0001`, identifiant `accueil`, mot de passe `MEDHUB_SEED_PASSWORD` (tous les comptes : section 3.6).
 3. Activation du poste : choisissez un code PIN d'au moins 6 chiffres et un nom de poste. Un **code de récupération** s'affiche une seule fois : notez-le.
 4. Tableau de bord, puis « Nouveau patient » : l'enregistrement fonctionne avec ou sans réseau. Le numéro de dossier contient le code du poste (`KIN-AA-26-00001`), ce qui évite tout doublon entre postes.
 5. Connectez-vous avec `infirmier` (bouton « Changer d'utilisateur » sur l'écran verrouillé) pour enregistrer des constantes sur la fiche patient. Une valeur hors limites plausibles demande un motif ; une correction crée une nouvelle mesure et l'ancienne reste visible, barrée.

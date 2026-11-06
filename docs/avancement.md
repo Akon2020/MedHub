@@ -54,16 +54,16 @@ Environnement de développement constaté sur le poste du porteur du projet : Wi
 
 | Date | Document | Écart | Validé par le porteur du projet |
 | --- | --- | --- | --- |
-| 06/11/2026 | `docs/modules/form.md` | Types tableau, schéma anatomique, image et signature reportés ; brouillon local non synchronisé ; correction par remplacement au lieu de `form_response.correct` ; le serveur contrôle la forme des réponses, pas les obligations (contexte du poste) ; index des champs « reportables », parcours cliniques et modèles de comptes rendus reportés | À valider |
+| 06/11/2026 | `docs/modules/form.md` | Types tableau, schéma anatomique, image et signature reportés ; brouillon local non synchronisé ; correction par remplacement au lieu de `form_response.correct` ; le serveur contrôle la forme des réponses, pas les obligations (contexte du poste) ; index des champs « reportables », parcours cliniques et modèles de comptes rendus reportés | Oui (06/11/2026) : à intégrer dès qu'un module en a besoin |
 | 06/11/2026 | `docs/modules/form.md` | Un seul modèle de départ livré, « Consultation générale » (décision du porteur au lancement de S9) | Tranché |
-| 06/11/2026 | `docs/modules/dpi.md` section 5 | Catalogue de médicaments et règles d'interaction importés par CSV, aucune liste OMS ni nationale préchargée (décision du porteur au lancement de S9) ; doses maximales en nombres (par prise, par jour, par kilo et par jour) au lieu d'un `jsonb` par âge et poids | Tranché pour l'import, à valider pour les colonnes |
-| 06/11/2026 | `docs/modules/dpi.md` section 5 | Gravité des interactions : majeure et contre-indiquée bloquantes, modérée avertit, mineure informe ; grossesse saisie par une case de la prescription en attendant MAT ; reconnaissance des insuffisances rénale et hépatique par les codes CIM-10 des problèmes actifs (N17 à N19, K70 à K77) | À valider |
-| 06/11/2026 | `docs/modules/dpi.md` section 5 | Le serveur ne refuse pas une ordonnance dont il trouve une alerte bloquante que le poste ne connaissait pas : il la garde et la signale dans le journal de sécurité (aucune perte d'une ordonnance déjà remise) ; il refuse seulement un passage outre sans la permission | À valider |
-| 06/11/2026 | `docs/modules/dpi.md` section 5 | Annulation d'une ordonnance entière avec motif (gardé dans `op_log`) ; arrêt d'une ligne et statuts de dispensation reportés à la pharmacie (S12) | À valider |
-| 06/11/2026 | `docs/modules/dpi.md` section 4 | Diagnostics : code CIM-10 saisi avec contrôle de format et liste importée par la structure, aucune liste fournie (décision du porteur au lancement de S9) ; note en cinq rubriques fixes en attendant les formulaires de note | Tranché pour la liste, à valider pour les rubriques |
-| 06/11/2026 | `docs/07-ui-ux.md` section 9 | Mise en page de l'ordonnance fixe en attendant les modèles de documents (`document_template`) ; page publique `/verifier` (structure, date, statut) | À valider |
-| 06/11/2026 | `docs/08-parcours-acceptation.md` P1 | La demande de goutte épaisse (étape 5) arrive avec le laboratoire (S13) ; le scénario automatisé couvre les étapes 1 et 3 à 6 sans la caisse | À valider |
-| 06/11/2026 | `docs/02-offline-sync.md` | Crochet `checkEntity` du moteur serveur : contrôles qui lisent la base (réponse de formulaire contre sa version, permission de passer outre) avant d'appliquer une opération | À valider |
+| 06/11/2026 | `docs/modules/dpi.md` section 5 | Catalogue de médicaments et règles d'interaction importés par CSV, aucune liste OMS ni nationale préchargée (décision du porteur au lancement de S9) ; doses maximales en nombres (par prise, par jour, par kilo et par jour) au lieu d'un `jsonb` par âge et poids | Oui (06/11/2026) |
+| 06/11/2026 | `docs/modules/dpi.md` section 5 | Gravité des interactions : majeure et contre-indiquée bloquantes, modérée avertit, mineure informe ; grossesse saisie par une case de la prescription en attendant MAT ; reconnaissance des insuffisances rénale et hépatique par les codes CIM-10 des problèmes actifs (N17 à N19, K70 à K77) | Oui pour la gravité et la grossesse (06/11/2026) ; insuffisances rénale et hépatique : proposition en attente |
+| 06/11/2026 | `docs/modules/dpi.md` section 5 | Le serveur ne refuse pas une ordonnance dont il trouve une alerte bloquante que le poste ne connaissait pas : il la garde et la signale dans le journal de sécurité (aucune perte d'une ordonnance déjà remise) ; il refuse seulement un passage outre sans la permission | Oui (06/11/2026) |
+| 06/11/2026 | `docs/modules/dpi.md` section 5 | Annulation d'une ordonnance entière avec motif (gardé dans `op_log`) ; arrêt d'une ligne et statuts de dispensation reportés à la pharmacie (S12) | Oui (06/11/2026) |
+| 06/11/2026 | `docs/modules/dpi.md` section 4 | Diagnostics : code CIM-10 saisi avec contrôle de format et liste importée par la structure, aucune liste fournie (décision du porteur au lancement de S9) ; note en cinq rubriques fixes en attendant les formulaires de note | Oui (06/11/2026) |
+| 06/11/2026 | `docs/07-ui-ux.md` section 9 | Mise en page de l'ordonnance fixe en attendant les modèles de documents (`document_template`) ; page publique `/verifier` (structure, date, statut) | Oui (06/11/2026) |
+| 06/11/2026 | `docs/08-parcours-acceptation.md` P1 | La demande de goutte épaisse (étape 5) arrive avec le laboratoire (S13) ; le scénario automatisé couvre les étapes 1 et 3 à 6 sans la caisse | Oui (06/11/2026) |
+| 06/11/2026 | `docs/02-offline-sync.md` | Crochet `checkEntity` du moteur serveur : contrôles qui lisent la base (réponse de formulaire contre sa version, permission de passer outre) avant d'appliquer une opération | Oui (06/11/2026) |
 | 29/10/2026 | `docs/07-ui-ux.md` | Accent teal et effets de verre au lieu de bleu sombre sans dégradé | Oui (échange du 29/10/2026), document mis à jour |
 | 29/10/2026 | `docs/03-multitenant-securite.md` section 1 | RLS appliquée par introspection après chaque migration (`ensureRls`, toute table ayant `tenant_id`) plutôt qu'un appel dans chaque migration. Plus sûr : aucune table ne peut être oubliée | À valider |
 | 29/10/2026 | `docs/03-multitenant-securite.md` section 2 | Cookie de session `<tenantId>.<jeton>.<HMAC>` : l'identifiant de structure sert seulement à cibler la recherche sous RLS, l'accès dépend du hachage du jeton trouvé dans cette structure | À valider |
@@ -145,6 +145,19 @@ J0 (en cours) : le risque principal, la synchronisation, est couvert par trois n
 | PC de développement | Windows 11 | Chromium (navigateur intégré) | Connexion, activation du poste, enregistrement patient, synchronisation : OK |
 
 ## Journal des sessions
+
+### 06/11/2026 (suite)
+
+Revue S9 par le porteur du projet :
+- Validés : alerte non vue gardée et signalée, gravité des interactions, grossesse par case à cocher, colonnes de doses, annulation de l'ordonnance entière, report de la goutte épaisse (S13) et des éléments de formulaire (à intégrer dès qu'un module en a besoin), choix techniques (rubriques de la note, page de vérification, crochet `checkEntity`).
+- Insuffisances rénale et hépatique : proposition demandée, rédigée ci-dessous, en attente de réponse.
+- Comptes de test : un compte par rôle modèle (ajout de `direction` et `laboratoire`) et section 3.6 de `guide.md`. Le mot de passe n'y est pas écrit (règle 12 de `CLAUDE.md`, guide versionné) : il reste dans `.env.local`, avec la commande pour l'afficher.
+
+Proposition pour les insuffisances rénale et hépatique (alertes de prescription) :
+1. Liste de codes en configuration (règle 8) : `prescription.renal_icd10_prefixes` et `prescription.hepatic_icd10_prefixes`, publiées comme les autres réglages. Valeurs par défaut proposées, tirées de la CIM-10 de l'OMS : rénal N17, N18, N19, I12, I13, E10.2, E11.2, E12.2, E13.2, E14.2 ; hépatique K70 à K77, B18.
+2. Cases « Insuffisance rénale connue » et « Atteinte hépatique connue » dans la prescription, pré-cochées d'après les problèmes actifs et modifiables par le médecin, comme la grossesse ; ce qui est coché est enregistré avec l'ordonnance.
+3. Avec le laboratoire (S13) : un débit de filtration glomérulaire sous un seuil réglable (aucune valeur fournie par défaut, à choisir par la structure) déclenche aussi l'alerte rénale.
+4. Gravité : avertissement (inchangée) ; elle pourra devenir bloquante par médicament si le catalogue importé le précise.
 
 ### 06/11/2026
 

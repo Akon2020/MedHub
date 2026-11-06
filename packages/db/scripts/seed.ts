@@ -50,6 +50,8 @@ const DEMO_USERS: {
   { username: 'medecin', displayName: 'Dieudonné Kasongo', title: 'Dr', roles: ['physician'] },
   { username: 'pharmacie', displayName: 'Patience Lukusa', title: 'Ph.', roles: ['pharmacist'] },
   { username: 'caisse', displayName: 'Héritier Mwamba', title: null, roles: ['cashier'] },
+  { username: 'direction', displayName: 'Sagesse Direction', title: null, roles: ['director'] },
+  { username: 'laboratoire', displayName: 'Fidèle Analyses', title: 'Tech.', roles: ['lab_tech'] },
 ];
 
 export type SeedTenant = typeof DEMO_TENANT;
