@@ -792,7 +792,11 @@
     "DPI_ICD10_FORMAT": "Code CIM-10 invalide (exemple : A09 ou J18.9).",
     "DPI_IMPORT_COLUMNS": "Colonnes code et label introuvables dans l’en-tête.",
     "DPI_IMPORT_MISSING": "code ou libellé manquant",
-    "DPI_IMPORT_DUPLICATE": "code en double dans le fichier"
+    "DPI_IMPORT_DUPLICATE": "code en double dans le fichier",
+    "FORM_INVALID": "Le formulaire contient des erreurs : corrigez-les avant de continuer.",
+    "FORM_CODE_TAKEN": "Un autre formulaire porte déjà ce code.",
+    "FORM_VERSION_UNKNOWN": "Cette version du formulaire n’est pas publiée.",
+    "FORM_RESPONSE_INVALID": "Les réponses ne correspondent pas à la version du formulaire."
   },
   "account": {
     "title": "Mon compte",
@@ -901,6 +905,10 @@
       "clinical": {
         "title": "Clinique",
         "text": "Constantes (plausibilité, tendance, plages normales) et programmes chroniques."
+      },
+      "forms": {
+        "title": "Formulaires cliniques",
+        "text": "Constructeur, versions publiées, modèle de consultation générale."
       }
     },
     "organization": {
@@ -1602,6 +1610,91 @@
       "error": "Ligne {line} : {problem}",
       "apply": "{count, plural, one {Importer # diagnostic} other {Importer # diagnostics}}",
       "saved": "{count} diagnostic(s) importé(s). La liste en compte {total}."
+    },
+    "forms": {
+      "title": "Formulaires cliniques",
+      "subtitle": "Créez et publiez vos formulaires sans code ; ils s’utilisent hors connexion sur tous les postes.",
+      "offline": "Le constructeur de formulaires se règle en ligne.",
+      "library": "Bibliothèque",
+      "libraryText": "Une version publiée est figée : la modifier crée la version suivante, les saisies gardent leur version.",
+      "none": "Aucun formulaire pour l’instant.",
+      "status": {
+        "draft": "Brouillon v{version}",
+        "published": "Publié v{version}",
+        "archived": "Archivé v{version}"
+      },
+      "new": "Nouveau formulaire",
+      "fromTemplate": "Partir du modèle « {name} »",
+      "importJson": "Collez ici un formulaire exporté (JSON)",
+      "import": "Importer",
+      "export": "Exporter (JSON)",
+      "editor": "Définition",
+      "editingNext": "La version {version} est publiée : vous préparez la suivante.",
+      "code": "Code du formulaire",
+      "step": "Étape",
+      "steps": {
+        "triage": "Triage",
+        "consultation": "Consultation",
+        "chronic_followup": "Suivi chronique",
+        "discharge": "Sortie",
+        "patient_profile": "Profil du patient",
+        "laboratory": "Laboratoire"
+      },
+      "formTitle": "Titre",
+      "sectionTitle": "Titre de la section",
+      "id": "Identifiant (minuscules, chiffres, _)",
+      "type": "Type",
+      "types": {
+        "text": "Texte court",
+        "textarea": "Texte long",
+        "number": "Nombre",
+        "date": "Date",
+        "time": "Heure",
+        "choice": "Choix unique",
+        "multi_choice": "Choix multiple",
+        "yes_no": "Oui / non",
+        "scale": "Échelle",
+        "calculation": "Calcul",
+        "vital": "Constante",
+        "coded": "Champ codé (CIM-10)",
+        "info": "Information"
+      },
+      "label": "Libellé",
+      "required": "Obligatoire",
+      "visibleIf": "Afficher si (expression)",
+      "requiredIf": "Obligatoire si (expression)",
+      "expression": "Expression du calcul",
+      "vital": "Constante liée",
+      "unit": "Unité",
+      "decimals": "Décimales",
+      "min": "Minimum",
+      "max": "Maximum",
+      "rangeMessage": "Message si hors plage",
+      "options": "Options",
+      "optionsHint": "Une option par ligne : code | libellé | libellé anglais (facultatif).",
+      "help": "Aide",
+      "choose": "Choisir",
+      "newField": "Nouveau champ",
+      "addField": "Ajouter un champ",
+      "addSection": "Ajouter une section",
+      "up": "Monter",
+      "down": "Descendre",
+      "remove": "Retirer",
+      "fr": "français",
+      "en": "anglais",
+      "saveDraft": "Enregistrer le brouillon",
+      "publish": "Publier",
+      "draftSaved": "Brouillon de la version {version} enregistré.",
+      "published": "Version {version} publiée : elle part vers les postes à la prochaine synchronisation.",
+      "preview": "Aperçu",
+      "previewText": "Rendu identique à celui des postes, avec un patient d’exemple.",
+      "sample": "Patient d’exemple",
+      "samples": {
+        "woman": "Femme adulte",
+        "man": "Homme adulte",
+        "child": "Enfant de 4 ans"
+      },
+      "previewUnavailable": "Corrigez la définition pour voir l’aperçu."
     }
   },
   "visits": {
@@ -1952,6 +2045,61 @@
       "add": "Ajouter",
       "cancel": "Annuler",
       "noCatalog": "Aucune liste de diagnostics importée : saisissez le libellé et, si vous le connaissez, le code CIM-10."
+    }
+  },
+  "forms": {
+    "title": "Formulaires",
+    "noForm": "Aucun formulaire publié pour cette étape.",
+    "version": "version {version}",
+    "save": "Enregistrer",
+    "sign": "Signer",
+    "cancel": "Annuler",
+    "saved": "Formulaire enregistré.",
+    "signed": "Formulaire signé.",
+    "incomplete": "Complétez les champs signalés.",
+    "correctionReason": "Motif de la correction",
+    "correctedBecause": "Correction : {reason}",
+    "correct": "Corriger",
+    "superseded": "Remplacé",
+    "pending": "En attente de synchronisation",
+    "versionMissing": "Version du formulaire absente de ce poste.",
+    "state": {
+      "completed": "Complété",
+      "signed": "Signé"
+    },
+    "yes": "Oui",
+    "no": "Non",
+    "choose": "Choisir",
+    "notComputed": "Pas encore calculé",
+    "codedCode": "Code",
+    "codedLabel": "Libellé",
+    "errors": {
+      "FORM_REQUIRED": "Réponse obligatoire.",
+      "FORM_RANGE": "Valeur hors de la plage autorisée.",
+      "FORM_NUMBER": "Nombre attendu.",
+      "FORM_DATE": "Date invalide.",
+      "FORM_TIME": "Heure invalide (HH:MM).",
+      "FORM_CHOICE": "Choix invalide.",
+      "FORM_CODED": "Libellé requis ; code CIM-10 au format A09 ou J18.9.",
+      "FORM_TEXT": "Texte trop long.",
+      "FORM_UNKNOWN_FIELD": "Champ inconnu de cette version.",
+      "FORM_EXPR_SYNTAX": "Expression mal écrite.",
+      "FORM_EXPR_TOO_LONG": "Expression trop longue.",
+      "FORM_EXPR_TOO_DEEP": "Expression trop imbriquée.",
+      "FORM_EXPR_FORBIDDEN": "Élément interdit dans une expression.",
+      "FORM_EXPR_UNKNOWN_FUNCTION": "Fonction inconnue.",
+      "FORM_EXPR_ARGUMENTS": "Arguments incorrects (identifiants entre guillemets).",
+      "FORM_EXPR_UNKNOWN_FIELD": "L’expression lit un champ qui n’existe pas.",
+      "FORM_EXPR_UNKNOWN_VITAL": "L’expression lit une constante inconnue.",
+      "FORM_EXPR_CYCLE": "Ce calcul dépend de lui-même.",
+      "FORM_FIELD_DUPLICATE": "Identifiant utilisé deux fois.",
+      "FORM_FIELD_TYPE_CHANGED": "Ce champ change de type par rapport à la version publiée : créez un nouvel identifiant.",
+      "FORM_OPTIONS_REQUIRED": "Ajoutez au moins une option.",
+      "FORM_OPTION_DUPLICATE": "Code d’option en double.",
+      "FORM_EXPRESSION_REQUIRED": "Saisissez l’expression du calcul.",
+      "FORM_VITAL_REQUIRED": "Choisissez la constante liée.",
+      "FORM_SCALE_BOUNDS": "Minimum et maximum requis, le minimum plus petit.",
+      "DPI_VITAL_IMPLAUSIBLE": "Valeur hors des limites plausibles : vérifiez la saisie."
     }
   }
 }

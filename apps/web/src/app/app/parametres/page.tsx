@@ -4,6 +4,7 @@ import {
   Building2,
   CalendarClock,
   ChevronRight,
+  ClipboardList,
   Database,
   GraduationCap,
   KeyRound,
@@ -54,6 +55,12 @@ const ENTRIES: Entry[] = [
     icon: Stethoscope,
     href: '/app/parametres/clinique',
     permission: 'configuration:read',
+  },
+  {
+    key: 'forms',
+    icon: ClipboardList,
+    href: '/app/parametres/clinique/formulaires',
+    permission: 'form:read',
   },
   {
     key: 'rdv',

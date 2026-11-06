@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { consultationGeneral } from '@medhub/forms';
 import { ROLE_TEMPLATES, uuidv7 } from '@medhub/shared';
 import { and, eq } from 'drizzle-orm';
 import { appendAudit } from '../src/audit';
@@ -8,6 +9,8 @@ import { hashPassword } from '../src/password';
 import {
   appointmentType,
   department,
+  formDefinition,
+  formVersion,
   queue,
   role,
   rolePermission,
@@ -219,6 +222,31 @@ export async function seedDemo(
             })),
           );
         }
+      }
+
+      // The general consultation template, published, so a consultation can be filled at once.
+      const [form] = await tx
+        .select({ id: formDefinition.id })
+        .from(formDefinition)
+        .where(eq(formDefinition.code, consultationGeneral.code));
+      if (!form) {
+        const formId = uuidv7();
+        await tx.insert(formDefinition).values({
+          id: formId,
+          tenantId,
+          code: consultationGeneral.code,
+          step: consultationGeneral.step,
+          title: consultationGeneral.title,
+        });
+        await tx.insert(formVersion).values({
+          id: uuidv7(),
+          tenantId,
+          formDefinitionId: formId,
+          version: 1,
+          definition: consultationGeneral as unknown as Record<string, unknown>,
+          status: 'published',
+          publishedAt: new Date(),
+        });
       }
     });
     return { tenantId };

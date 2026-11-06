@@ -16,6 +16,7 @@ import {
   type EntityName,
   type PatientRegisterPayload,
 } from '@medhub/domain';
+import { evaluateForm, formDefinition } from '@medhub/forms';
 import type { StockMovementKind } from '@medhub/shared';
 import { formatHlc, uuidv7 } from '@medhub/shared';
 import {
@@ -693,6 +694,56 @@ const mappers = {
       };
     },
   },
+  form_response: {
+    table: schema.formResponse,
+    toState(row: typeof schema.formResponse.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          encounterId: row.encounterId,
+          formVersionId: row.formVersionId,
+          formCode: row.formCode,
+          data: row.data,
+          state: row.state,
+          completedAt: row.completedAt.toISOString(),
+          signedBy: row.signedBy,
+          supersedesId: row.supersedesId,
+          correctionReason: row.correctionReason,
+          status: row.status,
+        }),
+        fieldMeta: {},
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.formResponse.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        encounterId: str(d.encounterId),
+        formVersionId: String(d.formVersionId),
+        formCode: String(d.formCode),
+        data: record(d.data) ?? {},
+        state: String(d.state),
+        completedAt: new Date(String(d.completedAt)),
+        signedBy: d.state === 'signed' ? state.createdBy || null : null,
+        correctionReason: str(d.correctionReason),
+        supersedesId: str(d.supersedesId),
+        status: str(d.status) ?? 'active',
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+      };
+    },
+  },
   program_enrollment: {
     table: schema.programEnrollment,
     toState(row: typeof schema.programEnrollment.$inferSelect): EntityState {
@@ -905,6 +956,7 @@ const TIMELINE: Partial<Record<EntityName, { kind: string; table: string; at: st
   problem: { kind: 'problem', table: 'problem', at: 'notedAt' },
   clinical_note: { kind: 'note', table: 'clinical_note', at: 'signedAt' },
   diagnosis: { kind: 'diagnosis', table: 'diagnosis', at: 'diagnosedAt' },
+  form_response: { kind: 'form_response', table: 'form_response', at: 'completedAt' },
 };
 
 async function recordClinicalEvent(
@@ -1043,6 +1095,14 @@ async function getEntity(tx: Tx, entity: EntityName, id: string): Promise<Entity
         .limit(1);
       return row ? mappers.program_enrollment.toState(row) : null;
     }
+    case 'form_response': {
+      const [row] = await tx
+        .select()
+        .from(schema.formResponse)
+        .where(eq(schema.formResponse.id, id))
+        .limit(1);
+      return row ? mappers.form_response.toState(row) : null;
+    }
     case 'break_glass': {
       const [row] = await tx
         .select()
@@ -1127,6 +1187,10 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
           .from(schema.programEnrollment)
           .where(inArray(schema.programEnrollment.id, ids))
       ).map((r) => mappers.program_enrollment.toState(r));
+    case 'form_response':
+      return (
+        await tx.select().from(schema.formResponse).where(inArray(schema.formResponse.id, ids))
+      ).map((r) => mappers.form_response.toState(r));
     case 'break_glass':
       return (
         await tx
@@ -1139,6 +1203,39 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
         await tx.select().from(schema.dataAccessLog).where(inArray(schema.dataAccessLog.id, ids))
       ).map((r) => mappers.record_access.toState(r));
   }
+}
+
+/**
+ * A form response must answer a published (or since archived) version of the
+ * same form, with answers whose shape fits it. Obligations and visibility
+ * depend on the workstation's context and were enforced there by the same engine.
+ */
+async function checkEntity(
+  tx: Tx,
+  entity: EntityName,
+  payload: Record<string, unknown>,
+): Promise<string | null> {
+  if (entity !== 'form_response') return null;
+  const [version] = await tx
+    .select({
+      status: schema.formVersion.status,
+      definition: schema.formVersion.definition,
+    })
+    .from(schema.formVersion)
+    .where(eq(schema.formVersion.id, String(payload.formVersionId)))
+    .limit(1);
+  if (!version || version.status === 'draft') return 'FORM_VERSION_UNKNOWN';
+  const definition = formDefinition.safeParse(version.definition);
+  if (!definition.success || definition.data.code !== payload.formCode) {
+    return 'FORM_VERSION_UNKNOWN';
+  }
+  const state = evaluateForm(
+    definition.data,
+    record(payload.data) ?? {},
+    { birthDate: null, sex: 'U', pregnant: false, vitals: {}, now: new Date() },
+    { structural: true },
+  );
+  return state.complete ? null : 'FORM_RESPONSE_INVALID';
 }
 
 function isUniqueViolation(error: unknown, constraint: string): boolean {
@@ -1212,6 +1309,7 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
       }
     },
     getEntity: (entity, id) => getEntity(tx, entity, id),
+    checkEntity: (entity, payload) => checkEntity(tx, entity, payload),
     async insertEntity(entity, state, op) {
       switch (entity) {
         case 'patient':
@@ -1276,6 +1374,10 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         case 'diagnosis':
           await tx.insert(schema.diagnosis).values(mappers.diagnosis.toRow(state, ctx));
           await recordClinicalEvent(tx, ctx, 'diagnosis', state);
+          return;
+        case 'form_response':
+          await tx.insert(schema.formResponse).values(mappers.form_response.toRow(state, ctx));
+          await recordClinicalEvent(tx, ctx, 'form_response', state);
           return;
         case 'program_enrollment':
           await tx
@@ -1440,6 +1542,16 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
               opId: state.opId,
             })
             .where(eq(schema.diagnosis.id, state.id));
+          return;
+        case 'form_response':
+          await tx
+            .update(schema.formResponse)
+            .set({
+              status: String(state.data.status ?? 'active'),
+              version: state.version,
+              opId: state.opId,
+            })
+            .where(eq(schema.formResponse.id, state.id));
           return;
         case 'program_enrollment': {
           const {
@@ -1779,6 +1891,10 @@ export async function patientBundles(
     .select()
     .from(schema.programEnrollment)
     .where(inArray(schema.programEnrollment.patientId, ids));
+  const responses = await tx
+    .select()
+    .from(schema.formResponse)
+    .where(inArray(schema.formResponse.patientId, ids));
   return [
     ...patients.map((r) => ({ entity: 'patient' as const, state: mappers.patient.toState(r) })),
     ...triages.map((r) => ({ entity: 'triage' as const, state: mappers.triage.toState(r) })),
@@ -1795,6 +1911,10 @@ export async function patientBundles(
     ...diagnoses.map((r) => ({
       entity: 'diagnosis' as const,
       state: mappers.diagnosis.toState(r),
+    })),
+    ...responses.map((r) => ({
+      entity: 'form_response' as const,
+      state: mappers.form_response.toState(r),
     })),
     ...enrollments.map((r) => ({
       entity: 'program_enrollment' as const,

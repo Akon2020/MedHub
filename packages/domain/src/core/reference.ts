@@ -238,6 +238,14 @@ export type CatalogSnapshot = {
   }[];
   /** Diagnosis list imported by the structure (S9); none is built in. */
   diagnoses?: { code: string; label: string; codeSystem: 'ICD10' | 'local' }[];
+  /** Published and archived form versions: an old response still reads with its own version. */
+  forms?: {
+    versionId: string;
+    definitionId: string;
+    version: number;
+    status: 'published' | 'archived';
+    definition: Record<string, unknown>;
+  }[];
   /** Chronic care programmes (S8). */
   programs?: {
     id: string;

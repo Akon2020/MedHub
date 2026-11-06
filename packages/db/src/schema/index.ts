@@ -7,3 +7,4 @@ export * from './security';
 export * from './reference';
 export * from './rdv';
 export * from './dpi';
+export * from './forms';

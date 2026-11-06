@@ -51,6 +51,8 @@ export interface ServerSyncTx {
   /** `op` is the signed operation that creates the row (kept with signed clinical notes). */
   insertEntity(entity: EntityName, state: EntityState, op?: Operation): Promise<void>;
   updateEntity(entity: EntityName, state: EntityState): Promise<void>;
+  /** Checks that need stored data (a form response against its version); a code refuses the op. */
+  checkEntity?(entity: EntityName, payload: Record<string, unknown>): Promise<string | null>;
   appendChange(change: ChangeEntry): Promise<void>;
   createConflict(conflict: ConflictEntry): Promise<string>;
   listStockMovements(
@@ -208,6 +210,10 @@ async function applyOperation(
     const { patientId } = command.patientAct(payload as never);
     const patient = await tx.getEntity('patient', patientId);
     const refusal = deathRefusal(command, payload, patient?.data);
+    if (refusal) throw new Rejection(refusal);
+  }
+  if (command.kind !== 'update' && tx.checkEntity) {
+    const refusal = await tx.checkEntity(entity, payload);
     if (refusal) throw new Rejection(refusal);
   }
   switch (command.kind) {

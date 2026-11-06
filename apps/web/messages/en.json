@@ -787,7 +787,11 @@
     "DPI_ICD10_FORMAT": "Invalid ICD-10 code (for example A09 or J18.9).",
     "DPI_IMPORT_COLUMNS": "Columns code and label not found in the header.",
     "DPI_IMPORT_MISSING": "missing code or label",
-    "DPI_IMPORT_DUPLICATE": "code repeated in the file"
+    "DPI_IMPORT_DUPLICATE": "code repeated in the file",
+    "FORM_INVALID": "The form has errors: fix them before going on.",
+    "FORM_CODE_TAKEN": "Another form already uses this code.",
+    "FORM_VERSION_UNKNOWN": "This form version is not published.",
+    "FORM_RESPONSE_INVALID": "The answers do not fit the form version."
   },
   "account": {
     "title": "My account",
@@ -896,6 +900,10 @@
       "clinical": {
         "title": "Clinical",
         "text": "Vital signs (plausibility, trend, normal ranges) and chronic programmes."
+      },
+      "forms": {
+        "title": "Clinical forms",
+        "text": "Builder, published versions, general consultation template."
       }
     },
     "organization": {
@@ -1597,6 +1605,91 @@
       "error": "Line {line}: {problem}",
       "apply": "{count, plural, one {Import # diagnosis} other {Import # diagnoses}}",
       "saved": "{count} diagnosis entries imported. The list now has {total}."
+    },
+    "forms": {
+      "title": "Clinical forms",
+      "subtitle": "Build and publish your forms without code; they work offline on every workstation.",
+      "offline": "The form builder needs a connection.",
+      "library": "Library",
+      "libraryText": "A published version is frozen: changing it creates the next version, responses keep their version.",
+      "none": "No form yet.",
+      "status": {
+        "draft": "Draft v{version}",
+        "published": "Published v{version}",
+        "archived": "Archived v{version}"
+      },
+      "new": "New form",
+      "fromTemplate": "Start from the template \"{name}\"",
+      "importJson": "Paste an exported form here (JSON)",
+      "import": "Import",
+      "export": "Export (JSON)",
+      "editor": "Definition",
+      "editingNext": "Version {version} is published: you are preparing the next one.",
+      "code": "Form code",
+      "step": "Step",
+      "steps": {
+        "triage": "Triage",
+        "consultation": "Consultation",
+        "chronic_followup": "Chronic follow-up",
+        "discharge": "Discharge",
+        "patient_profile": "Patient profile",
+        "laboratory": "Laboratory"
+      },
+      "formTitle": "Title",
+      "sectionTitle": "Section title",
+      "id": "Identifier (lowercase, digits, _)",
+      "type": "Type",
+      "types": {
+        "text": "Short text",
+        "textarea": "Long text",
+        "number": "Number",
+        "date": "Date",
+        "time": "Time",
+        "choice": "Single choice",
+        "multi_choice": "Multiple choice",
+        "yes_no": "Yes / no",
+        "scale": "Scale",
+        "calculation": "Calculation",
+        "vital": "Vital sign",
+        "coded": "Coded field (ICD-10)",
+        "info": "Information"
+      },
+      "label": "Label",
+      "required": "Required",
+      "visibleIf": "Show if (expression)",
+      "requiredIf": "Required if (expression)",
+      "expression": "Calculation expression",
+      "vital": "Linked vital sign",
+      "unit": "Unit",
+      "decimals": "Decimals",
+      "min": "Minimum",
+      "max": "Maximum",
+      "rangeMessage": "Message when out of range",
+      "options": "Options",
+      "optionsHint": "One option per line: code | label | English label (optional).",
+      "help": "Help",
+      "choose": "Choose",
+      "newField": "New field",
+      "addField": "Add a field",
+      "addSection": "Add a section",
+      "up": "Move up",
+      "down": "Move down",
+      "remove": "Remove",
+      "fr": "French",
+      "en": "English",
+      "saveDraft": "Save the draft",
+      "publish": "Publish",
+      "draftSaved": "Draft of version {version} saved.",
+      "published": "Version {version} published: it reaches the workstations at the next synchronisation.",
+      "preview": "Preview",
+      "previewText": "Rendered as on the workstations, with a sample patient.",
+      "sample": "Sample patient",
+      "samples": {
+        "woman": "Adult woman",
+        "man": "Adult man",
+        "child": "Child aged 4"
+      },
+      "previewUnavailable": "Fix the definition to see the preview."
     }
   },
   "visits": {
@@ -1947,6 +2040,61 @@
       "add": "Add",
       "cancel": "Cancel",
       "noCatalog": "No diagnosis list imported: type the label and, if you know it, the ICD-10 code."
+    }
+  },
+  "forms": {
+    "title": "Forms",
+    "noForm": "No form published for this step.",
+    "version": "version {version}",
+    "save": "Save",
+    "sign": "Sign",
+    "cancel": "Cancel",
+    "saved": "Form saved.",
+    "signed": "Form signed.",
+    "incomplete": "Complete the flagged fields.",
+    "correctionReason": "Reason for the correction",
+    "correctedBecause": "Correction: {reason}",
+    "correct": "Correct",
+    "superseded": "Replaced",
+    "pending": "Waiting for synchronisation",
+    "versionMissing": "Form version missing on this workstation.",
+    "state": {
+      "completed": "Completed",
+      "signed": "Signed"
+    },
+    "yes": "Yes",
+    "no": "No",
+    "choose": "Choose",
+    "notComputed": "Not computed yet",
+    "codedCode": "Code",
+    "codedLabel": "Label",
+    "errors": {
+      "FORM_REQUIRED": "Answer required.",
+      "FORM_RANGE": "Value outside the allowed range.",
+      "FORM_NUMBER": "A number is expected.",
+      "FORM_DATE": "Invalid date.",
+      "FORM_TIME": "Invalid time (HH:MM).",
+      "FORM_CHOICE": "Invalid choice.",
+      "FORM_CODED": "Label required; ICD-10 code like A09 or J18.9.",
+      "FORM_TEXT": "Text too long.",
+      "FORM_UNKNOWN_FIELD": "Field unknown in this version.",
+      "FORM_EXPR_SYNTAX": "Badly written expression.",
+      "FORM_EXPR_TOO_LONG": "Expression too long.",
+      "FORM_EXPR_TOO_DEEP": "Expression nested too deeply.",
+      "FORM_EXPR_FORBIDDEN": "Element not allowed in an expression.",
+      "FORM_EXPR_UNKNOWN_FUNCTION": "Unknown function.",
+      "FORM_EXPR_ARGUMENTS": "Wrong arguments (identifiers between quotes).",
+      "FORM_EXPR_UNKNOWN_FIELD": "The expression reads a field that does not exist.",
+      "FORM_EXPR_UNKNOWN_VITAL": "The expression reads an unknown vital sign.",
+      "FORM_EXPR_CYCLE": "This calculation depends on itself.",
+      "FORM_FIELD_DUPLICATE": "Identifier used twice.",
+      "FORM_FIELD_TYPE_CHANGED": "This field changes type compared with the published version: use a new identifier.",
+      "FORM_OPTIONS_REQUIRED": "Add at least one option.",
+      "FORM_OPTION_DUPLICATE": "Option code repeated.",
+      "FORM_EXPRESSION_REQUIRED": "Type the calculation expression.",
+      "FORM_VITAL_REQUIRED": "Choose the linked vital sign.",
+      "FORM_SCALE_BOUNDS": "Minimum and maximum required, the minimum smaller.",
+      "DPI_VITAL_IMPLAUSIBLE": "Value outside plausible limits: check the entry."
     }
   }
 }

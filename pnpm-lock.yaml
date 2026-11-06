@@ -196,6 +196,9 @@ importers:
       '@medhub/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@medhub/forms':
+        specifier: workspace:*
+        version: link:../../packages/forms
       '@medhub/local-db':
         specifier: workspace:*
         version: link:../../packages/local-db
@@ -425,6 +428,9 @@ importers:
       '@medhub/domain':
         specifier: workspace:*
         version: link:../domain
+      '@medhub/forms':
+        specifier: workspace:*
+        version: link:../forms
       '@types/node':
         specifier: 22.20.5
         version: 22.20.5
@@ -474,6 +480,9 @@ importers:
       '@medhub/shared':
         specifier: workspace:*
         version: link:../shared
+      jsep:
+        specifier: 1.6.0
+        version: 1.6.0
       zod:
         specifier: 4.6.7
         version: 4.6.7
@@ -4400,6 +4409,10 @@ packages:
   js-yaml@4.3.2:
     resolution: {integrity: sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==}
     hasBin: true
+
+  jsep@1.6.0:
+    resolution: {integrity: sha512-Y8Tr54CX7B5YGAwo7/n8eumidEX3Opx98RyyQVnlHqUaZcPA8uUzL2v1rshr9ypW9Q6hNjfJtg3sL+8kaNE7TA==}
+    engines: {node: '>= 20.16.0'}
 
   jsesc@3.1.0:
     resolution: {integrity: sha512-/sM3dO2FOzXjKQhJuo0Q173wf2KOo8t4I8vHy6lF9poUp7bKT0/NHE8fPX23PwfhnykfqnC2xRxOnVw5XuGIaA==}
@@ -9180,6 +9193,8 @@ snapshots:
   js-yaml@4.3.2:
     dependencies:
       argparse: 2.0.1
+
+  jsep@1.6.0: {}
 
   jsesc@3.1.0: {}
 

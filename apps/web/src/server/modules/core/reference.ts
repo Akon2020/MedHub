@@ -17,6 +17,7 @@ import { loadPermissions, requirePermission } from '../../platform/permissions';
 import type { RequestContext } from '../../platform/tenant';
 import { requireRecentStepUp } from './configuration';
 import { activeDiagnoses, activePrograms, effectiveVitalDefinitions } from '../dpi';
+import { publishedFormVersions } from '../form';
 
 type Client = { ip: string | null };
 
@@ -429,8 +430,10 @@ export async function catalogSnapshot(ctx: RequestContext): Promise<CatalogSnaps
       graceDays: p.graceDays,
     }));
     const diagnoses = await activeDiagnoses(tx);
+    const forms = await publishedFormVersions(tx);
     const body = {
       diagnoses,
+      forms,
       programs,
       vitalDefinitions,
       timeZone: tenant?.timeZone ?? 'Africa/Kinshasa',

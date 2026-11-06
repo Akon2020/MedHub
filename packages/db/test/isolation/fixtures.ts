@@ -18,6 +18,9 @@ import {
   devicePatient,
   diagnosis,
   diagnosisCatalogItem,
+  formDefinition,
+  formResponse,
+  formVersion,
   encounter,
   medicalHistory,
   duplicateCandidate,
@@ -281,6 +284,36 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       label: 'Paludisme simple',
       certainty: 'suspected',
       diagnosedAt: new Date(),
+    });
+  },
+  form_definition: async (tx, tenantId) => {
+    await tx.insert(formDefinition).values({
+      id: uuidv7(),
+      tenantId,
+      code: `suivi_${String(Math.floor(Math.random() * 1e6))}`,
+      step: 'consultation',
+      title: { fr: 'Suivi' },
+    });
+  },
+  form_version: async (tx, tenantId) => {
+    await tx.insert(formVersion).values({
+      id: uuidv7(),
+      tenantId,
+      formDefinitionId: uuidv7(),
+      version: 1,
+      definition: { code: 'suivi' },
+    });
+  },
+  form_response: async (tx, tenantId) => {
+    await tx.insert(formResponse).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      formVersionId: uuidv7(),
+      formCode: 'suivi',
+      data: { motif: 'Contrôle' },
+      state: 'completed',
+      completedAt: new Date(),
     });
   },
   diagnosis_catalog_item: async (tx, tenantId) => {

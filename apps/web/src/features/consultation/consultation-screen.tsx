@@ -14,6 +14,7 @@ import { AllergyBanner, toAllergyView } from '@/features/record/record-lists';
 import { LockedRecord, toGrant } from '@/features/record/break-glass';
 import { useRecordAccess } from '@/features/record/use-record-access';
 import { openVisitOfToday, todayTickets } from '@/features/visits/visit-helpers';
+import { FormsPanel } from '@/features/forms/forms-panel';
 import { DiagnosesPanel } from './diagnoses-panel';
 import { NoteEditor } from './note-editor';
 
@@ -53,6 +54,8 @@ export function ConsultationScreen({ patientId }: { patientId: string }) {
         visitStatus: typeof visit?.data.status === 'string' ? visit.data.status : null,
         notes: byVisit(await gather('clinical_note')),
         diagnoses: byVisit(await gather('diagnosis')),
+        responses: byVisit(await gather('form_response')),
+        lastVitals: lastVitalsOf(await gather('vital_sign')),
         allergies: (await gather('allergy')).map(toAllergyView),
         problems: (await gather('problem')).filter((p) => p.data.status === 'active'),
         tickets: todayTickets(await store.readEntitiesByPatient('queue_ticket', patientId)),
@@ -164,27 +167,55 @@ export function ConsultationScreen({ patientId }: { patientId: string }) {
             diagnoses={data.diagnoses}
           />
         </div>
-        <NoteEditor
-          key={data.visitId ?? 'none'}
-          patientId={patientId}
-          encounterId={data.visitId}
-          notes={data.notes}
-          onSigned={async () => {
-            // The first signed note starts the consultation of the visit.
-            if (
-              data.visitId &&
-              (data.visitStatus === 'arrived' || data.visitStatus === 'triaged') &&
-              identity?.permissions.includes('encounter:update_status')
-            ) {
-              await dispatch(
-                'encounter.update_status',
-                { status: 'in_consultation' },
-                { entityId: data.visitId },
-              );
-            }
-          }}
-        />
+        <div className="grid content-start gap-6">
+          <NoteEditor
+            key={data.visitId ?? 'none'}
+            patientId={patientId}
+            encounterId={data.visitId}
+            notes={data.notes}
+            onSigned={async () => {
+              // The first signed note starts the consultation of the visit.
+              if (
+                data.visitId &&
+                (data.visitStatus === 'arrived' || data.visitStatus === 'triaged') &&
+                identity?.permissions.includes('encounter:update_status')
+              ) {
+                await dispatch(
+                  'encounter.update_status',
+                  { status: 'in_consultation' },
+                  { entityId: data.visitId },
+                );
+              }
+            }}
+          />
+          <FormsPanel
+            step="consultation"
+            patientId={patientId}
+            encounterId={data.visitId}
+            responses={data.responses}
+            context={{
+              birthDate: typeof d.birthDate === 'string' ? d.birthDate : null,
+              sex: d.sex === 'M' || d.sex === 'F' ? d.sex : 'U',
+              pregnant: false,
+              vitals: data.lastVitals,
+            }}
+          />
+        </div>
       </div>
     </div>
   );
+}
+
+/** Last active measurement of each vital sign, for the forms' calculations. */
+function lastVitalsOf(rows: { rejected?: boolean; data: Record<string, unknown> }[]) {
+  const last: Record<string, { at: string; value: number }> = {};
+  for (const r of rows) {
+    if (r.rejected || r.data.status === 'superseded') continue;
+    const code = String(r.data.code);
+    const at = String(r.data.measuredAt);
+    const value = Number(r.data.value);
+    if (!Number.isFinite(value)) continue;
+    if (!last[code] || last[code].at < at) last[code] = { at, value };
+  }
+  return Object.fromEntries(Object.entries(last).map(([k, v]) => [k, v.value]));
 }

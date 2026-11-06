@@ -28,6 +28,7 @@
   "devDependencies": {
     "@medhub/config": "workspace:*",
     "@medhub/domain": "workspace:*",
+    "@medhub/forms": "workspace:*",
     "@types/node": "22.20.5",
     "@types/pg": "8.23.1",
     "dotenv": "18.0.9",

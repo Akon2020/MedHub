@@ -22,6 +22,7 @@ import { triageRecordPayload } from './rdv/triage';
 import { recordAccessPayload } from './dpi/access-log';
 import { breakGlassPayload } from './dpi/break-glass';
 import { clinicalNotePayload, diagnosisPayload } from './dpi/consultation';
+import { formResponseCompletePayload, formResponseSignPayload } from './dpi/form-responses';
 import { programDischargePayload, programEnrollPayload } from './dpi/programs';
 import {
   allergyAddPayload,
@@ -60,7 +61,8 @@ export type EntityName =
   | 'break_glass'
   | 'program_enrollment'
   | 'clinical_note'
-  | 'diagnosis';
+  | 'diagnosis'
+  | 'form_response';
 
 export type EntityDefinition = {
   name: EntityName;
@@ -149,6 +151,12 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
   },
   diagnosis: {
     name: 'diagnosis',
+    strategy: 'append_only',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  form_response: {
+    name: 'form_response',
     strategy: 'append_only',
     scopeKeys: (data) => [`patient:${String(data.patientId)}`],
     patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
@@ -470,6 +478,24 @@ export const COMMANDS = {
     permission: 'diagnosis:create',
     onlineOnly: false,
     patientAct: (p) => ({ patientId: p.patientId, at: p.diagnosedAt }),
+  }),
+  'form_response.complete': define({
+    name: 'form_response.complete',
+    entity: 'form_response',
+    kind: 'append',
+    payloadSchema: formResponseCompletePayload,
+    permission: 'clinical_record:create',
+    onlineOnly: false,
+    patientAct: (p) => ({ patientId: p.patientId, at: p.completedAt }),
+  }),
+  'form_response.sign': define({
+    name: 'form_response.sign',
+    entity: 'form_response',
+    kind: 'append',
+    payloadSchema: formResponseSignPayload,
+    permission: 'clinical_record:sign',
+    onlineOnly: false,
+    patientAct: (p) => ({ patientId: p.patientId, at: p.completedAt }),
   }),
   'program_enrollment.enroll': define({
     name: 'program_enrollment.enroll',
