@@ -1,4 +1,5 @@
 export {
+  billingRuleRoute,
   currencySettingRoute,
   exchangeRateRoute,
   financeRoute,

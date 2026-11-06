@@ -10,3 +10,4 @@ export * from './dpi';
 export * from './forms';
 export * from './prescription';
 export * from './finance';
+export * from './invoice';

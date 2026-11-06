@@ -19,7 +19,10 @@ import {
   diagnosis,
   diagnosisCatalogItem,
   drug,
+  billingRule,
   exchangeRate,
+  invoice,
+  invoiceLine,
   price,
   priceList,
   serviceItem,
@@ -297,6 +300,33 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       certainty: 'suspected',
       diagnosedAt: new Date(),
     });
+  },
+  invoice: async (tx, tenantId) => {
+    await tx.insert(invoice).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      number: `FAC-${uuidv7().slice(-12)}`,
+      currency: 'USD',
+      openedAt: new Date(),
+    });
+  },
+  invoice_line: async (tx, tenantId) => {
+    await tx.insert(invoiceLine).values({
+      id: uuidv7(),
+      tenantId,
+      invoiceId: uuidv7(),
+      patientId: uuidv7(),
+      label: 'Consultation de test',
+      category: 'consultation',
+      quantity: 1,
+      unitPrice: 1000,
+      currency: 'USD',
+      performedAt: new Date(),
+    });
+  },
+  billing_rule: async (tx, tenantId) => {
+    await tx.insert(billingRule).values({ id: uuidv7(), tenantId, serviceItemId: uuidv7() });
   },
   service_item: async (tx, tenantId) => {
     await tx.insert(serviceItem).values({

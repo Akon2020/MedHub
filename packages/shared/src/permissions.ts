@@ -97,6 +97,9 @@ export const ROLE_TEMPLATES: readonly RoleTemplate[] = [
     isPrivileged: false,
     requiresMfa: false,
     permissions: [
+      'invoice:read',
+      'invoice:create',
+      'invoice:add_line',
       'patient:read',
       'patient:create',
       'patient:update',

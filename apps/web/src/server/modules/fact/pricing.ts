@@ -4,6 +4,7 @@ import {
   DEFAULT_CASH_ROUNDING,
   parsePrices,
   parseServiceItems,
+  type BillingRule,
   type ExchangeRate,
   type FinanceImportError,
   type Price,
@@ -85,12 +86,20 @@ export async function financeCatalog(tx: Tx, today: string) {
     rate: normalizeRate(r.rate),
     validFrom: r.validFrom,
   }));
+  const billingRules: BillingRule[] = (await tx.select().from(schema.billingRule)).map((r) => ({
+    id: r.id,
+    encounterKind: r.encounterKind,
+    departmentId: r.departmentId,
+    serviceItemId: r.serviceItemId,
+    isActive: r.isActive,
+  }));
   return {
     serviceItems,
     priceLists,
     prices,
     exchangeRates: latestPerDay(exchangeRates),
     currencies: await currencySettings(tx),
+    billingRules,
   };
 }
 
@@ -396,5 +405,51 @@ export async function saveCurrencySetting(
         },
       });
     await audit(tx, ctx, client, 'tenant_currency', null, { ...input });
+  });
+}
+
+/**
+ * What a visit opening bills (owner decision S10). A rule targets a kind of
+ * visit, a department, both or neither; replacing a target deactivates the
+ * previous rule, which stays in the history.
+ */
+export async function saveBillingRule(
+  ctx: RequestContext,
+  input: {
+    encounterKind: string | null;
+    departmentId: string | null;
+    serviceItemId: string | null;
+  },
+  client: Client,
+): Promise<void> {
+  await manage(ctx, async (tx) => {
+    const sameTarget = and(
+      input.encounterKind
+        ? eq(schema.billingRule.encounterKind, input.encounterKind)
+        : isNull(schema.billingRule.encounterKind),
+      input.departmentId
+        ? eq(schema.billingRule.departmentId, input.departmentId)
+        : isNull(schema.billingRule.departmentId),
+      eq(schema.billingRule.isActive, true),
+    );
+    await tx
+      .update(schema.billingRule)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(sameTarget);
+    if (input.serviceItemId) {
+      const [service] = await tx
+        .select({ id: schema.serviceItem.id })
+        .from(schema.serviceItem)
+        .where(eq(schema.serviceItem.id, input.serviceItemId));
+      if (!service) throw new AppError('NOT_FOUND', 404);
+      await tx.insert(schema.billingRule).values({
+        id: uuidv7(),
+        tenantId: ctx.tenantId,
+        encounterKind: input.encounterKind,
+        departmentId: input.departmentId,
+        serviceItemId: input.serviceItemId,
+      });
+    }
+    await audit(tx, ctx, client, 'billing_rule', null, { ...input });
   });
 }

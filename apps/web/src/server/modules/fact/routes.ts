@@ -6,6 +6,7 @@ import {
   financeOverview,
   importPrices,
   importServiceItems,
+  saveBillingRule,
   saveCurrencySetting,
   savePriceList,
   saveServiceItem,
@@ -63,6 +64,19 @@ export const currencySettingRoute = defineRoute({
   }),
   handler: async ({ request, body, ctx }) => {
     await saveCurrencySetting(ctx, body, { ip: clientIp(request) });
+    return json({ ok: true });
+  },
+});
+
+export const billingRuleRoute = defineRoute({
+  route: 'billing_rules.save',
+  schema: z.object({
+    encounterKind: z.string().max(30).nullable(),
+    departmentId: z.uuid().nullable(),
+    serviceItemId: z.uuid().nullable(),
+  }),
+  handler: async ({ request, body, ctx }) => {
+    await saveBillingRule(ctx, body, { ip: clientIp(request) });
     return json({ ok: true });
   },
 });

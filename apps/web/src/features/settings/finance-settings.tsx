@@ -1,9 +1,11 @@
 'use client';
 
 import {
+  ENCOUNTER_KINDS,
   PRICE_LIST_KINDS,
   SERVICE_CATEGORIES,
   parseAmount,
+  type BillingRule,
   type Price,
   type PriceList,
   type PriceListKind,
@@ -32,6 +34,7 @@ type Overview = {
   prices: Price[];
   exchangeRates: { from: string; to: string; rate: string; validFrom: string }[];
   currencies: { currency: string; cashRoundingStep: number; isAccepted: boolean }[];
+  billingRules: BillingRule[];
   canManage: boolean;
 };
 
@@ -48,7 +51,8 @@ export function FinanceSettings() {
   const tErr = useTranslations('errors');
   const locale = useLocale();
   const online = useOnline();
-  const { reloadCatalogs } = useRuntime();
+  const { reloadCatalogs, catalogs } = useRuntime();
+  const departments = catalogs?.snapshot.departments ?? [];
   const { guard, dialog } = useStepUp();
   const [view, setView] = useState<Overview | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +72,7 @@ export function FinanceSettings() {
   });
   const [selectedList, setSelectedList] = useState<string | null>(null);
   const [rounding, setRounding] = useState<Record<string, string>>({});
+  const [rule, setRule] = useState({ encounterKind: '', departmentId: '', serviceItemId: '' });
 
   const refresh = useCallback(async () => {
     try {
@@ -362,6 +367,104 @@ export function FinanceSettings() {
               known={view.serviceItems.length}
               onDone={() => void refresh()}
             />
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('rules.title')}</CardTitle>
+          <CardDescription>{t('rules.text')}</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 text-sm">
+          {view.billingRules.filter((r) => r.isActive).length === 0 ? (
+            <p className="text-muted-foreground">{t('rules.none')}</p>
+          ) : (
+            <ul className="grid gap-1">
+              {view.billingRules
+                .filter((r) => r.isActive)
+                .map((r) => (
+                  <li key={r.id}>
+                    {r.encounterKind ? t(`visitKinds.${r.encounterKind}`) : t('rules.anyKind')}
+                    {' · '}
+                    {departments.find((d) => d.id === r.departmentId)?.name ??
+                      t('rules.anyDepartment')}
+                    {' : '}
+                    <span className="font-medium">
+                      {view.serviceItems.find((s) => s.id === r.serviceItemId)?.name ?? ''}
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          )}
+          {canManage && (
+            <form
+              className="flex flex-wrap items-end gap-2"
+              onSubmit={(e: FormEvent) => {
+                e.preventDefault();
+                void send(
+                  '/api/v1/billing-rules',
+                  {
+                    encounterKind: rule.encounterKind || null,
+                    departmentId: rule.departmentId || null,
+                    serviceItemId: rule.serviceItemId || null,
+                  },
+                  t('saved'),
+                );
+              }}
+            >
+              <div className="grid gap-1">
+                <Label htmlFor="rule-kind">{t('rules.kind')}</Label>
+                <NativeSelect
+                  id="rule-kind"
+                  value={rule.encounterKind}
+                  onChange={(e) => setRule({ ...rule, encounterKind: e.target.value })}
+                >
+                  <option value="">{t('rules.anyKind')}</option>
+                  {ENCOUNTER_KINDS.map((k) => (
+                    <option key={k} value={k}>
+                      {t(`visitKinds.${k}`)}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </div>
+              <div className="grid gap-1">
+                <Label htmlFor="rule-dept">{t('rules.department')}</Label>
+                <NativeSelect
+                  id="rule-dept"
+                  value={rule.departmentId}
+                  onChange={(e) => setRule({ ...rule, departmentId: e.target.value })}
+                >
+                  <option value="">{t('rules.anyDepartment')}</option>
+                  {departments.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </div>
+              <div className="grid gap-1">
+                <Label htmlFor="rule-service">{t('rules.service')}</Label>
+                <NativeSelect
+                  id="rule-service"
+                  value={rule.serviceItemId}
+                  onChange={(e) => setRule({ ...rule, serviceItemId: e.target.value })}
+                >
+                  <option value="">{t('rules.nothing')}</option>
+                  {view.serviceItems
+                    .filter((s) => s.isActive)
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.code} · {s.name}
+                      </option>
+                    ))}
+                </NativeSelect>
+              </div>
+              <Button type="submit" size="sm" disabled={busy}>
+                <Check />
+                {t('rules.save')}
+              </Button>
+            </form>
           )}
         </CardContent>
       </Card>

@@ -809,7 +809,11 @@
     "FACT_IMPORT_VALUE": "valeur invalide (code, montant ou date)",
     "FACT_IMPORT_CATEGORY": "catégorie inconnue",
     "FACT_IMPORT_DUPLICATE": "ligne en double dans le fichier",
-    "FACT_IMPORT_UNKNOWN_SERVICE": "prestation inconnue : importez-la d’abord"
+    "FACT_IMPORT_UNKNOWN_SERVICE": "prestation inconnue : importez-la d’abord",
+    "FACT_CURRENCY_MISMATCH": "La prestation n’est pas dans la devise de la facture.",
+    "FACT_MANUAL_PRICE_DENIED": "Saisir un prix demande la permission de gérer les tarifs.",
+    "FACT_INVOICE_NOT_FOUND": "Facture introuvable sur le serveur.",
+    "FACT_LINE_NOT_REPLACEABLE": "Seule une ligne sans prix peut recevoir un prix."
   },
   "account": {
     "title": "Mon compte",
@@ -1822,6 +1826,27 @@
         "error": "Ligne {line} : {problem}",
         "apply": "{count, plural, one {Importer # prix} other {Importer # prix}}",
         "saved": "{count} prix importé(s)."
+      },
+      "rules": {
+        "title": "Facturation automatique",
+        "text": "Prestation ajoutée à la facture dès l’ouverture d’une visite, selon le type de visite et le service. La règle la plus précise l’emporte.",
+        "none": "Aucune règle : l’ouverture d’une visite ne facture rien.",
+        "kind": "Type de visite",
+        "department": "Service",
+        "service": "Prestation facturée",
+        "anyKind": "Tout type de visite",
+        "anyDepartment": "Tout service",
+        "nothing": "Ne rien facturer",
+        "save": "Enregistrer la règle"
+      },
+      "visitKinds": {
+        "outpatient": "Consultation externe",
+        "emergency": "Urgence",
+        "inpatient": "Hospitalisation",
+        "day_care": "Hôpital de jour",
+        "teleconsult": "Téléconsultation",
+        "lab_only": "Laboratoire seul",
+        "pharmacy_only": "Pharmacie seule"
       }
     }
   },
@@ -2325,5 +2350,36 @@
     "cancelled": "Ordonnance authentique mais annulée par son prescripteur.",
     "issued": "Émise par {structure} le {date}.",
     "privacy": "Cette page ne montre aucune donnée de santé : ni le patient, ni les médicaments, ni le prescripteur."
+  },
+  "billing": {
+    "title": "Caisse",
+    "subtitle": "Factures du jour et factures ouvertes sur ce poste ; tout fonctionne hors connexion.",
+    "filter": "Patient, numéro de dossier ou de facture",
+    "empty": "Aucune facture aujourd’hui sur ce poste.",
+    "back": "Retour à la caisse",
+    "notOnDevice": "Ce patient n’est pas sur ce poste.",
+    "newInvoice": "Nouvelle facture",
+    "noInvoice": "Aucune facture pour ce patient.",
+    "invoice": {
+      "status": {
+        "open": "Ouverte",
+        "finalized": "Finalisée",
+        "voided": "Annulée"
+      },
+      "supplementary": "Complémentaire",
+      "pending": "En attente de synchronisation",
+      "opened": "Ouverte le {date}",
+      "empty": "Aucune ligne.",
+      "manual": "(prix saisi)",
+      "noPrice": "Prix manquant",
+      "setPrice": "Saisir le prix",
+      "unitPrice": "Prix unitaire ({currency})",
+      "confirmPrice": "Valider le prix",
+      "total": "Total",
+      "missing": "{count, plural, one {# ligne sans prix : saisissez-le avant de finaliser.} other {# lignes sans prix : saisissez-les avant de finaliser.}}",
+      "addService": "Ajouter une prestation",
+      "quantity": "Quantité",
+      "finalize": "Finaliser la facture"
+    }
   }
 }

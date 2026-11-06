@@ -65,7 +65,7 @@ export const NAVIGATION: NavGroup[] = [
   {
     key: 'finance',
     items: [
-      { key: 'billing', href: '/app/bientot?m=billing', icon: HandCoins, soon: 'S10' },
+      { key: 'billing', href: '/app/caisse', icon: HandCoins, permission: 'invoice:read' },
       { key: 'contracts', href: '/app/bientot?m=contracts', icon: FileHeart, soon: 'S11' },
     ],
   },

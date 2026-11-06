@@ -804,7 +804,11 @@
     "FACT_IMPORT_VALUE": "invalid value (code, amount or date)",
     "FACT_IMPORT_CATEGORY": "unknown category",
     "FACT_IMPORT_DUPLICATE": "line repeated in the file",
-    "FACT_IMPORT_UNKNOWN_SERVICE": "unknown service: import it first"
+    "FACT_IMPORT_UNKNOWN_SERVICE": "unknown service: import it first",
+    "FACT_CURRENCY_MISMATCH": "The service is not in the invoice currency.",
+    "FACT_MANUAL_PRICE_DENIED": "Typing a price needs the permission to manage prices.",
+    "FACT_INVOICE_NOT_FOUND": "Invoice not found on the server.",
+    "FACT_LINE_NOT_REPLACEABLE": "Only a line without price can receive a price."
   },
   "account": {
     "title": "My account",
@@ -1817,6 +1821,27 @@
         "error": "Line {line}: {problem}",
         "apply": "{count, plural, one {Import # price} other {Import # prices}}",
         "saved": "{count} prices imported."
+      },
+      "rules": {
+        "title": "Automatic billing",
+        "text": "Service added to the invoice as soon as a visit opens, by visit type and department. The most precise rule wins.",
+        "none": "No rule: opening a visit bills nothing.",
+        "kind": "Visit type",
+        "department": "Department",
+        "service": "Service billed",
+        "anyKind": "Any visit type",
+        "anyDepartment": "Any department",
+        "nothing": "Bill nothing",
+        "save": "Save the rule"
+      },
+      "visitKinds": {
+        "outpatient": "Outpatient",
+        "emergency": "Emergency",
+        "inpatient": "Inpatient",
+        "day_care": "Day care",
+        "teleconsult": "Teleconsultation",
+        "lab_only": "Laboratory only",
+        "pharmacy_only": "Pharmacy only"
       }
     }
   },
@@ -2320,5 +2345,36 @@
     "cancelled": "Authentic prescription, cancelled by its prescriber.",
     "issued": "Issued by {structure} on {date}.",
     "privacy": "This page shows no health data: neither the patient, nor the drugs, nor the prescriber."
+  },
+  "billing": {
+    "title": "Cash desk",
+    "subtitle": "Invoices of the day and open invoices on this workstation; everything works offline.",
+    "filter": "Patient, record or invoice number",
+    "empty": "No invoice today on this workstation.",
+    "back": "Back to the cash desk",
+    "notOnDevice": "This patient is not on this workstation.",
+    "newInvoice": "New invoice",
+    "noInvoice": "No invoice for this patient.",
+    "invoice": {
+      "status": {
+        "open": "Open",
+        "finalized": "Finalized",
+        "voided": "Voided"
+      },
+      "supplementary": "Supplementary",
+      "pending": "Waiting for synchronisation",
+      "opened": "Opened on {date}",
+      "empty": "No line.",
+      "manual": "(price typed)",
+      "noPrice": "Price missing",
+      "setPrice": "Enter the price",
+      "unitPrice": "Unit price ({currency})",
+      "confirmPrice": "Confirm the price",
+      "total": "Total",
+      "missing": "{count, plural, one {# line without price: enter it before finalizing.} other {# lines without price: enter them before finalizing.}}",
+      "addService": "Add a service",
+      "quantity": "Quantity",
+      "finalize": "Finalize the invoice"
+    }
   }
 }

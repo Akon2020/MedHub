@@ -36,6 +36,8 @@ const READ_PERMISSION: Record<string, readonly string[]> = {
   prescription: ['prescription:read', 'clinical_record:read'],
   medication_statement: ['clinical_record:read'],
   medication_reconciliation: ['clinical_record:read'],
+  invoice: ['invoice:read'],
+  invoice_line: ['invoice:read'],
   vital_sign: ['vital_sign:read', 'clinical_record:read'],
   stock_movement: ['stock:read'],
 };

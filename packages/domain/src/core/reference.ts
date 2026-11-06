@@ -1,3 +1,4 @@
+import type { BillingRule } from '../fact/invoice';
 import type { ExchangeRate, Price, PriceList, ServiceItem } from '../fact/pricing';
 import type { DrugInfo, InteractionRule } from '../dpi/prescription';
 import { ADMIN_AREA_KINDS, type CsvTable } from '@medhub/shared';
@@ -247,6 +248,8 @@ export type CatalogSnapshot = {
     prices: Price[];
     exchangeRates: ExchangeRate[];
     currencies: { currency: string; cashRoundingStep: number; isAccepted: boolean }[];
+    /** What a visit opening bills (S10). */
+    billingRules?: BillingRule[];
   };
   /** Drug catalogue and interaction rules imported by the structure (S9). */
   drugs?: (DrugInfo & { id: string })[];

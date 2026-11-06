@@ -23,6 +23,7 @@ import { recordAccessPayload } from './dpi/access-log';
 import { breakGlassPayload } from './dpi/break-glass';
 import { clinicalNotePayload, diagnosisPayload } from './dpi/consultation';
 import { formResponseCompletePayload, formResponseSignPayload } from './dpi/form-responses';
+import { invoiceFinalizePayload, invoiceLinePayload, invoiceOpenPayload } from './fact/invoice';
 import {
   medicationReconciliationPayload,
   medicationStatementAddPayload,
@@ -72,7 +73,9 @@ export type EntityName =
   | 'form_response'
   | 'prescription'
   | 'medication_statement'
-  | 'medication_reconciliation';
+  | 'medication_reconciliation'
+  | 'invoice'
+  | 'invoice_line';
 
 export type EntityDefinition = {
   name: EntityName;
@@ -179,6 +182,18 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
   },
   medication_reconciliation: {
     name: 'medication_reconciliation',
+    strategy: 'append_only',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  invoice: {
+    name: 'invoice',
+    strategy: 'field_merge',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  invoice_line: {
+    name: 'invoice_line',
     strategy: 'append_only',
     scopeKeys: (data) => [`patient:${String(data.patientId)}`],
     patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
@@ -561,6 +576,31 @@ export const COMMANDS = {
     permission: 'clinical_record:create',
     onlineOnly: false,
     patientAct: (p) => ({ patientId: p.patientId, at: p.performedAt }),
+  }),
+  'invoice.open': define({
+    name: 'invoice.open',
+    entity: 'invoice',
+    kind: 'create',
+    payloadSchema: invoiceOpenPayload,
+    permission: 'invoice:create',
+    onlineOnly: false,
+  }),
+  'invoice.add_line': define({
+    name: 'invoice.add_line',
+    entity: 'invoice_line',
+    kind: 'append',
+    payloadSchema: invoiceLinePayload,
+    permission: 'invoice:add_line',
+    onlineOnly: false,
+  }),
+  'invoice.finalize': define({
+    name: 'invoice.finalize',
+    entity: 'invoice',
+    kind: 'update',
+    payloadSchema: invoiceFinalizePayload,
+    permission: 'invoice:finalize',
+    onlineOnly: false,
+    transition: { from: ['open'], to: 'finalized' },
   }),
   'form_response.sign': define({
     name: 'form_response.sign',

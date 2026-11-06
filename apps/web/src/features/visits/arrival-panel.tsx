@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/select';
+import { billVisitOpening } from '@/features/billing/visit-billing';
 import { localDay, todayTickets, type TicketView } from './visit-helpers';
 
 /** Kinds a front desk opens at arrival; the others come with their modules. */
@@ -92,6 +93,24 @@ export function ArrivalPanel({ patientId, deceased }: { patientId: string; decea
           issuedAt: now.toISOString(),
         },
         { dependsOn: [visit.opId] },
+      );
+      // The visit opening bills the configured service (owner decision S10).
+      await billVisitOpening(
+        {
+          dispatch,
+          nextCounter,
+          finance: catalogs?.snapshot.finance,
+          siteCode: identity?.siteCode ?? 'SIT',
+          deviceCode: device.deviceCode,
+          permissions: identity?.permissions ?? [],
+        },
+        {
+          id: visit.entityId,
+          opId: visit.opId,
+          patientId,
+          kind,
+          departmentId: queue.departmentId ?? null,
+        },
       );
     } catch (err) {
       const code = err instanceof AppError ? err.code : 'UNKNOWN';

@@ -789,6 +789,115 @@ const mappers = {
       };
     },
   },
+  invoice: {
+    table: schema.invoice,
+    toState(row: typeof schema.invoice.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          encounterId: row.encounterId,
+          number: row.number,
+          officialNumber: row.officialNumber,
+          currency: row.currency,
+          status: row.status,
+          openedAt: row.openedAt.toISOString(),
+          finalizedAt: row.finalizedAt?.toISOString(),
+          supplementaryOf: row.supplementaryOf,
+        }),
+        fieldMeta: row.fieldMeta,
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.invoice.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        encounterId: str(d.encounterId),
+        number: String(d.number),
+        officialNumber: str(d.officialNumber),
+        currency: String(d.currency),
+        status: str(d.status) ?? 'open',
+        openedAt: new Date(String(d.openedAt)),
+        finalizedAt: instant(d.finalizedAt),
+        supplementaryOf: str(d.supplementaryOf),
+        fieldMeta: state.fieldMeta,
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+        updatedAt: new Date(),
+        updatedBy: ctx.userId,
+      };
+    },
+  },
+  invoice_line: {
+    table: schema.invoiceLine,
+    toState(row: typeof schema.invoiceLine.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          invoiceId: row.invoiceId,
+          patientId: row.patientId,
+          serviceItemId: row.serviceItemId,
+          code: row.code,
+          label: row.label,
+          category: row.category,
+          quantity: row.quantity,
+          unitPrice: row.unitPrice,
+          currency: row.currency,
+          priceListId: row.priceListId,
+          manualPrice: row.manualPrice,
+          sourceTable: row.sourceTable,
+          sourceId: row.sourceId,
+          performedAt: row.performedAt.toISOString(),
+          supersedesId: row.supersedesId,
+          status: row.status,
+        }),
+        fieldMeta: {},
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.invoiceLine.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        invoiceId: String(d.invoiceId),
+        patientId: String(d.patientId),
+        serviceItemId: str(d.serviceItemId),
+        code: str(d.code),
+        label: String(d.label),
+        category: String(d.category),
+        quantity: Number(d.quantity),
+        unitPrice: typeof d.unitPrice === 'number' ? d.unitPrice : null,
+        currency: String(d.currency),
+        priceListId: str(d.priceListId),
+        manualPrice: d.manualPrice === true,
+        sourceTable: str(d.sourceTable),
+        sourceId: str(d.sourceId),
+        performedAt: new Date(String(d.performedAt)),
+        supersedesId: str(d.supersedesId),
+        status: str(d.status) ?? 'active',
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+      };
+    },
+  },
   form_response: {
     table: schema.formResponse,
     toState(row: typeof schema.formResponse.$inferSelect): EntityState {
@@ -1201,6 +1310,22 @@ async function getEntity(tx: Tx, entity: EntityName, id: string): Promise<Entity
     }
     case 'prescription':
       return (await prescriptionStates(tx, [id]))[0] ?? null;
+    case 'invoice': {
+      const [row] = await tx
+        .select()
+        .from(schema.invoice)
+        .where(eq(schema.invoice.id, id))
+        .limit(1);
+      return row ? mappers.invoice.toState(row) : null;
+    }
+    case 'invoice_line': {
+      const [row] = await tx
+        .select()
+        .from(schema.invoiceLine)
+        .where(eq(schema.invoiceLine.id, id))
+        .limit(1);
+      return row ? mappers.invoice_line.toState(row) : null;
+    }
     case 'medication_statement': {
       const [row] = await tx
         .select()
@@ -1307,6 +1432,14 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
       ).map((r) => mappers.form_response.toState(r));
     case 'prescription':
       return prescriptionStates(tx, ids);
+    case 'invoice':
+      return (await tx.select().from(schema.invoice).where(inArray(schema.invoice.id, ids))).map(
+        (r) => mappers.invoice.toState(r),
+      );
+    case 'invoice_line':
+      return (
+        await tx.select().from(schema.invoiceLine).where(inArray(schema.invoiceLine.id, ids))
+      ).map((r) => mappers.invoice_line.toState(r));
     case 'medication_statement':
       return (
         await tx
@@ -1346,6 +1479,33 @@ async function checkEntity(
   payload: Record<string, unknown>,
   permissions: ReadonlySet<string>,
 ): Promise<string | null> {
+  if (entity === 'invoice_line') {
+    const [invoice] = await tx
+      .select({ currency: schema.invoice.currency })
+      .from(schema.invoice)
+      .where(eq(schema.invoice.id, String(payload.invoiceId)))
+      .limit(1);
+    if (!invoice) return 'FACT_INVOICE_NOT_FOUND';
+    if (invoice.currency !== payload.currency) return 'FACT_CURRENCY_MISMATCH';
+    if (payload.manualPrice === true && !permissions.has('price:manage')) {
+      return 'FACT_MANUAL_PRICE_DENIED';
+    }
+    if (typeof payload.supersedesId === 'string') {
+      // Only a line without price is replaced, on the same invoice.
+      const [target] = await tx
+        .select({
+          invoiceId: schema.invoiceLine.invoiceId,
+          unitPrice: schema.invoiceLine.unitPrice,
+        })
+        .from(schema.invoiceLine)
+        .where(eq(schema.invoiceLine.id, payload.supersedesId))
+        .limit(1);
+      if (!target || target.invoiceId !== payload.invoiceId || target.unitPrice !== null) {
+        return 'FACT_LINE_NOT_REPLACEABLE';
+      }
+    }
+    return null;
+  }
   if (entity === 'prescription') {
     // Overriding a blocking alert is a permission of its own (docs/modules/dpi.md 5).
     const items = (payload as PrescriptionCreatePayload).items;
@@ -1374,6 +1534,66 @@ async function checkEntity(
     { structural: true },
   );
   return state.complete ? null : 'FORM_RESPONSE_INVALID';
+}
+
+/**
+ * A line for an invoice another workstation already finalized: the act took
+ * place, so it is never rejected (docs/modules/fact.md, garde-fou serveur).
+ * It goes to a supplementary invoice of the same visit, opened by the server
+ * and sent to the devices like any synchronised change.
+ */
+async function insertInvoiceLine(tx: Tx, ctx: Ctx, state: EntityState): Promise<void> {
+  const row = mappers.invoice_line.toRow(state, ctx);
+  const [target] = await tx
+    .select()
+    .from(schema.invoice)
+    .where(eq(schema.invoice.id, row.invoiceId))
+    .limit(1);
+  if (target && target.status !== 'open') {
+    const root = target.supplementaryOf ?? target.id;
+    const [open] = await tx
+      .select({ id: schema.invoice.id })
+      .from(schema.invoice)
+      .where(and(eq(schema.invoice.supplementaryOf, root), eq(schema.invoice.status, 'open')))
+      .limit(1);
+    let invoiceId = open?.id ?? null;
+    if (!invoiceId) {
+      const siblings = await tx
+        .select({ id: schema.invoice.id })
+        .from(schema.invoice)
+        .where(eq(schema.invoice.supplementaryOf, root));
+      const [rootRow] = await tx
+        .select({ number: schema.invoice.number })
+        .from(schema.invoice)
+        .where(eq(schema.invoice.id, root));
+      invoiceId = uuidv7();
+      const opId = uuidv7();
+      await tx.insert(schema.invoice).values({
+        id: invoiceId,
+        tenantId: ctx.tenantId,
+        patientId: target.patientId,
+        encounterId: target.encounterId,
+        number: `${rootRow?.number ?? target.number}-C${siblings.length + 1}`,
+        currency: target.currency,
+        status: 'open',
+        openedAt: new Date(),
+        supplementaryOf: root,
+        hlc: formatHlc({ physical: Date.now(), counter: 0, node: 'server' }),
+        opId,
+        createdBy: state.createdBy || null,
+      });
+      await tx.insert(schema.changeLog).values({
+        tenantId: ctx.tenantId,
+        entity: 'invoice',
+        entityId: invoiceId,
+        version: 1,
+        opId,
+        scopeKeys: [`patient:${target.patientId}`],
+      });
+    }
+    row.invoiceId = invoiceId;
+  }
+  await tx.insert(schema.invoiceLine).values(row);
 }
 
 /** A prescription and its lines, as the synchronised entity. */
@@ -1720,6 +1940,12 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
           await tx.insert(schema.formResponse).values(mappers.form_response.toRow(state, ctx));
           await recordClinicalEvent(tx, ctx, 'form_response', state);
           return;
+        case 'invoice':
+          await tx.insert(schema.invoice).values(mappers.invoice.toRow(state, ctx));
+          return;
+        case 'invoice_line':
+          await insertInvoiceLine(tx, ctx, state);
+          return;
         case 'prescription':
           await insertPrescription(tx, ctx, state);
           await recordClinicalEvent(tx, ctx, 'prescription', state);
@@ -1907,6 +2133,27 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
               opId: state.opId,
             })
             .where(eq(schema.formResponse.id, state.id));
+          return;
+        case 'invoice': {
+          const {
+            id: _id,
+            tenantId: _t,
+            createdBy: _c,
+            ...row
+          } = mappers.invoice.toRow(state, ctx);
+          await tx.update(schema.invoice).set(row).where(eq(schema.invoice.id, state.id));
+          return;
+        }
+        case 'invoice_line':
+          // Append-only: only the status changes, when a priced line replaces it.
+          await tx
+            .update(schema.invoiceLine)
+            .set({
+              status: String(state.data.status ?? 'active'),
+              version: state.version,
+              opId: state.opId,
+            })
+            .where(eq(schema.invoiceLine.id, state.id));
           return;
         case 'prescription':
           // Append-only: a cancellation only changes the status.
@@ -2283,6 +2530,14 @@ export async function patientBundles(
       .where(inArray(schema.prescription.patientId, ids))
   ).map((r) => r.id);
   const prescriptions = await prescriptionStates(tx, prescriptionIds);
+  const invoices = await tx
+    .select()
+    .from(schema.invoice)
+    .where(inArray(schema.invoice.patientId, ids));
+  const invoiceLines = await tx
+    .select()
+    .from(schema.invoiceLine)
+    .where(inArray(schema.invoiceLine.patientId, ids));
   const statements = await tx
     .select()
     .from(schema.medicationStatement)
@@ -2313,6 +2568,11 @@ export async function patientBundles(
       state: mappers.form_response.toState(r),
     })),
     ...prescriptions.map((state) => ({ entity: 'prescription' as const, state })),
+    ...invoices.map((r) => ({ entity: 'invoice' as const, state: mappers.invoice.toState(r) })),
+    ...invoiceLines.map((r) => ({
+      entity: 'invoice_line' as const,
+      state: mappers.invoice_line.toState(r),
+    })),
     ...statements.map((r) => ({
       entity: 'medication_statement' as const,
       state: mappers.medication_statement.toState(r),
