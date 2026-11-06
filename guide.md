@@ -384,6 +384,28 @@ Menu **Paramètres** (permission `configuration:read`, administrateur de structu
 - **Réinitialiser** : la base actuelle est archivée (rien n'est supprimé), ses postes effacent leurs données de formation à leur prochain contact, et une nouvelle base est créée sous le même code avec la configuration du jour.
 - Aucun SMS ni courriel réel ne doit partir d'une base de formation : règle à appliquer par le module de notifications quand il arrivera (aucun envoi n'existe aujourd'hui).
 
+### Consultation (S9)
+
+- Depuis la fiche, **Consulter** (rôles qui signent des notes, Médecin par défaut) ouvre `/app/consultation` ; sans patient choisi, la page liste les visites du jour ouvertes sur ce poste.
+- À gauche : allergies en rouge, problèmes actifs, **Diagnostics** (recherche dans la liste de la structure, ou libellé libre avec code CIM-10 facultatif ; principal, suspecté ; « Corriger » remplace le diagnostic). Au centre : la **note** en cinq rubriques, enregistrée sur le poste toutes les 5 secondes (rien n'est perdu si la tablette s'éteint), puis **Signer la note**. Une note signée ne change plus : « Corriger » crée une nouvelle version avec un motif.
+- La première note signée passe la visite « En consultation » ; **Terminer la visite** la clôt et termine le ticket en cours.
+- Tout fonctionne hors connexion et part à la synchronisation suivante.
+
+### Formulaires cliniques (S9)
+
+- **Paramètres, Formulaires cliniques** (en ligne) : bibliothèque, **Nouveau formulaire** ou **Partir du modèle « Consultation générale »**, sections et champs (type, libellés français et anglais, obligatoire, « afficher si », « obligatoire si », unité, bornes, options une par ligne `code | libellé | libellé anglais`, constante liée, calcul). L'aperçu à droite fonctionne comme sur les postes, avec un patient d'exemple.
+- Expressions : `value('poids') > 3`, `vital('weight') / pow(vital('height') / 100, 2)`, `ageYears() >= 18`, `sex() == 'F'`, `selected('signes', 'toux')`, `if(a, b, c)`, `round(x, 1)`. Rien d'autre n'est accepté (aucun accès aux propriétés, aucune fonction inconnue).
+- **Enregistrer le brouillon**, puis **Publier** (second facteur) : une version publiée est figée, la modifier prépare la version suivante ; les anciennes saisies restent lisibles avec leur version. Export et import JSON.
+- En consultation, carte **Formulaires** : choisir un formulaire publié pour l'étape, le remplir (brouillon sur le poste toutes les 5 secondes), **Enregistrer** ou **Signer**. Une constante saisie dans le formulaire est enregistrée dans les constantes, sans double saisie.
+
+### Prescription et ordonnance (S9)
+
+- **Paramètres, Clinique** : importer le **catalogue des médicaments** et les **règles d'interaction** (CSV, vérification puis import avec second facteur). MedHub ne fournit aucune liste : importez la liste nationale ou celle de votre structure. Sans catalogue, le médicament se saisit en texte libre (sans contrôle de dose ni d'interaction).
+- En consultation, carte **Prescription** : **Ajouter une ligne**, choisir le médicament, la dose, la fréquence, la durée ; la quantité totale se calcule. Les alertes s'affichent aussitôt, hors connexion compris : allergie, même classe, interaction, dose maximale (par prise, par jour, par kilo), grossesse (case « Patiente enceinte »), âge, personne âgée, insuffisance rénale ou hépatique.
+- Une alerte **bloquante** empêche de signer : changez de médicament ou de dose, ou, si votre rôle le permet (Médecin par défaut), écrivez une justification pour passer outre. **Signer l'ordonnance**, puis **Imprimer** : ordonnance A5 avec un QR et un code de vérification. **Annuler l'ordonnance** demande un motif.
+- Carte **Traitements habituels** : ajouter ce que le patient prend déjà ; pour chacun, Continuer, Arrêter ou Modifier, puis **Enregistrer la réconciliation**.
+- Vérification : le QR ouvre `/verifier?code=...` (ou tapez le code sur cette page). La page dit si l'ordonnance est authentique ou annulée, sa date et la structure, sans aucune donnée de santé.
+
 ### Allergies, antécédents et problèmes (S8)
 
 - Rôles cliniques (lecture du dossier médical) : sous l'en-tête de la fiche, les **allergies en rouge** ; sinon « Aucune allergie connue (déclaré le ...) » ou « Allergies non renseignées ».

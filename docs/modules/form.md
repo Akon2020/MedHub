@@ -56,3 +56,11 @@ Constructeur (`/app/parametres/clinique/formulaires`), bibliothèque de modèles
 ## Points d'accroche
 
 Partogramme (MAT), plan de soins (HOSP), checklists chirurgicales, formulaires du portail patient (PORT), aide à la décision avancée (phase 3).
+
+## Mise en œuvre (S9)
+
+- `packages/forms` : schéma Zod (`schema.ts`), langage d'expression (`expr/`) analysé par `jsep` 1.6.0 et interprété sur liste blanche (fonctions `if`, `round`, `min`, `max`, `abs`, `sqrt`, `pow`, `ageYears`, `ageMonths`, `sex`, `isPregnant`, `value`, `vital`, `answered`, `selected`), moteur sans interface (`engine.ts`) partagé par le poste, l'aperçu du constructeur et le serveur.
+- Types livrés : texte court et long, nombre, date, heure, choix unique et multiple, oui/non, échelle, calcul, constante liée, champ codé CIM-10, information. Tableau, schéma anatomique, image et signature viendront avec leur premier usage.
+- Versions : `form_definition`, `form_version` (brouillon libre ; publié figé par le garde de configuration ; la publication archive la précédente), `form_response` en ajout seul. Contrôles de publication : expressions valides, champs et constantes connus, aucun calcul circulaire, aucun champ qui change de type.
+- Saisie : brouillon local chiffré (toutes les 5 secondes, non synchronisé), puis `form_response.complete` ou `form_response.sign` ; la correction remplace la réponse avec un motif (pas de commande `form_response.correct` séparée). Les champs liés aux constantes créent le `vital_sign` une seule fois. Le serveur vérifie que la version est publiée et que chaque réponse a la forme de son champ ; obligations et visibilité dépendent du contexte du poste, qui les a appliquées avec le même moteur.
+- Modèle de départ livré : « Consultation générale » seulement (décision du porteur au lancement de S9), publié dans la structure de démonstration ; les autres modèles, les parcours cliniques, les modèles de comptes rendus et l'index des champs « reportables » restent à faire.

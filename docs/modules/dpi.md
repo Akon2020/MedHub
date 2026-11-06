@@ -76,6 +76,16 @@ Chaque ouverture écrit le journal d'accès.
 - Tables de croissance OMS officielles (mensuelles, interpolées) dans `packages/domain/src/dpi/who-growth/`, avec leur source.
 - Dossiers sensibles présents sur les postes mais verrouillés derrière l'accès d'urgence (décision du 02/11/2026).
 
+## Mise en œuvre (S9)
+
+- Note de consultation en cinq rubriques (motif, histoire, examen, conclusion, conduite à tenir) : brouillon chiffré sur le poste toutes les 5 secondes, signature en une action hors connexion (`clinical_note.sign`). L'opération signée par la clé de l'appareil est conservée avec la note (`signed_operation`) et `verifyNoteSignature` la contrôle ; une correction est une nouvelle note signée avec motif, la précédente reste lisible (`superseded`).
+- Diagnostics (`diagnosis.add`, ajout seul) : choisis dans la liste importée par la structure (CSV `code;label;system`, aucune liste fournie) ou saisis en texte libre avec un code CIM-10 facultatif dont seul le format est contrôlé ; principal, suspecté, correction par remplacement.
+- Prescription (`prescription.create`, `prescription.cancel`) : catalogue de médicaments et règles d'interaction importés par la structure (CSV, aucun préchargement) ; contrôles partagés de `prescription-checks.ts` (allergie par nom ou classe ATC, même classe ATC niveau 4, interactions importées avec préfixes de classe, doses par prise, par jour et par kilo, grossesse, âge minimal, personne âgée, insuffisance rénale N17 à N19 et hépatique K70 à K77) ; gravité des interactions : mineure = information, modérée = avertissement, majeure et contre-indiquée = bloquante. Passer outre exige `prescription:override_alert` et une justification (refus `PRESC_OVERRIDE_DENIED` par le serveur sinon). Le serveur relance les contrôles sur ses données : une alerte bloquante que le prescripteur ne pouvait pas voir est signalée dans le journal de sécurité (`prescription_alert_unseen`), l'ordonnance est gardée.
+- Fréquences structurées (`once`, `1x/d` à `4x/d`, `q12h`, `q8h`, `q6h`, `prn`) et quantité calculée en unités de dose. Grossesse : case à cocher dans la prescription en attendant le suivi de grossesse (MAT, phase 2).
+- Traitements habituels (`medication_statement.add`, `.stop`, union) et réconciliation simple en consultation (`medication_reconciliation.record` : continuer, arrêter, modifier) ; arrêter ferme aussi le traitement habituel.
+- Ordonnance A5 générée sur le poste avec QR vers `/verifier?code=` : la page publique confirme le document, sa date, son statut et la structure, sans aucune donnée de santé, avec limitation de débit par adresse.
+- Arrêt d'une ligne (`prescription_item.stop`) et statuts de dispensation : avec la pharmacie (S12).
+
 ## 7. Confidentialité
 
 - Niveaux de sensibilité par catégorie de données (VIH, santé mentale, violences, IVG...) configurables : ces données sont chiffrées côté serveur et masquées sans permission `clinical_record:read_sensitive` ou bris de glace.
