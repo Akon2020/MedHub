@@ -2186,6 +2186,14 @@
       "q8h": "every 8 h",
       "q6h": "every 6 h",
       "prn": "as needed"
+    },
+    "printout": {
+      "title": "Prescription",
+      "patient": "Patient",
+      "weight": "weight",
+      "verify": "Check: /verifier",
+      "signature": "Signature and stamp",
+      "noSubstitution": "no substitution"
     }
   },
   "medication": {
@@ -2204,5 +2212,16 @@
     "label": "Drug",
     "dose": "Dosage",
     "addButton": "Add"
+  },
+  "verify": {
+    "title": "Check a prescription",
+    "code": "Code printed under the QR",
+    "check": "Check",
+    "notFound": "No document carries this code: the prescription is not authentic or not synchronised yet.",
+    "limited": "Too many checks from this address: try again in a few minutes.",
+    "authentic": "Authentic prescription.",
+    "cancelled": "Authentic prescription, cancelled by its prescriber.",
+    "issued": "Issued by {structure} on {date}.",
+    "privacy": "This page shows no health data: neither the patient, nor the drugs, nor the prescriber."
   }
 }

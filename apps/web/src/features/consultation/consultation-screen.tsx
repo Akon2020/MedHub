@@ -17,6 +17,7 @@ import { openVisitOfToday, todayTickets } from '@/features/visits/visit-helpers'
 import { FormsPanel } from '@/features/forms/forms-panel';
 import { MedicationPanel } from '@/features/prescription/medication-panel';
 import { PrescriptionPanel } from '@/features/prescription/prescription-panel';
+import { usePrescriptionPrint } from '@/features/prescription/prescription-pdf';
 import { DiagnosesPanel } from './diagnoses-panel';
 import { NoteEditor } from './note-editor';
 
@@ -29,6 +30,9 @@ import { NoteEditor } from './note-editor';
 export function ConsultationScreen({ patientId }: { patientId: string }) {
   const t = useTranslations('consultation');
   const tErr = useTranslations('errors');
+  const tp = useTranslations('patients');
+  const tc = useTranslations('common');
+  const printPrescription = usePrescriptionPrint();
   const { dispatch, identity } = useRuntime();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -211,6 +215,23 @@ export function ConsultationScreen({ patientId }: { patientId: string }) {
             patientId={patientId}
             encounterId={data.visitId}
             prescriptions={data.prescriptions}
+            onPrint={(p) => {
+              const months = ageInMonths(typeof d.birthDate === 'string' ? d.birthDate : null, now);
+              void printPrescription(p, {
+                name,
+                mrn: String(d.mrn ?? ''),
+                details: [
+                  tp(`sex.${d.sex === 'M' || d.sex === 'F' ? d.sex : 'U'}`),
+                  months === null ? '' : tc('years', { count: Math.floor(months / 12) }),
+                ]
+                  .filter(Boolean)
+                  .join(' · '),
+                weight:
+                  typeof data.lastVitals.weight === 'number'
+                    ? `${data.lastVitals.weight} kg`
+                    : null,
+              }).catch(() => setError(tErr('UNKNOWN')));
+            }}
             canBePregnant={d.sex === 'F'}
             facts={{
               ageMonths: ageInMonths(typeof d.birthDate === 'string' ? d.birthDate : null, now),

@@ -2191,6 +2191,14 @@
       "q8h": "toutes les 8 h",
       "q6h": "toutes les 6 h",
       "prn": "si besoin"
+    },
+    "printout": {
+      "title": "Ordonnance",
+      "patient": "Patient",
+      "weight": "poids",
+      "verify": "Vérifier : /verifier",
+      "signature": "Signature et cachet",
+      "noSubstitution": "non substituable"
     }
   },
   "medication": {
@@ -2209,5 +2217,16 @@
     "label": "Médicament",
     "dose": "Posologie",
     "addButton": "Ajouter"
+  },
+  "verify": {
+    "title": "Vérifier une ordonnance",
+    "code": "Code imprimé sous le QR",
+    "check": "Vérifier",
+    "notFound": "Aucun document ne porte ce code : l’ordonnance n’est pas authentique ou n’est pas encore synchronisée.",
+    "limited": "Trop de vérifications depuis cette adresse : réessayez dans quelques minutes.",
+    "authentic": "Ordonnance authentique.",
+    "cancelled": "Ordonnance authentique mais annulée par son prescripteur.",
+    "issued": "Émise par {structure} le {date}.",
+    "privacy": "Cette page ne montre aucune donnée de santé : ni le patient, ni les médicaments, ni le prescripteur."
   }
 }

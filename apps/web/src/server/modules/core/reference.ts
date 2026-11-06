@@ -422,7 +422,7 @@ export async function catalogSnapshot(ctx: RequestContext): Promise<CatalogSnaps
       .where(eq(schema.userAccount.status, 'active'))
       .orderBy(asc(schema.userAccount.displayName), asc(schema.userAccount.id));
     const [tenant] = await tx
-      .select({ timeZone: schema.tenant.timezone })
+      .select({ timeZone: schema.tenant.timezone, legalMentions: schema.tenant.legalMentions })
       .from(schema.tenant)
       .where(eq(schema.tenant.id, ctx.tenantId));
     const vitalDefinitions = (await effectiveVitalDefinitions(tx)).map(
@@ -447,6 +447,7 @@ export async function catalogSnapshot(ctx: RequestContext): Promise<CatalogSnaps
       programs,
       vitalDefinitions,
       timeZone: tenant?.timeZone ?? 'Africa/Kinshasa',
+      legalMentions: tenant?.legalMentions ?? null,
       currencies,
       units,
       provinces,

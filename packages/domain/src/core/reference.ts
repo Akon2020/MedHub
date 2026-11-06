@@ -260,6 +260,8 @@ export type CatalogSnapshot = {
   }[];
   /** Time zone of the structure: agenda slots are local times there. */
   timeZone?: string;
+  /** Legal mentions of the structure printed on documents (empty by default, never invented). */
+  legalMentions?: string | null;
   /** Active users, for names on screens and practitioner agendas. */
   staff?: { id: string; displayName: string; title: string | null }[];
 };

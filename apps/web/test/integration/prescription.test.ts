@@ -282,6 +282,40 @@ describe.skipIf(!url)('prescription against PostgreSQL', () => {
     ).rejects.toThrow();
   });
 
+  it('confirms a printed code publicly without showing any health data', async () => {
+    const { verifyPrescription } = await import('@/server/platform/verification');
+    const d = workstation();
+    const { entityId: patientId } = await d.dispatch('patient.register', {
+      mrn: 'TST-RX-3',
+      familyName: 'Kabeya',
+      sex: 'M',
+    });
+    const code = verification();
+    const { entityId } = await d.dispatch('prescription.create', {
+      patientId,
+      prescribedAt: '2026-11-06T09:00:00.000Z',
+      verificationCode: code,
+      items: [{ label: 'Paracétamol 500 mg', doseValue: 1, doseUnit: 'cp', frequency: '3x/d' }],
+    });
+    await d.sync();
+    const ip = `198.51.100.${String(Math.floor(Math.random() * 200) + 1)}`;
+    expect(await verifyPrescription(code.toLowerCase(), ip)).toEqual({
+      found: true,
+      status: 'active',
+      issuedOn: '2026-11-06',
+      structure: 'Structure de test prescription',
+    });
+    expect(await verifyPrescription('ABCDEFGHJK', ip)).toEqual({ found: false });
+    expect(await verifyPrescription('<script>', ip)).toEqual({ found: false });
+    await d.dispatch(
+      'prescription.cancel',
+      { status: 'cancelled', cancelReason: 'Erreur de saisie' },
+      { entityId },
+    );
+    await d.sync();
+    expect(await verifyPrescription(code, ip)).toMatchObject({ found: true, status: 'cancelled' });
+  });
+
   it('keeps habitual treatments and records the reconciliation decisions', async () => {
     const d = workstation();
     const { entityId: patientId } = await d.dispatch('patient.register', {
