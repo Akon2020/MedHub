@@ -19,6 +19,7 @@ Le jalon **J0 Fondations** est construit :
 - S7 (terminée) : files d'attente et tickets, écran d'appel, triage, rendez-vous et agendas.
 - S8 (terminée côté code) : allergies, antécédents, problèmes, journal des accès, constantes (plages normales, tendances, IMC, NEWS2), accès d'urgence, programmes chroniques, courbes de croissance OMS.
 - S9 (terminée côté code) : consultation, note signée, diagnostics codés, formulaires cliniques, prescription avec alertes, ordonnance avec QR ; critère de sortie de J1 atteint en test automatisé (scénario P1).
+- S10 (terminée côté code) : tarifs et devises, facture panier, caisse multi-devises avec arrondi et reçus, sessions et clôture, remises et avoirs approuvés par un second habilité.
 
 Le journal complet de tout ce qui a été fait se trouve dans `walkthrough.md`.
 
@@ -154,13 +155,13 @@ Pour se connecter : **Accéder à ma structure**, puis le code de structure, l'i
 | Identifiant | Nom affiché | Rôle | Double authentification | Pour tester |
 | --- | --- | --- | --- | --- |
 | `admin` | Administrateur Démo | Administrateur de structure et Direction | Obligatoire (configurée à la première connexion) | Paramètres, utilisateurs, rôles, imports (diagnostics, médicaments), formulaires, sécurité, appareils |
-| `direction` | Sagesse Direction | Direction | Obligatoire | Tableaux de bord et lecture des finances (au fil de J2) |
+| `direction` | Sagesse Direction | Direction | Obligatoire | Approbation des remises et des avoirs (`/app/caisse/approbations`), lecture des finances |
 | `accueil` | Bienvenu Accueil | Accueil | Non | Enregistrement et recherche des patients, visites, tickets, rendez-vous |
 | `infirmier` | Espérance Soins | Infirmier | Non | Files d'attente, appel, triage, constantes |
 | `medecin` | Dr Dieudonné Kasongo | Médecin | Non | Consultation, note signée, diagnostics, formulaires, prescription (peut passer outre une alerte), décès, accès d'urgence |
 | `laboratoire` | Tech. Fidèle Analyses | Technicien de laboratoire | Non | Laboratoire (S13) |
 | `pharmacie` | Ph. Patience Lukusa | Pharmacien | Non | Pharmacie et stock (S12) |
-| `caisse` | Héritier Mwamba | Caissier | Non | Facturation et caisse (S10 et S11) |
+| `caisse` | Héritier Mwamba | Caissier | Non | Caisse : session, factures, encaissements, demandes de remise et d'avoir, remboursements |
 
 **Pourquoi le mot de passe n'est pas écrit ici** : ce guide est versionné et poussé sur GitHub ; la règle 12 de `CLAUDE.md` interdit tout secret dans le dépôt, et ces comptes ouvrent une vraie base de développement. Le mot de passe reste donc seulement dans `.env.local` (non versionné). Pour l'afficher sur votre poste :
 
@@ -407,6 +408,25 @@ Menu **Paramètres** (permission `configuration:read`, administrateur de structu
 - Pour s'exercer, chacun se connecte avec ce code au lieu du code habituel. Le bandeau « Base de formation » reste affiché.
 - **Réinitialiser** : la base actuelle est archivée (rien n'est supprimé), ses postes effacent leurs données de formation à leur prochain contact, et une nouvelle base est créée sous le même code avec la configuration du jour.
 - Aucun SMS ni courriel réel ne doit partir d'une base de formation : règle à appliquer par le module de notifications quand il arrivera (aucun envoi n'existe aujourd'hui).
+
+### Tarifs et devises (S10)
+
+- **Paramètres, Tarifs et devises** (en ligne, `price:read` ; modification `price:manage` avec second facteur) :
+  - **Devises et arrondi** : pas d'arrondi des espèces par devise (50 pour 50 CDF, 0 pour aucun).
+  - **Taux de change** : « 1 USD vaut ... CDF à partir du ... ». Sans taux du jour, la caisse prend le dernier taux et affiche sa date.
+  - **Prestations** : code définitif, nom, catégorie ; import CSV `code;libelle;categorie`.
+  - **Facturation automatique** : la prestation ajoutée à l'ouverture d'une visite, selon le type de visite et le service.
+  - **Grilles de prix** : une par type de patient et par devise ; import CSV `code;montant;debut;fin`. MedHub ne fournit aucun prix : importez les vôtres.
+
+### Caisse (S10)
+
+- **Caisse** (menu Finances, `/app/caisse`), hors connexion compris : factures du jour, puis la fiche de facturation du patient.
+- **Ouvrir la caisse** avec le fonds de départ dans chaque devise. Chaque paiement est rattaché à votre session sur ce poste.
+- Une visite ouverte à l'accueil ajoute la consultation à une facture (« Prix manquant » si aucun prix ne s'applique : un utilisateur qui gère les tarifs le saisit). **Ajouter une prestation** à la main, puis **Finaliser la facture** (plus aucune ligne ensuite ; un acte tardif ouvre une facture complémentaire).
+- **Encaisser** : moyen (espèces, mobile money avec opérateur et référence, carte, chèque, virement), devise, montant reçu. Le montant à payer est converti au taux du jour et arrondi pour les espèces ; la monnaie à rendre s'affiche ; le reçu 80 mm s'imprime. Un paiement partiel est accepté.
+- **Remise ou avoir** : sur la facture, « Demander une remise ou un avoir » (montant, motif). La demande part à la synchronisation et ne s'applique qu'après l'accord d'une autre personne habilitée. Un avoir de tout le montant annule la facture. Un trop-perçu se rembourse en espèces avec un motif.
+- **Clôturer la caisse** : comptez les espèces de chaque devise ; un écart demande une justification. Une session close ne se rouvre pas. Le serveur refait le calcul et signale tout écart dans le journal de sécurité.
+- **Approbations** (`/app/caisse/approbations`, rôle Direction par défaut, en ligne, second facteur) : approuver ou refuser (commentaire obligatoire pour refuser). On ne décide jamais sa propre demande.
 
 ### Consultation (S9)
 

@@ -23,6 +23,13 @@ import { recordAccessPayload } from './dpi/access-log';
 import { breakGlassPayload } from './dpi/break-glass';
 import { clinicalNotePayload, diagnosisPayload } from './dpi/consultation';
 import { formResponseCompletePayload, formResponseSignPayload } from './dpi/form-responses';
+import { invoiceFinalizePayload, invoiceLinePayload, invoiceOpenPayload } from './fact/invoice';
+import { creditNoteRequestPayload, discountRequestPayload } from './fact/adjustments';
+import {
+  cashSessionClosePayload,
+  cashSessionOpenPayload,
+  paymentReceivePayload,
+} from './fact/payment';
 import {
   medicationReconciliationPayload,
   medicationStatementAddPayload,
@@ -72,7 +79,14 @@ export type EntityName =
   | 'form_response'
   | 'prescription'
   | 'medication_statement'
-  | 'medication_reconciliation';
+  | 'medication_reconciliation'
+  | 'invoice'
+  | 'invoice_line'
+  | 'cash_session'
+  | 'payment'
+  | 'approval_request'
+  | 'discount_grant'
+  | 'credit_note';
 
 export type EntityDefinition = {
   name: EntityName;
@@ -183,6 +197,18 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
     scopeKeys: (data) => [`patient:${String(data.patientId)}`],
     patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
   },
+  invoice: {
+    name: 'invoice',
+    strategy: 'field_merge',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  invoice_line: {
+    name: 'invoice_line',
+    strategy: 'append_only',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
   form_response: {
     name: 'form_response',
     strategy: 'append_only',
@@ -219,6 +245,35 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
     name: 'stock_movement',
     strategy: 'movements',
     scopeKeys: (data) => [`warehouse:${String(data.warehouseId)}`],
+  },
+  cash_session: {
+    name: 'cash_session',
+    strategy: 'field_merge',
+    scopeKeys: (_data, id) => [`cash_session:${id}`],
+  },
+  approval_request: {
+    name: 'approval_request',
+    strategy: 'field_merge',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  discount_grant: {
+    name: 'discount_grant',
+    strategy: 'append_only',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  credit_note: {
+    name: 'credit_note',
+    strategy: 'append_only',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  payment: {
+    name: 'payment',
+    strategy: 'append_only',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
   },
 };
 
@@ -561,6 +616,82 @@ export const COMMANDS = {
     permission: 'clinical_record:create',
     onlineOnly: false,
     patientAct: (p) => ({ patientId: p.patientId, at: p.performedAt }),
+  }),
+  'invoice.open': define({
+    name: 'invoice.open',
+    entity: 'invoice',
+    kind: 'create',
+    payloadSchema: invoiceOpenPayload,
+    permission: 'invoice:create',
+    onlineOnly: false,
+  }),
+  'invoice.add_line': define({
+    name: 'invoice.add_line',
+    entity: 'invoice_line',
+    kind: 'append',
+    payloadSchema: invoiceLinePayload,
+    permission: 'invoice:add_line',
+    onlineOnly: false,
+  }),
+  'invoice.finalize': define({
+    name: 'invoice.finalize',
+    entity: 'invoice',
+    kind: 'update',
+    payloadSchema: invoiceFinalizePayload,
+    permission: 'invoice:finalize',
+    onlineOnly: false,
+    transition: { from: ['open'], to: 'finalized' },
+  }),
+  'cash_session.open': define({
+    name: 'cash_session.open',
+    entity: 'cash_session',
+    kind: 'create',
+    payloadSchema: cashSessionOpenPayload,
+    permission: 'cash_session:open',
+    onlineOnly: false,
+  }),
+  'cash_session.close': define({
+    name: 'cash_session.close',
+    entity: 'cash_session',
+    kind: 'update',
+    payloadSchema: cashSessionClosePayload,
+    permission: 'cash_session:close',
+    onlineOnly: false,
+    transition: { from: ['open'], to: 'closed' },
+  }),
+  'payment.receive': define({
+    name: 'payment.receive',
+    entity: 'payment',
+    kind: 'append',
+    payloadSchema: paymentReceivePayload,
+    permission: 'payment:receive',
+    onlineOnly: false,
+    check: (p) => (p.amount < 0 ? 'FACT_REFUND_NOT_ALLOWED' : null),
+  }),
+  'payment.refund': define({
+    name: 'payment.refund',
+    entity: 'payment',
+    kind: 'append',
+    payloadSchema: paymentReceivePayload,
+    permission: 'payment:refund',
+    onlineOnly: false,
+    check: (p) => (p.amount > 0 ? 'FACT_REFUND_NOT_ALLOWED' : null),
+  }),
+  'discount.request': define({
+    name: 'discount.request',
+    entity: 'approval_request',
+    kind: 'create',
+    payloadSchema: discountRequestPayload,
+    permission: 'invoice:discount',
+    onlineOnly: false,
+  }),
+  'credit_note.request': define({
+    name: 'credit_note.request',
+    entity: 'approval_request',
+    kind: 'create',
+    payloadSchema: creditNoteRequestPayload,
+    permission: 'invoice:void',
+    onlineOnly: false,
   }),
   'form_response.sign': define({
     name: 'form_response.sign',

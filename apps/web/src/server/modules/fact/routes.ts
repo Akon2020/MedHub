@@ -1,11 +1,18 @@
 import 'server-only';
-import { exchangeRateInput, priceListInput, serviceItemInput } from '@medhub/domain';
+import {
+  approvalDecisionInput,
+  exchangeRateInput,
+  priceListInput,
+  serviceItemInput,
+} from '@medhub/domain';
+import { decideApproval, listApprovals, saveApprovalThreshold } from './approvals';
 import { z } from 'zod';
 import { clientIp, defineRoute, json } from '../../platform/http';
 import {
   financeOverview,
   importPrices,
   importServiceItems,
+  saveBillingRule,
   saveCurrencySetting,
   savePriceList,
   saveServiceItem,
@@ -63,6 +70,47 @@ export const currencySettingRoute = defineRoute({
   }),
   handler: async ({ request, body, ctx }) => {
     await saveCurrencySetting(ctx, body, { ip: clientIp(request) });
+    return json({ ok: true });
+  },
+});
+
+export const billingRuleRoute = defineRoute({
+  route: 'billing_rules.save',
+  schema: z.object({
+    encounterKind: z.string().max(30).nullable(),
+    departmentId: z.uuid().nullable(),
+    serviceItemId: z.uuid().nullable(),
+  }),
+  handler: async ({ request, body, ctx }) => {
+    await saveBillingRule(ctx, body, { ip: clientIp(request) });
+    return json({ ok: true });
+  },
+});
+
+export const approvalsRoute = defineRoute({
+  route: 'approvals.read',
+  handler: async ({ ctx }) => json(await listApprovals(ctx)),
+});
+
+export const approvalDecideRoute = defineRoute({
+  route: 'approvals.decide',
+  schema: approvalDecisionInput,
+  handler: async ({ request, body, ctx }) => {
+    await decideApproval(ctx, body, { ip: clientIp(request) });
+    return json({ ok: true });
+  },
+});
+
+export const approvalThresholdRoute = defineRoute({
+  route: 'approval_thresholds.save',
+  schema: z.object({
+    roleId: z.uuid(),
+    kind: z.enum(['discount', 'credit_note']),
+    currency: z.string().regex(/^[A-Z]{3}$/),
+    maxAmount: z.number().int().min(0).max(1_000_000_000_000),
+  }),
+  handler: async ({ request, body, ctx }) => {
+    await saveApprovalThreshold(ctx, body, { ip: clientIp(request) });
     return json({ ok: true });
   },
 });

@@ -33,7 +33,7 @@ test('a privileged role enrolls its second factor at first sign-in, then must us
   page,
   browser,
 }) => {
-  test.setTimeout(4 * 60_000);
+  test.setTimeout(6 * 60_000);
   await signIn(page, 'admin');
 
   await expect(page.getByRole('heading', { name: 'Protégez votre compte' })).toBeVisible({

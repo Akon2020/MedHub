@@ -809,7 +809,20 @@
     "FACT_IMPORT_VALUE": "valeur invalide (code, montant ou date)",
     "FACT_IMPORT_CATEGORY": "catégorie inconnue",
     "FACT_IMPORT_DUPLICATE": "ligne en double dans le fichier",
-    "FACT_IMPORT_UNKNOWN_SERVICE": "prestation inconnue : importez-la d’abord"
+    "FACT_IMPORT_UNKNOWN_SERVICE": "prestation inconnue : importez-la d’abord",
+    "FACT_CURRENCY_MISMATCH": "La prestation n’est pas dans la devise de la facture.",
+    "FACT_MANUAL_PRICE_DENIED": "Saisir un prix demande la permission de gérer les tarifs.",
+    "FACT_INVOICE_NOT_FOUND": "Facture introuvable sur le serveur.",
+    "FACT_LINE_NOT_REPLACEABLE": "Seule une ligne sans prix peut recevoir un prix.",
+    "FACT_SESSION_CLOSED": "La session de caisse est fermée : ouvrez-en une nouvelle.",
+    "FACT_SESSION_NOT_YOURS": "Cette session de caisse appartient à un autre poste.",
+    "FACT_DUPLICATE_REFERENCE": "Cette référence mobile money a déjà été encaissée.",
+    "FACT_INVOICE_VOIDED": "Cette facture est annulée.",
+    "FACT_REFUND_NOT_ALLOWED": "Un remboursement passe par la commande dédiée, avec son motif.",
+    "FACT_ADJUSTMENT_TOO_HIGH": "Montant supérieur à ce qui reste facturé.",
+    "FACT_SAME_APPROVER": "Une autre personne que le demandeur doit décider.",
+    "FACT_ALREADY_DECIDED": "Cette demande est déjà décidée.",
+    "FACT_REFUND_REASON_REQUIRED": "Indiquez le motif du remboursement."
   },
   "account": {
     "title": "Mon compte",
@@ -1822,6 +1835,27 @@
         "error": "Ligne {line} : {problem}",
         "apply": "{count, plural, one {Importer # prix} other {Importer # prix}}",
         "saved": "{count} prix importé(s)."
+      },
+      "rules": {
+        "title": "Facturation automatique",
+        "text": "Prestation ajoutée à la facture dès l’ouverture d’une visite, selon le type de visite et le service. La règle la plus précise l’emporte.",
+        "none": "Aucune règle : l’ouverture d’une visite ne facture rien.",
+        "kind": "Type de visite",
+        "department": "Service",
+        "service": "Prestation facturée",
+        "anyKind": "Tout type de visite",
+        "anyDepartment": "Tout service",
+        "nothing": "Ne rien facturer",
+        "save": "Enregistrer la règle"
+      },
+      "visitKinds": {
+        "outpatient": "Consultation externe",
+        "emergency": "Urgence",
+        "inpatient": "Hospitalisation",
+        "day_care": "Hôpital de jour",
+        "teleconsult": "Téléconsultation",
+        "lab_only": "Laboratoire seul",
+        "pharmacy_only": "Pharmacie seule"
       }
     }
   },
@@ -2325,5 +2359,149 @@
     "cancelled": "Ordonnance authentique mais annulée par son prescripteur.",
     "issued": "Émise par {structure} le {date}.",
     "privacy": "Cette page ne montre aucune donnée de santé : ni le patient, ni les médicaments, ni le prescripteur."
+  },
+  "billing": {
+    "title": "Caisse",
+    "subtitle": "Factures du jour et factures ouvertes sur ce poste ; tout fonctionne hors connexion.",
+    "filter": "Patient, numéro de dossier ou de facture",
+    "empty": "Aucune facture aujourd’hui sur ce poste.",
+    "back": "Retour à la caisse",
+    "notOnDevice": "Ce patient n’est pas sur ce poste.",
+    "newInvoice": "Nouvelle facture",
+    "noInvoice": "Aucune facture pour ce patient.",
+    "invoice": {
+      "status": {
+        "open": "Ouverte",
+        "finalized": "Finalisée",
+        "voided": "Annulée"
+      },
+      "supplementary": "Complémentaire",
+      "pending": "En attente de synchronisation",
+      "opened": "Ouverte le {date}",
+      "empty": "Aucune ligne.",
+      "manual": "(prix saisi)",
+      "noPrice": "Prix manquant",
+      "setPrice": "Saisir le prix",
+      "unitPrice": "Prix unitaire ({currency})",
+      "confirmPrice": "Valider le prix",
+      "total": "Total",
+      "missing": "{count, plural, one {# ligne sans prix : saisissez-le avant de finaliser.} other {# lignes sans prix : saisissez-les avant de finaliser.}}",
+      "addService": "Ajouter une prestation",
+      "quantity": "Quantité",
+      "finalize": "Finaliser la facture"
+    },
+    "session": {
+      "closedTitle": "Caisse fermée",
+      "closedText": "Ouvrez votre session de caisse sur ce poste pour encaisser. Indiquez le fonds de caisse de départ dans chaque devise.",
+      "float": "Fonds de caisse ({currency})",
+      "open": "Ouvrir la caisse",
+      "openTitle": "Caisse ouverte",
+      "noPayment": "Aucun encaissement dans cette session.",
+      "close": "Clôturer la caisse",
+      "counted": "Espèces comptées ({currency})",
+      "expected": "attendu : {amount}",
+      "variance": "écart : {amount}",
+      "justification": "Justification de l’écart (obligatoire)",
+      "confirmClose": "Clôturer définitivement",
+      "cancel": "Annuler",
+      "methods": {
+        "cash": "Espèces",
+        "mobile_money": "Mobile money",
+        "card": "Carte",
+        "cheque": "Chèque",
+        "transfer": "Virement"
+      }
+    },
+    "payment": {
+      "balance": "Reste à payer",
+      "state": {
+        "unpaid": "Non payée",
+        "partially_paid": "Payée en partie",
+        "paid": "Payée",
+        "refund_due": "À rembourser"
+      },
+      "pending": "En attente de synchronisation",
+      "reprint": "Reçu",
+      "openSessionFirst": "Ouvrez la caisse pour encaisser.",
+      "method": "Moyen",
+      "currency": "Devise",
+      "received": "Montant reçu ({currency})",
+      "operator": "Opérateur",
+      "reference": "Référence de la transaction",
+      "operators": {
+        "mpesa": "M-Pesa",
+        "orange": "Orange Money",
+        "airtel": "Airtel Money",
+        "africell": "Afrimoney",
+        "other": "Autre"
+      },
+      "noRate": "Aucun taux {from} vers {to} sur ce poste : saisissez le taux dans Tarifs et devises.",
+      "rate": "Taux du {date} : {rate}",
+      "staleRate": "Dernier taux connu, du {date} : {rate}. Saisissez le taux du jour si possible.",
+      "due": "À payer : {amount}",
+      "rounding": "(arrondi {amount})",
+      "settles": "Règle {amount} sur la facture.",
+      "change": "Monnaie à rendre : {amount}",
+      "receive": "Encaisser et imprimer le reçu",
+      "refundDue": "Trop perçu à rembourser : {amount}",
+      "refundReason": "Motif du remboursement",
+      "refund": "Rembourser en espèces"
+    },
+    "receipt": {
+      "title": "Reçu de paiement",
+      "patient": "Patient",
+      "invoice": "Facture",
+      "method": "Moyen",
+      "reference": "Référence",
+      "settled": "Montant réglé",
+      "rate": "Taux du {date}",
+      "rounding": "Arrondi",
+      "received": "Reçu",
+      "change": "Monnaie rendue",
+      "remaining": "Reste à payer",
+      "thanks": "Merci."
+    },
+    "adjustments": {
+      "discount": "Remise",
+      "creditNote": "Avoir {number}",
+      "billed": "Net à payer",
+      "pendingApproval": "En attente d’approbation",
+      "askedDiscount": "Remise de {amount} demandée",
+      "askedCredit": "Avoir de {amount} demandé",
+      "rejected": "Demande de {amount} refusée.",
+      "ask": "Demander une remise ou un avoir",
+      "kind": "Type de demande",
+      "kinds": {
+        "discount": "Remise",
+        "credit_note": "Avoir (annulation)"
+      },
+      "amount": "Montant ({currency})",
+      "all": "Tout",
+      "reason": "Motif (obligatoire)",
+      "hint": "La demande part avec la prochaine synchronisation ; elle ne s’applique qu’après l’accord d’une autre personne habilitée.",
+      "send": "Envoyer la demande"
+    },
+    "approvals": {
+      "title": "Approbations",
+      "subtitle": "Remises et avoirs demandés à la caisse : une autre personne habilitée décide, avec le second facteur.",
+      "offline": "Les approbations se décident en ligne.",
+      "empty": "Aucune demande.",
+      "kinds": {
+        "discount": "Remise",
+        "credit_note": "Avoir"
+      },
+      "status": {
+        "pending": "En attente",
+        "approved": "Approuvée",
+        "rejected": "Refusée"
+      },
+      "asked": "Demandée par {name} le {date}",
+      "decidedBy": "décidée par {name}",
+      "reason": "Commentaire (obligatoire pour refuser)",
+      "approve": "Approuver",
+      "reject": "Refuser",
+      "ownRequest": "Votre propre demande : une autre personne doit la décider."
+    },
+    "approvalsLink": "Approbations en attente"
   }
 }

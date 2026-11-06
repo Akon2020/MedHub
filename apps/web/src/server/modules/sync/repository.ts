@@ -9,6 +9,12 @@ import {
   type Tx,
 } from '@medhub/db';
 import {
+  adjustmentAllowed,
+  approvalCap,
+  CREDIT_NOTE_NUMBER_TEMPLATE,
+  formatNumber,
+  type AdjustmentKind,
+  expectedCash,
   checkPrescription,
   overridesBlocking,
   type DrugInfo,
@@ -39,7 +45,7 @@ import {
   type ServerSyncStore,
   type ServerSyncTx,
 } from '@medhub/sync/server';
-import { and, asc, eq, gt, gte, inArray, isNull, lte, ne } from 'drizzle-orm';
+import { and, asc, eq, gt, gte, inArray, isNull, lte, ne, sql } from 'drizzle-orm';
 
 type Ctx = { tenantId: string; userId: string; deviceId: string | null };
 
@@ -789,6 +795,377 @@ const mappers = {
       };
     },
   },
+  cash_session: {
+    table: schema.cashSession,
+    toState(row: typeof schema.cashSession.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          openedAt: row.openedAt.toISOString(),
+          openingFloat: row.openingFloat,
+          status: row.status,
+          closedAt: row.closedAt?.toISOString(),
+          counted: row.counted,
+          expected: row.expected,
+          serverExpected: row.serverExpected,
+          justification: row.justification,
+          cashierId: row.createdBy,
+          deviceId: row.deviceId,
+        }),
+        fieldMeta: row.fieldMeta,
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.cashSession.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        openedAt: new Date(String(d.openedAt)),
+        openingFloat: numberMap(d.openingFloat) ?? {},
+        status: str(d.status) ?? 'open',
+        closedAt: instant(d.closedAt),
+        counted: numberMap(d.counted),
+        expected: numberMap(d.expected),
+        serverExpected: numberMap(d.serverExpected),
+        justification: str(d.justification),
+        fieldMeta: state.fieldMeta,
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+        updatedAt: new Date(),
+        updatedBy: ctx.userId,
+      };
+    },
+  },
+  payment: {
+    table: schema.payment,
+    toState(row: typeof schema.payment.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          invoiceId: row.invoiceId,
+          cashSessionId: row.cashSessionId,
+          method: row.method,
+          currency: row.currency,
+          amount: row.amount,
+          invoiceCurrency: row.invoiceCurrency,
+          amountInInvoiceCurrency: row.amountInInvoiceCurrency,
+          exchangeRate: row.exchangeRate,
+          exchangeRateDate: row.exchangeRateDate,
+          exchangeRateInverse: row.exchangeRateInverse,
+          roundingAdjustment: row.roundingAdjustment,
+          change: row.change,
+          reference: row.reference,
+          operator: row.operator,
+          receiptNumber: row.receiptNumber,
+          receivedAt: row.receivedAt.toISOString(),
+          refundReason: row.refundReason,
+          status: row.status,
+        }),
+        fieldMeta: {},
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.payment.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        invoiceId: String(d.invoiceId),
+        cashSessionId: String(d.cashSessionId),
+        method: String(d.method),
+        currency: String(d.currency),
+        amount: Number(d.amount),
+        invoiceCurrency: String(d.invoiceCurrency),
+        amountInInvoiceCurrency: Number(d.amountInInvoiceCurrency),
+        exchangeRate: str(d.exchangeRate),
+        exchangeRateDate: str(d.exchangeRateDate),
+        exchangeRateInverse: d.exchangeRateInverse === true,
+        roundingAdjustment: Number(d.roundingAdjustment ?? 0),
+        change: Number(d.change ?? 0),
+        reference: str(d.reference),
+        operator: str(d.operator),
+        receiptNumber: String(d.receiptNumber),
+        receivedAt: new Date(String(d.receivedAt)),
+        refundReason: str(d.refundReason),
+        status: 'active',
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+      };
+    },
+  },
+  approval_request: {
+    table: schema.approvalRequest,
+    toState(row: typeof schema.approvalRequest.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          kind: row.kind,
+          invoiceId: row.invoiceId,
+          patientId: row.patientId,
+          currency: row.currency,
+          amount: row.amount,
+          reason: row.reason,
+          requestedAt: row.requestedAt.toISOString(),
+          status: row.status,
+          decidedBy: row.decidedBy,
+          decidedAt: row.decidedAt?.toISOString(),
+          decisionReason: row.decisionReason,
+        }),
+        fieldMeta: row.fieldMeta,
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.approvalRequest.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        kind: String(d.kind),
+        invoiceId: String(d.invoiceId),
+        patientId: String(d.patientId),
+        currency: String(d.currency),
+        amount: Number(d.amount),
+        reason: String(d.reason),
+        requestedAt: new Date(String(d.requestedAt)),
+        status: str(d.status) ?? 'pending',
+        decidedBy: str(d.decidedBy),
+        decidedAt: instant(d.decidedAt),
+        decisionReason: str(d.decisionReason),
+        fieldMeta: state.fieldMeta,
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+        updatedAt: new Date(),
+        updatedBy: ctx.userId,
+      };
+    },
+  },
+  discount_grant: {
+    table: schema.discountGrant,
+    toState(row: typeof schema.discountGrant.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          approvalRequestId: row.approvalRequestId,
+          invoiceId: row.invoiceId,
+          patientId: row.patientId,
+          currency: row.currency,
+          amount: row.amount,
+          reason: row.reason,
+          approvedBy: row.approvedBy,
+          grantedAt: row.grantedAt.toISOString(),
+          status: row.status,
+        }),
+        fieldMeta: {},
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.discountGrant.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        approvalRequestId: String(d.approvalRequestId),
+        invoiceId: String(d.invoiceId),
+        patientId: String(d.patientId),
+        currency: String(d.currency),
+        amount: Number(d.amount),
+        reason: String(d.reason),
+        approvedBy: str(d.approvedBy),
+        grantedAt: new Date(String(d.grantedAt)),
+        status: 'active',
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+      };
+    },
+  },
+  credit_note: {
+    table: schema.creditNote,
+    toState(row: typeof schema.creditNote.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          approvalRequestId: row.approvalRequestId,
+          invoiceId: row.invoiceId,
+          patientId: row.patientId,
+          number: row.number,
+          currency: row.currency,
+          amount: row.amount,
+          reason: row.reason,
+          approvedBy: row.approvedBy,
+          issuedAt: row.issuedAt.toISOString(),
+          status: row.status,
+        }),
+        fieldMeta: {},
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.creditNote.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        approvalRequestId: String(d.approvalRequestId),
+        invoiceId: String(d.invoiceId),
+        patientId: String(d.patientId),
+        number: String(d.number),
+        currency: String(d.currency),
+        amount: Number(d.amount),
+        reason: String(d.reason),
+        approvedBy: str(d.approvedBy),
+        issuedAt: new Date(String(d.issuedAt)),
+        status: 'active',
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+      };
+    },
+  },
+  invoice: {
+    table: schema.invoice,
+    toState(row: typeof schema.invoice.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          encounterId: row.encounterId,
+          number: row.number,
+          officialNumber: row.officialNumber,
+          currency: row.currency,
+          status: row.status,
+          openedAt: row.openedAt.toISOString(),
+          finalizedAt: row.finalizedAt?.toISOString(),
+          supplementaryOf: row.supplementaryOf,
+        }),
+        fieldMeta: row.fieldMeta,
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.invoice.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        encounterId: str(d.encounterId),
+        number: String(d.number),
+        officialNumber: str(d.officialNumber),
+        currency: String(d.currency),
+        status: str(d.status) ?? 'open',
+        openedAt: new Date(String(d.openedAt)),
+        finalizedAt: instant(d.finalizedAt),
+        supplementaryOf: str(d.supplementaryOf),
+        fieldMeta: state.fieldMeta,
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+        updatedAt: new Date(),
+        updatedBy: ctx.userId,
+      };
+    },
+  },
+  invoice_line: {
+    table: schema.invoiceLine,
+    toState(row: typeof schema.invoiceLine.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          invoiceId: row.invoiceId,
+          patientId: row.patientId,
+          serviceItemId: row.serviceItemId,
+          code: row.code,
+          label: row.label,
+          category: row.category,
+          quantity: row.quantity,
+          unitPrice: row.unitPrice,
+          currency: row.currency,
+          priceListId: row.priceListId,
+          manualPrice: row.manualPrice,
+          sourceTable: row.sourceTable,
+          sourceId: row.sourceId,
+          performedAt: row.performedAt.toISOString(),
+          supersedesId: row.supersedesId,
+          status: row.status,
+        }),
+        fieldMeta: {},
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.invoiceLine.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        invoiceId: String(d.invoiceId),
+        patientId: String(d.patientId),
+        serviceItemId: str(d.serviceItemId),
+        code: str(d.code),
+        label: String(d.label),
+        category: String(d.category),
+        quantity: Number(d.quantity),
+        unitPrice: typeof d.unitPrice === 'number' ? d.unitPrice : null,
+        currency: String(d.currency),
+        priceListId: str(d.priceListId),
+        manualPrice: d.manualPrice === true,
+        sourceTable: str(d.sourceTable),
+        sourceId: str(d.sourceId),
+        performedAt: new Date(String(d.performedAt)),
+        supersedesId: str(d.supersedesId),
+        status: str(d.status) ?? 'active',
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+      };
+    },
+  },
   form_response: {
     table: schema.formResponse,
     toState(row: typeof schema.formResponse.$inferSelect): EntityState {
@@ -1201,6 +1578,62 @@ async function getEntity(tx: Tx, entity: EntityName, id: string): Promise<Entity
     }
     case 'prescription':
       return (await prescriptionStates(tx, [id]))[0] ?? null;
+    case 'approval_request': {
+      const [row] = await tx
+        .select()
+        .from(schema.approvalRequest)
+        .where(eq(schema.approvalRequest.id, id))
+        .limit(1);
+      return row ? mappers.approval_request.toState(row) : null;
+    }
+    case 'discount_grant': {
+      const [row] = await tx
+        .select()
+        .from(schema.discountGrant)
+        .where(eq(schema.discountGrant.id, id))
+        .limit(1);
+      return row ? mappers.discount_grant.toState(row) : null;
+    }
+    case 'credit_note': {
+      const [row] = await tx
+        .select()
+        .from(schema.creditNote)
+        .where(eq(schema.creditNote.id, id))
+        .limit(1);
+      return row ? mappers.credit_note.toState(row) : null;
+    }
+    case 'cash_session': {
+      const [row] = await tx
+        .select()
+        .from(schema.cashSession)
+        .where(eq(schema.cashSession.id, id))
+        .limit(1);
+      return row ? mappers.cash_session.toState(row) : null;
+    }
+    case 'payment': {
+      const [row] = await tx
+        .select()
+        .from(schema.payment)
+        .where(eq(schema.payment.id, id))
+        .limit(1);
+      return row ? mappers.payment.toState(row) : null;
+    }
+    case 'invoice': {
+      const [row] = await tx
+        .select()
+        .from(schema.invoice)
+        .where(eq(schema.invoice.id, id))
+        .limit(1);
+      return row ? mappers.invoice.toState(row) : null;
+    }
+    case 'invoice_line': {
+      const [row] = await tx
+        .select()
+        .from(schema.invoiceLine)
+        .where(eq(schema.invoiceLine.id, id))
+        .limit(1);
+      return row ? mappers.invoice_line.toState(row) : null;
+    }
     case 'medication_statement': {
       const [row] = await tx
         .select()
@@ -1307,6 +1740,37 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
       ).map((r) => mappers.form_response.toState(r));
     case 'prescription':
       return prescriptionStates(tx, ids);
+    case 'approval_request':
+      return (
+        await tx
+          .select()
+          .from(schema.approvalRequest)
+          .where(inArray(schema.approvalRequest.id, ids))
+      ).map((r) => mappers.approval_request.toState(r));
+    case 'discount_grant':
+      return (
+        await tx.select().from(schema.discountGrant).where(inArray(schema.discountGrant.id, ids))
+      ).map((r) => mappers.discount_grant.toState(r));
+    case 'credit_note':
+      return (
+        await tx.select().from(schema.creditNote).where(inArray(schema.creditNote.id, ids))
+      ).map((r) => mappers.credit_note.toState(r));
+    case 'cash_session':
+      return (
+        await tx.select().from(schema.cashSession).where(inArray(schema.cashSession.id, ids))
+      ).map((r) => mappers.cash_session.toState(r));
+    case 'payment':
+      return (await tx.select().from(schema.payment).where(inArray(schema.payment.id, ids))).map(
+        (r) => mappers.payment.toState(r),
+      );
+    case 'invoice':
+      return (await tx.select().from(schema.invoice).where(inArray(schema.invoice.id, ids))).map(
+        (r) => mappers.invoice.toState(r),
+      );
+    case 'invoice_line':
+      return (
+        await tx.select().from(schema.invoiceLine).where(inArray(schema.invoiceLine.id, ids))
+      ).map((r) => mappers.invoice_line.toState(r));
     case 'medication_statement':
       return (
         await tx
@@ -1342,10 +1806,84 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
  */
 async function checkEntity(
   tx: Tx,
+  ctx: Ctx,
   entity: EntityName,
   payload: Record<string, unknown>,
   permissions: ReadonlySet<string>,
 ): Promise<string | null> {
+  if (entity === 'approval_request') {
+    const [invoice] = await tx
+      .select({ currency: schema.invoice.currency, status: schema.invoice.status })
+      .from(schema.invoice)
+      .where(eq(schema.invoice.id, String(payload.invoiceId)))
+      .limit(1);
+    if (!invoice) return 'FACT_INVOICE_NOT_FOUND';
+    if (invoice.status === 'voided') return 'FACT_INVOICE_VOIDED';
+    if (invoice.currency !== payload.currency) return 'FACT_CURRENCY_MISMATCH';
+    const sums = await invoiceSums(tx, String(payload.invoiceId));
+    return adjustmentAllowed(Number(payload.amount), sums.gross, sums.discounts, sums.credits)
+      ? null
+      : 'FACT_ADJUSTMENT_TOO_HIGH';
+  }
+  if (entity === 'payment') {
+    const [session] = await tx
+      .select({ status: schema.cashSession.status, deviceId: schema.cashSession.deviceId })
+      .from(schema.cashSession)
+      .where(eq(schema.cashSession.id, String(payload.cashSessionId)))
+      .limit(1);
+    if (!session || session.status !== 'open') return 'FACT_SESSION_CLOSED';
+    if (session.deviceId && session.deviceId !== ctx.deviceId) return 'FACT_SESSION_NOT_YOURS';
+    const [invoice] = await tx
+      .select({ currency: schema.invoice.currency, status: schema.invoice.status })
+      .from(schema.invoice)
+      .where(eq(schema.invoice.id, String(payload.invoiceId)))
+      .limit(1);
+    if (!invoice) return 'FACT_INVOICE_NOT_FOUND';
+    if (invoice.status === 'voided') return 'FACT_INVOICE_VOIDED';
+    if (invoice.currency !== payload.invoiceCurrency) return 'FACT_CURRENCY_MISMATCH';
+    if (payload.method === 'mobile_money') {
+      const [dup] = await tx
+        .select({ id: schema.payment.id })
+        .from(schema.payment)
+        .where(
+          and(
+            eq(schema.payment.method, 'mobile_money'),
+            eq(schema.payment.operator, String(payload.operator)),
+            eq(schema.payment.reference, String(payload.reference)),
+          ),
+        )
+        .limit(1);
+      if (dup) return 'FACT_DUPLICATE_REFERENCE';
+    }
+    return null;
+  }
+  if (entity === 'invoice_line') {
+    const [invoice] = await tx
+      .select({ currency: schema.invoice.currency })
+      .from(schema.invoice)
+      .where(eq(schema.invoice.id, String(payload.invoiceId)))
+      .limit(1);
+    if (!invoice) return 'FACT_INVOICE_NOT_FOUND';
+    if (invoice.currency !== payload.currency) return 'FACT_CURRENCY_MISMATCH';
+    if (payload.manualPrice === true && !permissions.has('price:manage')) {
+      return 'FACT_MANUAL_PRICE_DENIED';
+    }
+    if (typeof payload.supersedesId === 'string') {
+      // Only a line without price is replaced, on the same invoice.
+      const [target] = await tx
+        .select({
+          invoiceId: schema.invoiceLine.invoiceId,
+          unitPrice: schema.invoiceLine.unitPrice,
+        })
+        .from(schema.invoiceLine)
+        .where(eq(schema.invoiceLine.id, payload.supersedesId))
+        .limit(1);
+      if (!target || target.invoiceId !== payload.invoiceId || target.unitPrice !== null) {
+        return 'FACT_LINE_NOT_REPLACEABLE';
+      }
+    }
+    return null;
+  }
   if (entity === 'prescription') {
     // Overriding a blocking alert is a permission of its own (docs/modules/dpi.md 5).
     const items = (payload as PrescriptionCreatePayload).items;
@@ -1374,6 +1912,298 @@ async function checkEntity(
     { structural: true },
   );
   return state.complete ? null : 'FORM_RESPONSE_INVALID';
+}
+
+/**
+ * A line for an invoice another workstation already finalized: the act took
+ * place, so it is never rejected (docs/modules/fact.md, garde-fou serveur).
+ * It goes to a supplementary invoice of the same visit, opened by the server
+ * and sent to the devices like any synchronised change.
+ */
+async function insertInvoiceLine(tx: Tx, ctx: Ctx, state: EntityState): Promise<void> {
+  const row = mappers.invoice_line.toRow(state, ctx);
+  const [target] = await tx
+    .select()
+    .from(schema.invoice)
+    .where(eq(schema.invoice.id, row.invoiceId))
+    .limit(1);
+  if (target && target.status !== 'open') {
+    const root = target.supplementaryOf ?? target.id;
+    const [open] = await tx
+      .select({ id: schema.invoice.id })
+      .from(schema.invoice)
+      .where(and(eq(schema.invoice.supplementaryOf, root), eq(schema.invoice.status, 'open')))
+      .limit(1);
+    let invoiceId = open?.id ?? null;
+    if (!invoiceId) {
+      const siblings = await tx
+        .select({ id: schema.invoice.id })
+        .from(schema.invoice)
+        .where(eq(schema.invoice.supplementaryOf, root));
+      const [rootRow] = await tx
+        .select({ number: schema.invoice.number })
+        .from(schema.invoice)
+        .where(eq(schema.invoice.id, root));
+      invoiceId = uuidv7();
+      const opId = uuidv7();
+      await tx.insert(schema.invoice).values({
+        id: invoiceId,
+        tenantId: ctx.tenantId,
+        patientId: target.patientId,
+        encounterId: target.encounterId,
+        number: `${rootRow?.number ?? target.number}-C${siblings.length + 1}`,
+        currency: target.currency,
+        status: 'open',
+        openedAt: new Date(),
+        supplementaryOf: root,
+        hlc: formatHlc({ physical: Date.now(), counter: 0, node: 'server' }),
+        opId,
+        createdBy: state.createdBy || null,
+      });
+      await tx.insert(schema.changeLog).values({
+        tenantId: ctx.tenantId,
+        entity: 'invoice',
+        entityId: invoiceId,
+        version: 1,
+        opId,
+        scopeKeys: [`patient:${target.patientId}`],
+      });
+    }
+    row.invoiceId = invoiceId;
+  }
+  await tx.insert(schema.invoiceLine).values(row);
+}
+
+/** Gross of an invoice (active lines) and what discounts and credit notes already take off. */
+async function invoiceSums(tx: Tx, invoiceId: string) {
+  const lines = await tx
+    .select({ quantity: schema.invoiceLine.quantity, unitPrice: schema.invoiceLine.unitPrice })
+    .from(schema.invoiceLine)
+    .where(
+      and(eq(schema.invoiceLine.invoiceId, invoiceId), eq(schema.invoiceLine.status, 'active')),
+    );
+  const grants = await tx
+    .select({ amount: schema.discountGrant.amount })
+    .from(schema.discountGrant)
+    .where(eq(schema.discountGrant.invoiceId, invoiceId));
+  const credits = await tx
+    .select({ amount: schema.creditNote.amount })
+    .from(schema.creditNote)
+    .where(eq(schema.creditNote.invoiceId, invoiceId));
+  return {
+    gross: lines.reduce((s, l) => s + l.quantity * (l.unitPrice ?? 0), 0),
+    discounts: grants.reduce((s, g) => s + g.amount, 0),
+    credits: credits.reduce((s, c) => s + c.amount, 0),
+  };
+}
+
+async function serverChange(
+  tx: Tx,
+  ctx: Ctx,
+  entity: EntityName,
+  entityId: string,
+  version: number,
+  patientId: string,
+): Promise<string> {
+  const opId = uuidv7();
+  await tx.insert(schema.changeLog).values({
+    tenantId: ctx.tenantId,
+    entity,
+    entityId,
+    version,
+    opId,
+    scopeKeys: [`patient:${patientId}`],
+  });
+  return opId;
+}
+
+/** Below the cap of one of the requester's roles, a request is granted at once (S10 decision). */
+async function autoApprove(
+  tx: Tx,
+  ctx: Ctx,
+  requestId: string,
+  kind: AdjustmentKind,
+  currency: string,
+  amount: number,
+  requesterId: string | null,
+): Promise<void> {
+  if (!requesterId) return;
+  const roles = await tx
+    .select({ roleId: schema.userRole.roleId })
+    .from(schema.userRole)
+    .where(and(eq(schema.userRole.userId, requesterId), isNull(schema.userRole.validUntil)));
+  if (roles.length === 0) return;
+  const thresholds = await tx.select().from(schema.approvalThreshold);
+  const cap = approvalCap(
+    thresholds,
+    roles.map((r) => r.roleId),
+    kind,
+    currency,
+  );
+  if (amount <= cap) {
+    await applyApproval(tx, ctx, requestId, { approve: true, deciderId: null, reason: 'auto' });
+  }
+}
+
+/**
+ * Applies a decision on a four-eyes request: the request is closed and, when
+ * approved, the discount or the credit note is written; a credit note that
+ * takes off everything still billed voids the invoice. Every row reaches the
+ * devices through the change log.
+ */
+export async function applyApproval(
+  tx: Tx,
+  ctx: Ctx,
+  requestId: string,
+  decision: { approve: boolean; deciderId: string | null; reason: string | null },
+): Promise<void> {
+  const [request] = await tx
+    .select()
+    .from(schema.approvalRequest)
+    .where(eq(schema.approvalRequest.id, requestId))
+    .limit(1);
+  if (!request) throw new Error('approval request not found');
+  if (request.status !== 'pending') throw new Error('FACT_ALREADY_DECIDED');
+  const now = new Date();
+  if (decision.approve) {
+    const sums = await invoiceSums(tx, request.invoiceId);
+    if (!adjustmentAllowed(request.amount, sums.gross, sums.discounts, sums.credits)) {
+      throw new Error('FACT_ADJUSTMENT_TOO_HIGH');
+    }
+    const id = uuidv7();
+    if (request.kind === 'discount') {
+      await tx.insert(schema.discountGrant).values({
+        id,
+        tenantId: ctx.tenantId,
+        approvalRequestId: request.id,
+        invoiceId: request.invoiceId,
+        patientId: request.patientId,
+        currency: request.currency,
+        amount: request.amount,
+        reason: request.reason,
+        approvedBy: decision.deciderId,
+        grantedAt: now,
+        createdBy: request.createdBy,
+      });
+      await serverChange(tx, ctx, 'discount_grant', id, 1, request.patientId);
+    } else {
+      const year = now.getFullYear();
+      const [count] = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(schema.creditNote)
+        .where(sql`extract(year from ${schema.creditNote.issuedAt}) = ${year}`);
+      const number = formatNumber(CREDIT_NOTE_NUMBER_TEMPLATE, {
+        device: '',
+        year,
+        seq: (count?.n ?? 0) + 1,
+      });
+      await tx.insert(schema.creditNote).values({
+        id,
+        tenantId: ctx.tenantId,
+        approvalRequestId: request.id,
+        invoiceId: request.invoiceId,
+        patientId: request.patientId,
+        number,
+        currency: request.currency,
+        amount: request.amount,
+        reason: request.reason,
+        approvedBy: decision.deciderId,
+        issuedAt: now,
+        createdBy: request.createdBy,
+      });
+      await serverChange(tx, ctx, 'credit_note', id, 1, request.patientId);
+      if (request.amount === sums.gross - sums.discounts - sums.credits) {
+        const [invoice] = await tx
+          .select({ version: schema.invoice.version })
+          .from(schema.invoice)
+          .where(eq(schema.invoice.id, request.invoiceId));
+        const version = (invoice?.version ?? 1) + 1;
+        const opId = await serverChange(
+          tx,
+          ctx,
+          'invoice',
+          request.invoiceId,
+          version,
+          request.patientId,
+        );
+        await tx
+          .update(schema.invoice)
+          .set({ status: 'voided', version, opId, updatedAt: now, updatedBy: decision.deciderId })
+          .where(eq(schema.invoice.id, request.invoiceId));
+      }
+    }
+  }
+  const version = request.version + 1;
+  const opId = await serverChange(
+    tx,
+    ctx,
+    'approval_request',
+    request.id,
+    version,
+    request.patientId,
+  );
+  await tx
+    .update(schema.approvalRequest)
+    .set({
+      status: decision.approve ? 'approved' : 'rejected',
+      decidedBy: decision.deciderId,
+      decidedAt: now,
+      decisionReason: decision.reason,
+      version,
+      opId,
+      updatedAt: now,
+      updatedBy: decision.deciderId,
+    })
+    .where(eq(schema.approvalRequest.id, request.id));
+}
+
+/** Amounts per currency stored as JSON (floats, counts, expected cash). */
+function numberMap(value: unknown): Record<string, number> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(value)) if (typeof v === 'number') out[k] = v;
+  return out;
+}
+
+/**
+ * Closing reconciliation (docs/modules/fact.md section 4): the server
+ * recomputes the expected cash from the payments it received for the session
+ * and keeps it beside the workstation's figure; a difference is reported in
+ * the security journal the same day.
+ */
+async function reconcileSession(
+  tx: Tx,
+  ctx: Ctx,
+  state: EntityState,
+  row: {
+    openingFloat?: Record<string, number>;
+    expected?: Record<string, number> | null;
+    serverExpected?: Record<string, number> | null;
+  },
+): Promise<void> {
+  const payments = await tx
+    .select({
+      method: schema.payment.method,
+      currency: schema.payment.currency,
+      amount: schema.payment.amount,
+    })
+    .from(schema.payment)
+    .where(eq(schema.payment.cashSessionId, state.id));
+  const server = expectedCash(row.openingFloat ?? {}, payments);
+  row.serverExpected = server;
+  const device = row.expected ?? {};
+  const keys = new Set([...Object.keys(server), ...Object.keys(device)]);
+  const differs = [...keys].some((k) => (server[k] ?? 0) !== (device[k] ?? 0));
+  if (differs) {
+    await recordSecurityEvent(tx, {
+      kind: 'cash_reconciliation_mismatch',
+      severity: 'warning',
+      tenantId: ctx.tenantId,
+      userId: state.createdBy || null,
+      ip: null,
+      detail: { cashSessionId: state.id, server, device },
+    });
+  }
 }
 
 /** A prescription and its lines, as the synchronised entity. */
@@ -1650,7 +2480,8 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
       }
     },
     getEntity: (entity, id) => getEntity(tx, entity, id),
-    checkEntity: (entity, payload, permissions) => checkEntity(tx, entity, payload, permissions),
+    checkEntity: (entity, payload, permissions) =>
+      checkEntity(tx, ctx, entity, payload, permissions),
     async insertEntity(entity, state, op) {
       switch (entity) {
         case 'patient':
@@ -1719,6 +2550,35 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         case 'form_response':
           await tx.insert(schema.formResponse).values(mappers.form_response.toRow(state, ctx));
           await recordClinicalEvent(tx, ctx, 'form_response', state);
+          return;
+        case 'invoice':
+          await tx.insert(schema.invoice).values(mappers.invoice.toRow(state, ctx));
+          return;
+        case 'approval_request': {
+          const row = mappers.approval_request.toRow(state, ctx);
+          await tx.insert(schema.approvalRequest).values(row);
+          await autoApprove(
+            tx,
+            ctx,
+            row.id,
+            row.kind as AdjustmentKind,
+            row.currency,
+            row.amount,
+            row.createdBy ?? null,
+          );
+          return;
+        }
+        case 'discount_grant':
+        case 'credit_note':
+          throw new Error(`${entity} rows are written by the server`);
+        case 'cash_session':
+          await tx.insert(schema.cashSession).values(mappers.cash_session.toRow(state, ctx));
+          return;
+        case 'payment':
+          await tx.insert(schema.payment).values(mappers.payment.toRow(state, ctx));
+          return;
+        case 'invoice_line':
+          await insertInvoiceLine(tx, ctx, state);
           return;
         case 'prescription':
           await insertPrescription(tx, ctx, state);
@@ -1907,6 +2767,45 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
               opId: state.opId,
             })
             .where(eq(schema.formResponse.id, state.id));
+          return;
+        case 'cash_session': {
+          const {
+            id: _id,
+            tenantId: _t,
+            createdBy: _c,
+            deviceId: _d,
+            ...row
+          } = mappers.cash_session.toRow(state, ctx);
+          if (row.status === 'closed') await reconcileSession(tx, ctx, state, row);
+          await tx.update(schema.cashSession).set(row).where(eq(schema.cashSession.id, state.id));
+          return;
+        }
+        case 'payment':
+          throw new Error('payment rows are immutable');
+        case 'approval_request':
+        case 'discount_grant':
+        case 'credit_note':
+          throw new Error(`${entity} rows are decided on the server`);
+        case 'invoice': {
+          const {
+            id: _id,
+            tenantId: _t,
+            createdBy: _c,
+            ...row
+          } = mappers.invoice.toRow(state, ctx);
+          await tx.update(schema.invoice).set(row).where(eq(schema.invoice.id, state.id));
+          return;
+        }
+        case 'invoice_line':
+          // Append-only: only the status changes, when a priced line replaces it.
+          await tx
+            .update(schema.invoiceLine)
+            .set({
+              status: String(state.data.status ?? 'active'),
+              version: state.version,
+              opId: state.opId,
+            })
+            .where(eq(schema.invoiceLine.id, state.id));
           return;
         case 'prescription':
           // Append-only: a cancellation only changes the status.
@@ -2283,6 +3182,30 @@ export async function patientBundles(
       .where(inArray(schema.prescription.patientId, ids))
   ).map((r) => r.id);
   const prescriptions = await prescriptionStates(tx, prescriptionIds);
+  const invoices = await tx
+    .select()
+    .from(schema.invoice)
+    .where(inArray(schema.invoice.patientId, ids));
+  const invoiceLines = await tx
+    .select()
+    .from(schema.invoiceLine)
+    .where(inArray(schema.invoiceLine.patientId, ids));
+  const payments = await tx
+    .select()
+    .from(schema.payment)
+    .where(inArray(schema.payment.patientId, ids));
+  const requests = await tx
+    .select()
+    .from(schema.approvalRequest)
+    .where(inArray(schema.approvalRequest.patientId, ids));
+  const grants = await tx
+    .select()
+    .from(schema.discountGrant)
+    .where(inArray(schema.discountGrant.patientId, ids));
+  const credits = await tx
+    .select()
+    .from(schema.creditNote)
+    .where(inArray(schema.creditNote.patientId, ids));
   const statements = await tx
     .select()
     .from(schema.medicationStatement)
@@ -2313,6 +3236,24 @@ export async function patientBundles(
       state: mappers.form_response.toState(r),
     })),
     ...prescriptions.map((state) => ({ entity: 'prescription' as const, state })),
+    ...invoices.map((r) => ({ entity: 'invoice' as const, state: mappers.invoice.toState(r) })),
+    ...payments.map((r) => ({ entity: 'payment' as const, state: mappers.payment.toState(r) })),
+    ...requests.map((r) => ({
+      entity: 'approval_request' as const,
+      state: mappers.approval_request.toState(r),
+    })),
+    ...grants.map((r) => ({
+      entity: 'discount_grant' as const,
+      state: mappers.discount_grant.toState(r),
+    })),
+    ...credits.map((r) => ({
+      entity: 'credit_note' as const,
+      state: mappers.credit_note.toState(r),
+    })),
+    ...invoiceLines.map((r) => ({
+      entity: 'invoice_line' as const,
+      state: mappers.invoice_line.toState(r),
+    })),
     ...statements.map((r) => ({
       entity: 'medication_statement' as const,
       state: mappers.medication_statement.toState(r),

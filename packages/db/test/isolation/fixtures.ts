@@ -19,7 +19,15 @@ import {
   diagnosis,
   diagnosisCatalogItem,
   drug,
+  approvalRequest,
+  approvalThreshold,
+  billingRule,
+  creditNote,
+  discountGrant,
+  cashSession,
   exchangeRate,
+  invoice,
+  invoiceLine,
   price,
   priceList,
   serviceItem,
@@ -29,6 +37,7 @@ import {
   formDefinition,
   medicationReconciliation,
   medicationStatement,
+  payment,
   prescription,
   prescriptionItem,
   formResponse,
@@ -297,6 +306,107 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       certainty: 'suspected',
       diagnosedAt: new Date(),
     });
+  },
+  approval_request: async (tx, tenantId) => {
+    await tx.insert(approvalRequest).values({
+      id: uuidv7(),
+      tenantId,
+      kind: 'discount',
+      invoiceId: uuidv7(),
+      patientId: uuidv7(),
+      currency: 'USD',
+      amount: 100,
+      reason: 'Remise de test',
+      requestedAt: new Date(),
+    });
+  },
+  discount_grant: async (tx, tenantId) => {
+    await tx.insert(discountGrant).values({
+      id: uuidv7(),
+      tenantId,
+      approvalRequestId: uuidv7(),
+      invoiceId: uuidv7(),
+      patientId: uuidv7(),
+      currency: 'USD',
+      amount: 100,
+      reason: 'Remise de test',
+      grantedAt: new Date(),
+    });
+  },
+  credit_note: async (tx, tenantId) => {
+    await tx.insert(creditNote).values({
+      id: uuidv7(),
+      tenantId,
+      approvalRequestId: uuidv7(),
+      invoiceId: uuidv7(),
+      patientId: uuidv7(),
+      number: `AV-${uuidv7().slice(-10)}`,
+      currency: 'USD',
+      amount: 100,
+      reason: 'Avoir de test',
+      issuedAt: new Date(),
+    });
+  },
+  approval_threshold: async (tx, tenantId) => {
+    await tx.insert(approvalThreshold).values({
+      id: uuidv7(),
+      tenantId,
+      roleId: uuidv7(),
+      kind: 'discount',
+      currency: 'USD',
+      maxAmount: 0,
+    });
+  },
+  cash_session: async (tx, tenantId) => {
+    await tx.insert(cashSession).values({
+      id: uuidv7(),
+      tenantId,
+      openedAt: new Date(),
+      openingFloat: { CDF: 0 },
+    });
+  },
+  payment: async (tx, tenantId) => {
+    await tx.insert(payment).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      invoiceId: uuidv7(),
+      cashSessionId: uuidv7(),
+      method: 'cash',
+      currency: 'USD',
+      amount: 1000,
+      invoiceCurrency: 'USD',
+      amountInInvoiceCurrency: 1000,
+      receiptNumber: `REC-${uuidv7().slice(-12)}`,
+      receivedAt: new Date(),
+    });
+  },
+  invoice: async (tx, tenantId) => {
+    await tx.insert(invoice).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      number: `FAC-${uuidv7().slice(-12)}`,
+      currency: 'USD',
+      openedAt: new Date(),
+    });
+  },
+  invoice_line: async (tx, tenantId) => {
+    await tx.insert(invoiceLine).values({
+      id: uuidv7(),
+      tenantId,
+      invoiceId: uuidv7(),
+      patientId: uuidv7(),
+      label: 'Consultation de test',
+      category: 'consultation',
+      quantity: 1,
+      unitPrice: 1000,
+      currency: 'USD',
+      performedAt: new Date(),
+    });
+  },
+  billing_rule: async (tx, tenantId) => {
+    await tx.insert(billingRule).values({ id: uuidv7(), tenantId, serviceItemId: uuidv7() });
   },
   service_item: async (tx, tenantId) => {
     await tx.insert(serviceItem).values({

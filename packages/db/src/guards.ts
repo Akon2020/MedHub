@@ -35,6 +35,13 @@ const NO_DELETE = [
   'medication_statement',
   'medication_reconciliation',
   'exchange_rate',
+  'invoice',
+  'invoice_line',
+  'cash_session',
+  'payment',
+  'approval_request',
+  'discount_grant',
+  'credit_note',
 ];
 const NO_UPDATE = [
   'stock_movement',
@@ -49,6 +56,9 @@ const NO_UPDATE = [
   'clinical_event',
   'medication_reconciliation',
   'exchange_rate',
+  'payment',
+  'discount_grant',
+  'credit_note',
 ];
 const STATUS_ONLY_UPDATE = [
   'vital_sign',
@@ -58,6 +68,7 @@ const STATUS_ONLY_UPDATE = [
   'form_response',
   'prescription',
   'prescription_item',
+  'invoice_line',
 ];
 
 export async function ensureGuards(client: pg.ClientBase): Promise<void> {
@@ -109,6 +120,73 @@ export async function ensureGuards(client: pg.ClientBase): Promise<void> {
       return new;
     end $$;
   `);
+
+  // An invoice keeps its identity; once finalized, only the move to voided is allowed.
+  await client.query(`
+    create or replace function medhub_invoice_guard() returns trigger language plpgsql as $$
+    begin
+      if new.tenant_id is distinct from old.tenant_id
+         or new.patient_id is distinct from old.patient_id
+         or new.encounter_id is distinct from old.encounter_id
+         or new.number is distinct from old.number
+         or new.currency is distinct from old.currency
+         or new.opened_at is distinct from old.opened_at then
+        raise exception 'MEDHUB_IMMUTABLE_ROW: invoice identity cannot change' using errcode = 'P0001';
+      end if;
+      if old.status <> 'open' and not (
+        old.status = 'finalized' and new.status = 'voided'
+        and new.finalized_at is not distinct from old.finalized_at
+        and new.official_number is not distinct from old.official_number
+        and new.supplementary_of is not distinct from old.supplementary_of
+      ) then
+        raise exception 'MEDHUB_IMMUTABLE_ROW: a finalized invoice cannot change' using errcode = 'P0001';
+      end if;
+      return new;
+    end $$;
+  `);
+  // A closed cash session is final: no reopening, no change (docs/modules/fact.md section 4).
+  await client.query(`
+    create or replace function medhub_cash_session_guard() returns trigger language plpgsql as $$
+    begin
+      if old.status = 'closed' then
+        raise exception 'MEDHUB_IMMUTABLE_ROW: a closed cash session cannot change' using errcode = 'P0001';
+      end if;
+      if new.opened_at is distinct from old.opened_at
+         or new.opening_float is distinct from old.opening_float
+         or new.device_id is distinct from old.device_id
+         or new.created_by is distinct from old.created_by then
+        raise exception 'MEDHUB_IMMUTABLE_ROW: the opening of a cash session cannot change' using errcode = 'P0001';
+      end if;
+      return new;
+    end $$;
+  `);
+  // A decided four-eyes request is final.
+  await client.query(`
+    create or replace function medhub_approval_guard() returns trigger language plpgsql as $$
+    begin
+      if old.status <> 'pending' then
+        raise exception 'MEDHUB_IMMUTABLE_ROW: a decided request cannot change' using errcode = 'P0001';
+      end if;
+      if new.amount is distinct from old.amount or new.kind is distinct from old.kind
+         or new.invoice_id is distinct from old.invoice_id
+         or new.created_by is distinct from old.created_by then
+        raise exception 'MEDHUB_IMMUTABLE_ROW: a request cannot change' using errcode = 'P0001';
+      end if;
+      return new;
+    end $$;
+  `);
+  await client.query('drop trigger if exists medhub_approval_guard on "approval_request"');
+  await client.query(
+    'create trigger medhub_approval_guard before update on "approval_request" for each row execute function medhub_approval_guard()',
+  );
+  await client.query('drop trigger if exists medhub_cash_session_guard on "cash_session"');
+  await client.query(
+    'create trigger medhub_cash_session_guard before update on "cash_session" for each row execute function medhub_cash_session_guard()',
+  );
+  await client.query('drop trigger if exists medhub_invoice_guard on "invoice"');
+  await client.query(
+    'create trigger medhub_invoice_guard before update on "invoice" for each row execute function medhub_invoice_guard()',
+  );
 
   for (const table of NO_DELETE) {
     await client.query(`drop trigger if exists medhub_no_delete on "${table}"`);

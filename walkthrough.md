@@ -597,6 +597,15 @@ Chaque document reçoit une CSP avec **nonce neuf** (`src/proxy.ts`) : `script-s
 - Ordonnance : PDF A5 et QR générés sur le poste (bibliothèques chargées à la demande), page publique `/verifier` lue sous la portée plateforme (statut, date, structure), limitation `verify-ip`.
 - Scénario P1 automatisé : `apps/web/e2e/p1-consultation.spec.ts` (critère de sortie de J1).
 
+### 13.25 Tarification, facturation et caisse (S10)
+
+- Tarifs : `service_item`, `price_list`, `price` daté (historique), `exchange_rate` immuable, `tenant_currency` (arrondi), `tax` inactive ; règles pures `resolvePrice`, `rateFor` (direct ou inverse, avertissement de taux ancien), `convertWith` en entiers, `roundCash`.
+- Facture : `invoice` (garde `medhub_invoice_guard` : identité fixe, facture finalisée figée), `invoice_line` en ajout seul (une ligne sans prix remplacée par une ligne avec prix), `billing_rule` ; facture complémentaire et entrée du journal des changements écrites par le serveur.
+- Caisse : `cash_session` (garde : session close figée), `payment` immuable (remboursement de signe opposé) ; `quote`, `settlement`, `invoiceBalance`, `expectedCash` partagés ; rapprochement `reconcileSession` à la clôture.
+- Quatre yeux : `approval_request` (décision figée), `discount_grant`, `credit_note`, `approval_threshold` ; `applyApproval` partagé entre la décision en ligne et l'approbation automatique sous le plafond du rôle.
+- Moteur de synchronisation : le crochet `checkEntity` reçoit le contexte du poste (session de caisse d'un autre poste refusée).
+- Scénario Playwright `p1-cash.spec.ts`.
+
 ### 13.9 Mesure de la durée des requêtes
 
 Réponse au point ouvert de J0 (une connexion restée 20 s sans réponse) : chaque route renvoie `Server-Timing: app;dur=N`, la métrique `http.duration_ms` est émise, et toute requête plus lente que `MEDHUB_SLOW_REQUEST_MS` (2 s par défaut) est journalisée avec l'état du pool (`total`, `idle`, `waiting`) pour distinguer pool saturé, requête lente ou verrou.
@@ -650,6 +659,9 @@ Réponse au point ouvert de J0 (une connexion restée 20 s sans réponse) : chaq
 | `packages/domain` et `packages/forms` (S9) | Notes, diagnostics, import CIM-10 ; expressions (allowlist, `constructor`, `__proto__`, longueur, profondeur), moteur de formulaire, publication ; prescription (chaque alerte, imports, quantité, code de vérification) | 30 tests verts |
 | `apps/web` intégration (S9) | Signature de note vérifiée et refusée sans clé, correction, diagnostics, import ; publication, version figée, code en double, réponses refusées ; passage outre refusé, alerte non vue signalée, annulation, lignes immuables, traitements habituels, vérification publique | 11 tests verts |
 | Playwright `p1-consultation.spec.ts` (S9) | Scénario P1 : accueil (recherche « Mukendi » trouve « Moukendi »), triage hors connexion, consultation hors connexion (allergie vue, alerte bloquante sur l'amoxicilline, autre antibiotique, ordonnance et note signées), synchronisation : zéro rejet, triage, note signée, ordonnance et visite « en consultation » vérifiés en base | Vert |
+| `packages/domain` finances (S10) | Choix du prix, prix datés, taux direct et inverse, arrondi, imports ; totaux de facture, règles de facturation ; paiement USD en CDF, monnaie, paiement partiel, montant attendu, clôture | 26 tests verts |
+| `apps/web` intégration (S10) | Tarifs et historique, facture complémentaire, prix saisi, devise ; sessions, paiements, référence en double, écart signalé ; remises et avoirs approuvés, demande propre refusée, avoir total, plafond, remboursement | 9 tests verts |
+| Playwright `p1-cash.spec.ts` (S10) | Visite facturée hors connexion, paiement en CDF hors connexion au taux du jour avec arrondi à 50 CDF et monnaie, reçu, clôture ; vérifié en base, zéro rejet | Vert |
 | `packages/domain` carte (S6) | Jeton opaque de longueur fixe, relu depuis une saisie de douchette, numéros de dossier refusés | 2 tests verts (51 au total pour le paquet) |
 | `apps/web` intégration recherche serveur (S6) | Mêmes attentes avec `pg_trgm` et en repli : nom, variante d'orthographe, accents, dossier fusionné exclu, année, téléphone en groupes, numéro de dossier, nom de la mère, permission, état remis au poste | 6 tests verts (3 par mode) |
 | `packages/domain` requête de recherche (S6) | Nom et année, téléphone et numéro de dossier, nom composé et année future | 3 tests verts |
@@ -757,4 +769,4 @@ S5 et S6 sont terminées. En S6 : la détection des doublons, la fusion supervis
 
 S9 est terminée côté code : consultation, notes signées, diagnostics codés, formulaires (FORM), prescription avec alertes, réconciliation simple, ordonnance avec QR. Le critère de sortie de J1 est atteint en test automatisé (scénario P1 : accueil, triage et consultation hors connexion, synchronisation sans aucun rejet).
 
-J2 (S10 à S14) commence par la tarification et la facturation (S10), après votre validation des écarts « à valider » de `docs/avancement.md`.
+S10 est terminée côté code : tarifs et devises, facture panier, caisse multi-devises avec arrondi, sessions et clôture, remises et avoirs approuvés par un second habilité. Suite de J2 : conventions (S11), pharmacie et stock (S12), laboratoire (S13), super-admin (S14).

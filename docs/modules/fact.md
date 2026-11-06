@@ -88,3 +88,15 @@ Caisse (`/app/caisse`), facture du patient, session de caisse, clôture, tarifs 
 ## Points d'accroche
 
 MPAY (phase 2) : `payment.method = 'mobile_money'` avec `provider_payment_id`. HOSP : lignes de journée et dépassement de forfait. AMB (phase 3) : facturation des missions.
+
+## Mise en œuvre (S10)
+
+- Tarifs : `packages/domain/src/fact/pricing.ts` (grille de la couverture, puis du type de patient, puis publique ; prix en vigueur le jour de l'acte), prestations et prix importés par CSV, historique des prix gardé (un nouveau prix ferme le précédent à sa date), taux de change jamais modifiés, taxes présentes mais inactives (règles fiscales : `TODO(medhub-decision)`). Écran `/app/parametres/finances`.
+- Arrondi des espèces par devise (`tenant_currency.cash_rounding_step`), **50 CDF par défaut**, USD non arrondi ; sans taux du jour, **dernier taux connu avec avertissement** et date du taux enregistrée dans le paiement (décisions du porteur, S10).
+- Facture : `invoice.open`, `invoice.add_line`, `invoice.finalize` hors connexion, numéro `FAC-{SITE}-{DEVICE}-{YYYY}-{SEQ:5}`. La consultation est ajoutée **à l'ouverture de la visite** selon des règles de facturation (type de visite, service). Un acte sans prix est gardé et signalé ; une ligne sans prix reçoit son prix par une ligne qui la remplace (prix saisi : `price:manage`). Une ligne destinée à une facture déjà finalisée par un autre poste va sur une **facture complémentaire** créée par le serveur (`-C1`), jamais rejetée.
+- Totaux, état payé et montant attendu en caisse toujours **calculés** à partir des lignes, remises, avoirs et paiements : la facture ne porte que `open`, `finalized` ou `voided`.
+- Encaissement : `payment.receive` hors connexion, reçu `REC-{SITE}-{DEVICE}-{YYYY}-{SEQ:6}` (ticket 80 mm), monnaie rendue, paiement partiel converti et plafonné, référence mobile money unique par opérateur, remboursement par `payment.refund` (montant négatif et motif).
+- Sessions : `cash_session.open` (fonds par devise) et `cash_session.close` (comptage, écart justifié) ; une session close ne se rouvre jamais ; le serveur recalcule le montant attendu et signale tout écart dans le journal de sécurité.
+- Remises et avoirs : `discount.request` et `credit_note.request` hors connexion ; **tout est approuvé par un second habilité** en ligne (`/app/caisse/approbations`, second facteur), plafonds par rôle (`approval_threshold`, 0 par défaut) ; avoir numéroté `AV-{YYYY}-{SEQ:6}` ; un avoir total annule la facture.
+- Reportés : dépôts, acomptes et cautions, imputation sur plusieurs factures, majorations de nuit et de dimanche, mode « second utilisateur sur le même poste », créances et relances, rapports et exports comptables, rapprochement par caisse physique (`cash_register`).
+

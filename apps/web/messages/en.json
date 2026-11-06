@@ -804,7 +804,20 @@
     "FACT_IMPORT_VALUE": "invalid value (code, amount or date)",
     "FACT_IMPORT_CATEGORY": "unknown category",
     "FACT_IMPORT_DUPLICATE": "line repeated in the file",
-    "FACT_IMPORT_UNKNOWN_SERVICE": "unknown service: import it first"
+    "FACT_IMPORT_UNKNOWN_SERVICE": "unknown service: import it first",
+    "FACT_CURRENCY_MISMATCH": "The service is not in the invoice currency.",
+    "FACT_MANUAL_PRICE_DENIED": "Typing a price needs the permission to manage prices.",
+    "FACT_INVOICE_NOT_FOUND": "Invoice not found on the server.",
+    "FACT_LINE_NOT_REPLACEABLE": "Only a line without price can receive a price.",
+    "FACT_SESSION_CLOSED": "The cash session is closed: open a new one.",
+    "FACT_SESSION_NOT_YOURS": "This cash session belongs to another workstation.",
+    "FACT_DUPLICATE_REFERENCE": "This mobile money reference was already received.",
+    "FACT_INVOICE_VOIDED": "This invoice is voided.",
+    "FACT_REFUND_NOT_ALLOWED": "A refund goes through its own command, with its reason.",
+    "FACT_ADJUSTMENT_TOO_HIGH": "Amount above what is still billed.",
+    "FACT_SAME_APPROVER": "Someone other than the requester must decide.",
+    "FACT_ALREADY_DECIDED": "This request is already decided.",
+    "FACT_REFUND_REASON_REQUIRED": "Give the reason for the refund."
   },
   "account": {
     "title": "My account",
@@ -1817,6 +1830,27 @@
         "error": "Line {line}: {problem}",
         "apply": "{count, plural, one {Import # price} other {Import # prices}}",
         "saved": "{count} prices imported."
+      },
+      "rules": {
+        "title": "Automatic billing",
+        "text": "Service added to the invoice as soon as a visit opens, by visit type and department. The most precise rule wins.",
+        "none": "No rule: opening a visit bills nothing.",
+        "kind": "Visit type",
+        "department": "Department",
+        "service": "Service billed",
+        "anyKind": "Any visit type",
+        "anyDepartment": "Any department",
+        "nothing": "Bill nothing",
+        "save": "Save the rule"
+      },
+      "visitKinds": {
+        "outpatient": "Outpatient",
+        "emergency": "Emergency",
+        "inpatient": "Inpatient",
+        "day_care": "Day care",
+        "teleconsult": "Teleconsultation",
+        "lab_only": "Laboratory only",
+        "pharmacy_only": "Pharmacy only"
       }
     }
   },
@@ -2320,5 +2354,149 @@
     "cancelled": "Authentic prescription, cancelled by its prescriber.",
     "issued": "Issued by {structure} on {date}.",
     "privacy": "This page shows no health data: neither the patient, nor the drugs, nor the prescriber."
+  },
+  "billing": {
+    "title": "Cash desk",
+    "subtitle": "Invoices of the day and open invoices on this workstation; everything works offline.",
+    "filter": "Patient, record or invoice number",
+    "empty": "No invoice today on this workstation.",
+    "back": "Back to the cash desk",
+    "notOnDevice": "This patient is not on this workstation.",
+    "newInvoice": "New invoice",
+    "noInvoice": "No invoice for this patient.",
+    "invoice": {
+      "status": {
+        "open": "Open",
+        "finalized": "Finalized",
+        "voided": "Voided"
+      },
+      "supplementary": "Supplementary",
+      "pending": "Waiting for synchronisation",
+      "opened": "Opened on {date}",
+      "empty": "No line.",
+      "manual": "(price typed)",
+      "noPrice": "Price missing",
+      "setPrice": "Enter the price",
+      "unitPrice": "Unit price ({currency})",
+      "confirmPrice": "Confirm the price",
+      "total": "Total",
+      "missing": "{count, plural, one {# line without price: enter it before finalizing.} other {# lines without price: enter them before finalizing.}}",
+      "addService": "Add a service",
+      "quantity": "Quantity",
+      "finalize": "Finalize the invoice"
+    },
+    "session": {
+      "closedTitle": "Cash desk closed",
+      "closedText": "Open your cash session on this workstation to take payments. Give the opening float in each currency.",
+      "float": "Opening float ({currency})",
+      "open": "Open the cash desk",
+      "openTitle": "Cash desk open",
+      "noPayment": "No payment in this session.",
+      "close": "Close the cash desk",
+      "counted": "Cash counted ({currency})",
+      "expected": "expected: {amount}",
+      "variance": "variance: {amount}",
+      "justification": "Reason for the variance (required)",
+      "confirmClose": "Close for good",
+      "cancel": "Cancel",
+      "methods": {
+        "cash": "Cash",
+        "mobile_money": "Mobile money",
+        "card": "Card",
+        "cheque": "Cheque",
+        "transfer": "Transfer"
+      }
+    },
+    "payment": {
+      "balance": "Balance due",
+      "state": {
+        "unpaid": "Unpaid",
+        "partially_paid": "Partly paid",
+        "paid": "Paid",
+        "refund_due": "Refund due"
+      },
+      "pending": "Waiting for synchronisation",
+      "reprint": "Receipt",
+      "openSessionFirst": "Open the cash desk to take payments.",
+      "method": "Method",
+      "currency": "Currency",
+      "received": "Amount received ({currency})",
+      "operator": "Operator",
+      "reference": "Transaction reference",
+      "operators": {
+        "mpesa": "M-Pesa",
+        "orange": "Orange Money",
+        "airtel": "Airtel Money",
+        "africell": "Afrimoney",
+        "other": "Other"
+      },
+      "noRate": "No {from} to {to} rate on this workstation: enter it in Prices and currencies.",
+      "rate": "Rate of {date}: {rate}",
+      "staleRate": "Last known rate, of {date}: {rate}. Enter the rate of the day if you can.",
+      "due": "To pay: {amount}",
+      "rounding": "(rounding {amount})",
+      "settles": "Settles {amount} on the invoice.",
+      "change": "Change to give: {amount}",
+      "receive": "Take the payment and print the receipt",
+      "refundDue": "Overpayment to refund: {amount}",
+      "refundReason": "Reason for the refund",
+      "refund": "Refund in cash"
+    },
+    "receipt": {
+      "title": "Payment receipt",
+      "patient": "Patient",
+      "invoice": "Invoice",
+      "method": "Method",
+      "reference": "Reference",
+      "settled": "Amount settled",
+      "rate": "Rate of {date}",
+      "rounding": "Rounding",
+      "received": "Received",
+      "change": "Change",
+      "remaining": "Balance due",
+      "thanks": "Thank you."
+    },
+    "adjustments": {
+      "discount": "Discount",
+      "creditNote": "Credit note {number}",
+      "billed": "Net due",
+      "pendingApproval": "Waiting for approval",
+      "askedDiscount": "Discount of {amount} asked",
+      "askedCredit": "Credit note of {amount} asked",
+      "rejected": "Request of {amount} refused.",
+      "ask": "Ask for a discount or a credit note",
+      "kind": "Request type",
+      "kinds": {
+        "discount": "Discount",
+        "credit_note": "Credit note (cancellation)"
+      },
+      "amount": "Amount ({currency})",
+      "all": "All",
+      "reason": "Reason (required)",
+      "hint": "The request leaves with the next synchronisation; it applies only once another authorised person agrees.",
+      "send": "Send the request"
+    },
+    "approvals": {
+      "title": "Approvals",
+      "subtitle": "Discounts and credit notes asked at the cash desk: another authorised person decides, with the second factor.",
+      "offline": "Approvals are decided online.",
+      "empty": "No request.",
+      "kinds": {
+        "discount": "Discount",
+        "credit_note": "Credit note"
+      },
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Refused"
+      },
+      "asked": "Asked by {name} on {date}",
+      "decidedBy": "decided by {name}",
+      "reason": "Comment (required to refuse)",
+      "approve": "Approve",
+      "reject": "Refuse",
+      "ownRequest": "Your own request: another person must decide it."
+    },
+    "approvalsLink": "Pending approvals"
   }
 }
