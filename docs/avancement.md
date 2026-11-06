@@ -152,6 +152,16 @@ J0 (en cours) : le risque principal, la synchronisation, est couvert par trois n
 
 ## Journal des sessions
 
+### 07/11/2026 (S11)
+
+Décisions du porteur au lancement de S11 (« Démarre S11 ») :
+- Modèles A, B, C, D en démonstration avec les prix du tableau Open Clinic (55, 75 et 100 USD par famille et par mois, D à l'acte ; 3, 5 et 7 jours d'hospitalisation forfaitaire ; garantie 100 USD par travailleur pour D et 75 USD pour B selon P4), règles réduites à la nomenclature de démonstration, tiers fictif « Entreprise Démo SARL ».
+- Patient couvert dont l'acte est exclu : il paie au **tarif public**.
+- Prise en charge d'urgence sans bon d'envoi : **accueil et caisse, avec motif**.
+- Décisions des tiers (accords préalables, rejets, paiements des factures aux tiers) : droits donnés au rôle **Direction**, sans nouveau rôle.
+
+S11, tranche 1 (moteur) : `packages/conventions` (schéma des règles, moteur `evaluateCoverage` pur et déterministe, mois commencés dus, jour de génération), modèles de démonstration A à D, 12 jeux d'essai (acte inclus, exclu, accord préalable, plafond, dépassement d'hospitalisation, mois commencé, journalier, urgence sans bon d'envoi, ticket modérateur, bénéficiaire sorti).
+
 ### 06/11/2026 (S10, fin)
 
 - Tranche 2, facture panier : `packages/domain/src/fact/invoice.ts`, migration `0026_s10_invoice` (`invoice` avec garde, `invoice_line`, `billing_rule`), facturation à l'ouverture de la visite (`features/billing/visit-billing.ts`), facture complémentaire créée par le serveur, écran `/app/caisse`.

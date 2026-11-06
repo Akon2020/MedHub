@@ -1,5 +1,8 @@
 /**
- * Contract (convention) rules engine: pure, deterministic and versioned.
- * Implemented in S11 (docs/modules/conv.md); this module only reserves the package boundary.
+ * Coverage rules of the contracts (docs/modules/conv.md): rule schema, pure
+ * deterministic engine and monthly packages, shared by client and server.
  */
-export const CONVENTIONS_ENGINE_VERSION = 0;
+export * from './schema';
+export * from './engine';
+export * from './packages';
+export * from './fixtures/open-clinic';
