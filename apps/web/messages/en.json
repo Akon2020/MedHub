@@ -139,12 +139,7 @@
         "tab": "Laboratory",
         "title": "Laboratory",
         "text": "Orders, specimen collection, result entry and validation, critical values flagged immediately.",
-        "points": [
-          "Labels and specimens",
-          "Two-level validation",
-          "Reference ranges",
-          "Reports"
-        ]
+        "points": ["Labels and specimens", "Two-level validation", "Reference ranges", "Reports"]
       }
     },
     "why": {
