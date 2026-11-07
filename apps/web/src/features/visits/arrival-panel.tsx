@@ -35,7 +35,7 @@ export function ArrivalPanel({ patientId, deceased }: { patientId: string; decea
   const t = useTranslations('visits.arrival');
   const tv = useTranslations('visits');
   const tErr = useTranslations('errors');
-  const { dispatch, catalogs, device, identity, nextCounter } = useRuntime();
+  const { dispatch, catalogs, device, identity, nextCounter, store } = useRuntime();
   const queues = catalogs?.snapshot.queues ?? [];
   const departments = (catalogs?.snapshot.departments ?? []).filter((d) => d.isActive);
   const [kind, setKind] = useState<EncounterKind>('outpatient');
@@ -103,6 +103,8 @@ export function ArrivalPanel({ patientId, deceased }: { patientId: string; decea
           siteCode: identity?.siteCode ?? 'SIT',
           deviceCode: device.deviceCode,
           permissions: identity?.permissions ?? [],
+          store: store ?? undefined,
+          conventions: catalogs?.snapshot.conventions,
         },
         {
           id: visit.entityId,

@@ -832,7 +832,11 @@
     "CONV_IMPORT_VALUE": "valeur invalide (rôle ou date)",
     "CONV_IMPORT_UNKNOWN_PLAN": "plan inconnu de cette convention",
     "CONV_IMPORT_DUPLICATE": "matricule en double",
-    "CONV_IMPORT_NO_HOLDER": "titulaire absent du fichier"
+    "CONV_IMPORT_NO_HOLDER": "titulaire absent du fichier",
+    "CONV_VOUCHER_NUMBER_TAKEN": "Ce numéro de bon d’envoi est déjà enregistré pour cette convention.",
+    "CONV_VOUCHER_DATES": "La fin de validité précède la date du bon.",
+    "FACT_PAYER_SHARE_TOO_HIGH": "La part du tiers dépasse le montant de la ligne.",
+    "FACT_COVERAGE_WITHOUT_CONTRACT": "Le patient n’est pas rattaché à cette convention."
   },
   "account": {
     "title": "Mon compte",
@@ -2516,7 +2520,25 @@
       "reject": "Refuser",
       "ownRequest": "Votre propre demande : une autre personne doit la décider."
     },
-    "approvalsLink": "Approbations en attente"
+    "approvalsLink": "Approbations en attente",
+    "coverage": {
+      "decisions": {
+        "covered": "Pris en charge",
+        "partially_covered": "Pris en charge en partie",
+        "not_covered": "Non couvert",
+        "blocked": "Bloqué",
+        "needs_prior_authorization": "Accord préalable requis"
+      },
+      "shares": "Part tiers {payer} · part patient {patient}",
+      "requires": {
+        "voucher": "Bon d’envoi à fournir",
+        "prior_authorization": "Accord préalable à obtenir",
+        "justification": "Justification à saisir"
+      },
+      "reevaluate": "Réévaluer la couverture",
+      "billToPatient": "Facturer au patient",
+      "payerTotal": "À la charge des tiers"
+    }
   },
   "conventions": {
     "title": "Conventions et tiers payants",
@@ -2646,7 +2668,21 @@
       "pending": "En attente de synchronisation",
       "end": "Mettre fin au rattachement",
       "reason": "Motif",
-      "confirmEnd": "Confirmer"
+      "confirmEnd": "Confirmer",
+      "voucher": "Enregistrer un bon d’envoi",
+      "voucherNumber": "Numéro du bon",
+      "signatory": "Signataire",
+      "issuedOn": "Date du bon",
+      "validUntil": "Valable jusqu’au",
+      "saveVoucher": "Enregistrer le bon",
+      "vouchers": "Bons d’envoi",
+      "emergency": "Prise en charge d’urgence (carte de service)",
+      "emergencyReason": "Motif de l’urgence (obligatoire)",
+      "saveEmergency": "Prendre en charge",
+      "openEmergency": "Urgence à régulariser avant le {date}",
+      "overdue": "Régularisation en retard depuis le {date}",
+      "regularize": "Régulariser avec ce bon",
+      "regularized": "Urgence régularisée"
     }
   }
 }

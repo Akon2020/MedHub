@@ -28,6 +28,13 @@ export type InvoiceLineView = {
   status: string;
   performedAt: string;
   pending: boolean;
+  /** Coverage (S11): share of the payer, decision and what is still required. */
+  payerShare: number;
+  decision: string | null;
+  action: string | null;
+  requires: string[];
+  reasons: string[];
+  contractId: string | null;
 };
 
 const s = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 ? v : null);
@@ -51,6 +58,10 @@ export function toInvoiceView(e: LocalEntity): InvoiceView {
 
 export function toLineView(e: LocalEntity): InvoiceLineView {
   const d = e.data;
+  const cov = (d.coverage && typeof d.coverage === 'object' ? d.coverage : {}) as Record<
+    string,
+    unknown
+  >;
   return {
     id: e.id,
     invoiceId: s(d.invoiceId) ?? '',
@@ -65,6 +76,12 @@ export function toLineView(e: LocalEntity): InvoiceLineView {
     status: s(d.status) ?? 'active',
     performedAt: s(d.performedAt) ?? '',
     pending: e.version === 0,
+    payerShare: typeof d.payerShare === 'number' ? d.payerShare : 0,
+    decision: s(cov.decision),
+    action: s(cov.action),
+    requires: Array.isArray(cov.requires) ? cov.requires.map(String) : [],
+    reasons: Array.isArray(cov.reasons) ? cov.reasons.map(String) : [],
+    contractId: s(d.contractId),
   };
 }
 

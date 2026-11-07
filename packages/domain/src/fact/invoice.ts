@@ -50,7 +50,20 @@ export const invoiceLinePayload = z
     supersedesId: z.uuid().nullish(),
     /** Price typed at the cash desk instead of the price lists (needs price:manage). */
     manualPrice: z.boolean().default(false),
+    /** Coverage of a contract (S11): share of the payer and the trace of the engine. */
+    payerShare: minorAmountSchema.min(0).default(0),
+    contractId: z.uuid().nullish(),
+    beneficiaryId: z.uuid().nullish(),
+    coverage: z.record(z.string(), z.unknown()).nullish(),
+    /** The same act evaluated again (voucher, authorization received): replaces the line. */
+    reevaluation: z.boolean().default(false),
   })
+  .refine(
+    (l) => l.payerShare === 0 || (l.unitPrice !== null && l.payerShare <= l.unitPrice * l.quantity),
+    {
+      message: 'FACT_PAYER_SHARE_TOO_HIGH',
+    },
+  )
   .refine((l) => l.unitPrice === null || Number.isSafeInteger(l.unitPrice * l.quantity), {
     message: 'AMOUNT_OUT_OF_RANGE',
   });
@@ -69,6 +82,11 @@ export type LineView = {
   unitPrice: number | null;
   currency: string;
   status?: string;
+  /** Share of the payer (S11); the patient pays the rest. */
+  payerShare?: number;
+  /** Coverage decision of the engine, when the patient is covered. */
+  decision?: string | null;
+  action?: string | null;
 };
 
 export function lineAmount(line: Pick<LineView, 'quantity' | 'unitPrice'>): number {
@@ -77,28 +95,41 @@ export function lineAmount(line: Pick<LineView, 'quantity' | 'unitPrice'>): numb
 
 /** Total of an invoice in its currency, and the lines still waiting for a price. */
 export function invoiceTotals(
-  lines: readonly Pick<LineView, 'quantity' | 'unitPrice' | 'status'>[],
+  lines: readonly Pick<LineView, 'quantity' | 'unitPrice' | 'status' | 'payerShare'>[],
 ): {
   gross: number;
   missingPrices: number;
+  /** Owed by the third parties of the lines. */
+  payer: number;
+  /** Owed by the patient: gross minus the payers' shares. */
+  patient: number;
 } {
   let gross = 0;
   let missingPrices = 0;
+  let payer = 0;
   for (const l of lines) {
     // A replaced line no longer counts: its replacement does.
     if (l.status === 'superseded') continue;
     if (l.unitPrice === null) missingPrices += 1;
     gross += lineAmount(l);
+    payer += l.payerShare ?? 0;
   }
   if (!Number.isSafeInteger(gross)) throw new Error('AMOUNT_OUT_OF_RANGE');
-  return { gross, missingPrices };
+  return { gross, missingPrices, payer, patient: gross - payer };
 }
 
 /** A line cannot be finalized without a price: the cash desk sets it first. */
 export function canFinalize(
-  lines: readonly Pick<LineView, 'quantity' | 'unitPrice' | 'status'>[],
+  lines: readonly Pick<LineView, 'quantity' | 'unitPrice' | 'status' | 'action' | 'decision'>[],
 ): boolean {
-  return lines.some((l) => l.status !== 'superseded') && invoiceTotals(lines).missingPrices === 0;
+  const active = lines.filter((l) => l.status !== 'superseded');
+  // A line the contract blocks (voucher, prior authorization) is resolved first.
+  const blocked = active.some(
+    (l) =>
+      l.action === 'block' &&
+      (l.decision === 'blocked' || l.decision === 'needs_prior_authorization'),
+  );
+  return active.length > 0 && !blocked && invoiceTotals(lines).missingPrices === 0;
 }
 
 /** Automatic billing of a visit opening (owner decision S10: billed when the visit opens). */
@@ -131,7 +162,16 @@ export function billingRuleFor(
 
 export type LineDraft = Omit<
   InvoiceLinePayload,
-  'invoiceId' | 'patientId' | 'performedAt' | 'supersedesId' | 'manualPrice'
+  | 'invoiceId'
+  | 'patientId'
+  | 'performedAt'
+  | 'supersedesId'
+  | 'manualPrice'
+  | 'payerShare'
+  | 'contractId'
+  | 'beneficiaryId'
+  | 'coverage'
+  | 'reevaluation'
 >;
 
 /** The line a service gives on a day, priced from the lists (null price when none applies). */

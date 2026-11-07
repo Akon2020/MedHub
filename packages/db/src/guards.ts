@@ -44,6 +44,8 @@ const NO_DELETE = [
   'credit_note',
   'beneficiary_movement',
   'patient_coverage',
+  'referral_voucher',
+  'coverage_exception',
 ];
 const NO_UPDATE = [
   'stock_movement',
@@ -72,6 +74,7 @@ const STATUS_ONLY_UPDATE = [
   'prescription',
   'prescription_item',
   'invoice_line',
+  'referral_voucher',
 ];
 
 export async function ensureGuards(client: pg.ClientBase): Promise<void> {

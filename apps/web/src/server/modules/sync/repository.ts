@@ -1057,6 +1057,101 @@ const mappers = {
       };
     },
   },
+  referral_voucher: {
+    table: schema.referralVoucher,
+    toState(row: typeof schema.referralVoucher.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          contractId: row.contractId,
+          beneficiaryId: row.beneficiaryId,
+          number: row.number,
+          signatory: row.signatory,
+          issuedOn: row.issuedOn,
+          validUntil: row.validUntil,
+          encounterId: row.encounterId,
+          registeredAt: row.registeredAt.toISOString(),
+          status: row.status,
+        }),
+        fieldMeta: {},
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.referralVoucher.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        contractId: String(d.contractId),
+        beneficiaryId: String(d.beneficiaryId),
+        number: String(d.number),
+        signatory: String(d.signatory),
+        issuedOn: String(d.issuedOn),
+        validUntil: String(d.validUntil),
+        encounterId: str(d.encounterId),
+        registeredAt: new Date(String(d.registeredAt)),
+        status: 'active',
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+      };
+    },
+  },
+  coverage_exception: {
+    table: schema.coverageException,
+    toState(row: typeof schema.coverageException.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          contractId: row.contractId,
+          encounterId: row.encounterId,
+          reason: row.reason,
+          recordedAt: row.recordedAt.toISOString(),
+          dueBy: row.dueBy.toISOString(),
+          status: row.status,
+          voucherId: row.voucherId,
+        }),
+        fieldMeta: row.fieldMeta,
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.coverageException.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        contractId: String(d.contractId),
+        encounterId: str(d.encounterId),
+        reason: String(d.reason),
+        recordedAt: new Date(String(d.recordedAt)),
+        dueBy: new Date(String(d.dueBy)),
+        status: str(d.status) ?? 'open',
+        voucherId: str(d.voucherId),
+        fieldMeta: state.fieldMeta,
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+        updatedAt: new Date(),
+        updatedBy: ctx.userId,
+      };
+    },
+  },
   patient_coverage: {
     table: schema.patientCoverage,
     toState(row: typeof schema.patientCoverage.$inferSelect): EntityState {
@@ -1167,6 +1262,10 @@ const mappers = {
           currency: row.currency,
           priceListId: row.priceListId,
           manualPrice: row.manualPrice,
+          payerShare: row.payerShare,
+          contractId: row.contractId,
+          beneficiaryId: row.beneficiaryId,
+          coverage: row.coverage,
           sourceTable: row.sourceTable,
           sourceId: row.sourceId,
           performedAt: row.performedAt.toISOString(),
@@ -1197,6 +1296,10 @@ const mappers = {
         currency: String(d.currency),
         priceListId: str(d.priceListId),
         manualPrice: d.manualPrice === true,
+        payerShare: typeof d.payerShare === 'number' ? d.payerShare : 0,
+        contractId: str(d.contractId),
+        beneficiaryId: str(d.beneficiaryId),
+        coverage: record(d.coverage),
         sourceTable: str(d.sourceTable),
         sourceId: str(d.sourceId),
         performedAt: new Date(String(d.performedAt)),
@@ -1645,6 +1748,22 @@ async function getEntity(tx: Tx, entity: EntityName, id: string): Promise<Entity
         .limit(1);
       return row ? mappers.credit_note.toState(row) : null;
     }
+    case 'referral_voucher': {
+      const [row] = await tx
+        .select()
+        .from(schema.referralVoucher)
+        .where(eq(schema.referralVoucher.id, id))
+        .limit(1);
+      return row ? mappers.referral_voucher.toState(row) : null;
+    }
+    case 'coverage_exception': {
+      const [row] = await tx
+        .select()
+        .from(schema.coverageException)
+        .where(eq(schema.coverageException.id, id))
+        .limit(1);
+      return row ? mappers.coverage_exception.toState(row) : null;
+    }
     case 'patient_coverage': {
       const [row] = await tx
         .select()
@@ -1806,6 +1925,20 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
       return (
         await tx.select().from(schema.creditNote).where(inArray(schema.creditNote.id, ids))
       ).map((r) => mappers.credit_note.toState(r));
+    case 'referral_voucher':
+      return (
+        await tx
+          .select()
+          .from(schema.referralVoucher)
+          .where(inArray(schema.referralVoucher.id, ids))
+      ).map((r) => mappers.referral_voucher.toState(r));
+    case 'coverage_exception':
+      return (
+        await tx
+          .select()
+          .from(schema.coverageException)
+          .where(inArray(schema.coverageException.id, ids))
+      ).map((r) => mappers.coverage_exception.toState(r));
     case 'patient_coverage':
       return (
         await tx
@@ -1869,6 +2002,19 @@ async function checkEntity(
   payload: Record<string, unknown>,
   permissions: ReadonlySet<string>,
 ): Promise<string | null> {
+  if (entity === 'referral_voucher') {
+    const [dup] = await tx
+      .select({ id: schema.referralVoucher.id })
+      .from(schema.referralVoucher)
+      .where(
+        and(
+          eq(schema.referralVoucher.contractId, String(payload.contractId)),
+          eq(schema.referralVoucher.number, String(payload.number)),
+        ),
+      )
+      .limit(1);
+    return dup ? 'CONV_VOUCHER_NUMBER_TAKEN' : null;
+  }
   if (entity === 'patient_coverage') {
     const [member] = await tx
       .select({ contractId: schema.beneficiary.contractId, status: schema.beneficiary.status })
@@ -1940,17 +2086,53 @@ async function checkEntity(
     if (payload.manualPrice === true && !permissions.has('price:manage')) {
       return 'FACT_MANUAL_PRICE_DENIED';
     }
+    if (Number(payload.payerShare ?? 0) > 0) {
+      // A payer pays only for a patient linked to its contract.
+      const [link] = await tx
+        .select({ id: schema.patientCoverage.id })
+        .from(schema.patientCoverage)
+        .where(
+          and(
+            eq(schema.patientCoverage.patientId, String(payload.patientId)),
+            eq(schema.patientCoverage.contractId, String(payload.contractId ?? '')),
+            eq(schema.patientCoverage.status, 'active'),
+          ),
+        )
+        .limit(1);
+      if (!payload.contractId || !link) return 'FACT_COVERAGE_WITHOUT_CONTRACT';
+    }
     if (typeof payload.supersedesId === 'string') {
-      // Only a line without price is replaced, on the same invoice.
+      // A line without price is replaced by a priced one; the same act is evaluated
+      // again for its coverage (voucher, authorization) while the invoice is open.
       const [target] = await tx
         .select({
           invoiceId: schema.invoiceLine.invoiceId,
           unitPrice: schema.invoiceLine.unitPrice,
+          serviceItemId: schema.invoiceLine.serviceItemId,
+          quantity: schema.invoiceLine.quantity,
+          status: schema.invoiceLine.status,
         })
         .from(schema.invoiceLine)
         .where(eq(schema.invoiceLine.id, payload.supersedesId))
         .limit(1);
-      if (!target || target.invoiceId !== payload.invoiceId || target.unitPrice !== null) {
+      const [owner] = target
+        ? await tx
+            .select({ status: schema.invoice.status })
+            .from(schema.invoice)
+            .where(eq(schema.invoice.id, target.invoiceId))
+            .limit(1)
+        : [];
+      const sameAct =
+        payload.reevaluation === true &&
+        target?.serviceItemId === (payload.serviceItemId ?? null) &&
+        target?.quantity === payload.quantity &&
+        owner?.status === 'open';
+      if (
+        !target ||
+        target.status !== 'active' ||
+        target.invoiceId !== payload.invoiceId ||
+        (target.unitPrice !== null && !sameAct)
+      ) {
         return 'FACT_LINE_NOT_REPLACEABLE';
       }
     }
@@ -2643,6 +2825,16 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         case 'discount_grant':
         case 'credit_note':
           throw new Error(`${entity} rows are written by the server`);
+        case 'referral_voucher':
+          await tx
+            .insert(schema.referralVoucher)
+            .values(mappers.referral_voucher.toRow(state, ctx));
+          return;
+        case 'coverage_exception':
+          await tx
+            .insert(schema.coverageException)
+            .values(mappers.coverage_exception.toRow(state, ctx));
+          return;
         case 'patient_coverage':
           await tx
             .insert(schema.patientCoverage)
@@ -2859,6 +3051,21 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         }
         case 'payment':
           throw new Error('payment rows are immutable');
+        case 'referral_voucher':
+          throw new Error('referral_voucher rows are immutable');
+        case 'coverage_exception': {
+          const {
+            id: _id,
+            tenantId: _t,
+            createdBy: _c,
+            ...row
+          } = mappers.coverage_exception.toRow(state, ctx);
+          await tx
+            .update(schema.coverageException)
+            .set(row)
+            .where(eq(schema.coverageException.id, state.id));
+          return;
+        }
         case 'patient_coverage': {
           const {
             id: _id,
@@ -3284,6 +3491,14 @@ export async function patientBundles(
     .select()
     .from(schema.payment)
     .where(inArray(schema.payment.patientId, ids));
+  const vouchers = await tx
+    .select()
+    .from(schema.referralVoucher)
+    .where(inArray(schema.referralVoucher.patientId, ids));
+  const exceptions = await tx
+    .select()
+    .from(schema.coverageException)
+    .where(inArray(schema.coverageException.patientId, ids));
   const coverages = await tx
     .select()
     .from(schema.patientCoverage)
@@ -3332,6 +3547,14 @@ export async function patientBundles(
     ...prescriptions.map((state) => ({ entity: 'prescription' as const, state })),
     ...invoices.map((r) => ({ entity: 'invoice' as const, state: mappers.invoice.toState(r) })),
     ...payments.map((r) => ({ entity: 'payment' as const, state: mappers.payment.toState(r) })),
+    ...vouchers.map((r) => ({
+      entity: 'referral_voucher' as const,
+      state: mappers.referral_voucher.toState(r),
+    })),
+    ...exceptions.map((r) => ({
+      entity: 'coverage_exception' as const,
+      state: mappers.coverage_exception.toState(r),
+    })),
     ...coverages.map((r) => ({
       entity: 'patient_coverage' as const,
       state: mappers.patient_coverage.toState(r),

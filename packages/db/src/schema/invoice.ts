@@ -65,6 +65,12 @@ export const invoiceLine = pgTable(
     sourceTable: text('source_table'),
     sourceId: uuid('source_id'),
     performedAt: timestamp('performed_at', { withTimezone: true }).notNull(),
+    /** Share of the third party (contract), the patient pays the rest. */
+    payerShare: bigint('payer_share', { mode: 'number' }).notNull().default(0),
+    contractId: uuid('contract_id'),
+    beneficiaryId: uuid('beneficiary_id'),
+    /** Trace of the coverage engine (decision, rule, version, reasons). */
+    coverage: jsonb('coverage').$type<Record<string, unknown>>(),
   },
   (t) => [
     index('invoice_line_invoice_idx').on(t.tenantId, t.invoiceId),
@@ -72,6 +78,7 @@ export const invoiceLine = pgTable(
     check('invoice_line_status_check', sql`${t.status} in ('active','superseded')`),
     check('invoice_line_quantity_check', sql`${t.quantity} > 0`),
     check('invoice_line_price_check', sql`${t.unitPrice} is null or ${t.unitPrice} >= 0`),
+    check('invoice_line_payer_share_check', sql`${t.payerShare} >= 0`),
   ],
 );
 

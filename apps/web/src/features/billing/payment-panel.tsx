@@ -70,7 +70,8 @@ export function PaymentPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const gross = totalsOf(lines).gross - deductions;
+  // The patient pays what the contracts leave: gross minus the payers' shares.
+  const gross = totalsOf(lines).patient - deductions;
   const [refundReason, setRefundReason] = useState('');
   const canRefund = identity?.permissions.includes('payment:refund') ?? false;
   const balance = invoiceBalance(gross, payments);

@@ -296,7 +296,7 @@ function PatientRecord() {
         </div>
         <div className="grid content-start gap-6">
           <ArrivalPanel patientId={patient.id} deceased={deceasedAtOf(raw) !== null} />
-          <CoverageCard patientId={patient.id} />
+          <CoverageCard patientId={patient.id} encounterId={visitId} />
           <PatientAppointments patientId={patient.id} />
           <VitalsSummary vitals={vitals} sex={patient.sex} birthDate={patient.birthDate} />
           {patient.birthDate &&

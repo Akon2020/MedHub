@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { localDay } from '@/features/visits/visit-helpers';
 import { totalsOf, type InvoiceLineView, type InvoiceView } from './billing-helpers';
+import { applyCoverage, coverageInputs } from './coverage-billing';
 import { addLine, type BillingContext } from './visit-billing';
 
 export function useMoney() {
@@ -37,10 +38,11 @@ export function InvoiceCard({
   children?: React.ReactNode;
 }) {
   const t = useTranslations('billing.invoice');
+  const tc = useTranslations('billing.coverage');
   const tErr = useTranslations('errors');
   const format = useFormatter();
   const money = useMoney();
-  const { dispatch, nextCounter, catalogs, identity, device } = useRuntime();
+  const { dispatch, nextCounter, catalogs, identity, device, store } = useRuntime();
   const finance = catalogs?.snapshot.finance;
   const perms = identity?.permissions ?? [];
   const canAdd = perms.includes('invoice:add_line') && invoice.status === 'open';
@@ -70,6 +72,8 @@ export function InvoiceCard({
     siteCode: identity?.siteCode ?? 'SIT',
     deviceCode: device?.deviceCode ?? 'XX',
     permissions: perms,
+    store: store ?? undefined,
+    conventions: catalogs?.snapshot.conventions,
   };
 
   async function run(task: () => Promise<void>) {
@@ -89,17 +93,94 @@ export function InvoiceCard({
     void run(async () => {
       if (!finance) return;
       const qty = Math.max(1, Math.trunc(Number(quantity) || 1));
-      const line = lineFor(service, localDay(new Date()), finance, invoice.currency, qty);
-      if (line.unitPrice !== null && line.currency !== invoice.currency) {
+      const day = localDay(new Date());
+      const line = lineFor(service, day, finance, invoice.currency, qty);
+      const covered = store
+        ? applyCoverage(
+            line,
+            await coverageInputs(
+              store,
+              catalogs?.snapshot.conventions,
+              invoice.patientId,
+              invoice.encounterId,
+              day,
+            ),
+            finance,
+            day,
+          )
+        : undefined;
+      const priced = covered?.line ?? line;
+      if (priced.unitPrice !== null && priced.currency !== invoice.currency) {
         throw new AppError('FACT_CURRENCY_MISMATCH');
       }
       await addLine(ctx, {
         invoiceId: invoice.id,
         patientId: invoice.patientId,
         line: { ...line, currency: invoice.currency },
+        covered: covered && { ...covered, line: { ...priced, currency: invoice.currency } },
       });
       setQuery('');
       setQuantity('1');
+    });
+  }
+
+  /** The same act evaluated again (voucher, authorization received, or billed to the patient). */
+  function reevaluate(target: InvoiceLineView, toPatient: boolean) {
+    void run(async () => {
+      if (!finance) return;
+      const day = localDay(new Date());
+      const service = finance.serviceItems.find((x) => x.id === target.serviceItemId);
+      const base = service
+        ? lineFor(service, day, finance, invoice.currency, target.quantity)
+        : {
+            serviceItemId: target.serviceItemId,
+            code: target.code,
+            label: target.label,
+            category: target.category as ServiceItem['category'],
+            quantity: target.quantity,
+            unitPrice: target.unitPrice,
+            currency: invoice.currency,
+            priceListId: null,
+          };
+      const covered =
+        !toPatient && store
+          ? applyCoverage(
+              base,
+              await coverageInputs(
+                store,
+                catalogs?.snapshot.conventions,
+                invoice.patientId,
+                invoice.encounterId,
+                day,
+              ),
+              finance,
+              day,
+            )
+          : undefined;
+      await addLine(ctx, {
+        invoiceId: invoice.id,
+        patientId: invoice.patientId,
+        line: base,
+        covered: toPatient
+          ? {
+              line: base,
+              payerShare: 0,
+              contractId: null,
+              beneficiaryId: null,
+              coverage: {
+                decision: 'not_covered',
+                reasons: ['CONV_BILLED_TO_PATIENT'],
+                action: null,
+                requires: [],
+              },
+              decision: 'not_covered',
+              action: null,
+              requires: [],
+            }
+          : covered,
+        supersedesId: target.id,
+        reevaluation: true,
+      });
     });
   }
 
@@ -173,6 +254,19 @@ export function InvoiceCard({
                     <span className="ml-1 text-xs text-warning">{t('manual')}</span>
                   )}
                 </span>
+                {l.decision && (
+                  <Badge
+                    variant={
+                      l.decision === 'covered'
+                        ? 'info'
+                        : l.decision === 'partially_covered'
+                          ? 'muted'
+                          : 'warning'
+                    }
+                  >
+                    {tc(`decisions.${l.decision}`)}
+                  </Badge>
+                )}
                 {l.unitPrice === null ? (
                   <Badge variant="warning">{t('noPrice')}</Badge>
                 ) : (
@@ -184,6 +278,45 @@ export function InvoiceCard({
                   </Button>
                 )}
               </div>
+              {l.payerShare > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {tc('shares', {
+                    payer: money(l.payerShare, invoice.currency),
+                    patient: money(lineAmount(l) - l.payerShare, invoice.currency),
+                  })}
+                </p>
+              )}
+              {(l.requires.length > 0 ||
+                l.decision === 'blocked' ||
+                l.decision === 'needs_prior_authorization') && (
+                <div className="flex flex-wrap items-center gap-2 text-xs text-warning">
+                  {l.requires.map((r) => (
+                    <span key={r}>{tc(`requires.${r}`)}</span>
+                  ))}
+                  {invoice.status === 'open' && perms.includes('invoice:add_line') && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={busy}
+                        onClick={() => reevaluate(l, false)}
+                      >
+                        {tc('reevaluate')}
+                      </Button>
+                      {(l.decision === 'blocked' || l.decision === 'needs_prior_authorization') && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={busy}
+                          onClick={() => reevaluate(l, true)}
+                        >
+                          {tc('billToPatient')}
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
               {pricing === l.id && (
                 <form onSubmit={(e) => setPrice(l, e)} className="flex flex-wrap gap-2">
                   <Input
@@ -216,6 +349,12 @@ export function InvoiceCard({
           <span>{t('total')}</span>
           <span className="font-mono">{money(totals.gross, invoice.currency)}</span>
         </p>
+        {totals.payer > 0 && (
+          <p className="flex items-center justify-between text-sm">
+            <span>{tc('payerTotal')}</span>
+            <span className="font-mono">{money(totals.payer, invoice.currency)}</span>
+          </p>
+        )}
         {totals.missingPrices > 0 && (
           <p role="status" className="text-xs text-warning">
             {t('missing', { count: totals.missingPrices })}

@@ -216,7 +216,7 @@ export function PatientBilling({ patientId }: { patientId: string }) {
           >
             <AdjustmentsPanel
               invoice={inv}
-              gross={totalsOf(data.lines.filter((l) => l.invoiceId === inv.id)).gross}
+              gross={totalsOf(data.lines.filter((l) => l.invoiceId === inv.id)).patient}
               rows={data.adjustments.filter((a) => a.invoiceId === inv.id)}
             />
             <PaymentPanel

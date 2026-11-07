@@ -25,6 +25,11 @@ import { clinicalNotePayload, diagnosisPayload } from './dpi/consultation';
 import { formResponseCompletePayload, formResponseSignPayload } from './dpi/form-responses';
 import { invoiceFinalizePayload, invoiceLinePayload, invoiceOpenPayload } from './fact/invoice';
 import { patientCoverageEndPayload, patientCoverageLinkPayload } from './conv/contracts';
+import {
+  coverageExceptionPayload,
+  coverageRegularizePayload,
+  referralVoucherPayload,
+} from './conv/coverage';
 import { creditNoteRequestPayload, discountRequestPayload } from './fact/adjustments';
 import {
   cashSessionClosePayload,
@@ -88,7 +93,9 @@ export type EntityName =
   | 'approval_request'
   | 'discount_grant'
   | 'credit_note'
-  | 'patient_coverage';
+  | 'patient_coverage'
+  | 'referral_voucher'
+  | 'coverage_exception';
 
 export type EntityDefinition = {
   name: EntityName;
@@ -268,6 +275,18 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
   credit_note: {
     name: 'credit_note',
     strategy: 'append_only',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  referral_voucher: {
+    name: 'referral_voucher',
+    strategy: 'append_only',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  coverage_exception: {
+    name: 'coverage_exception',
+    strategy: 'field_merge',
     scopeKeys: (data) => [`patient:${String(data.patientId)}`],
     patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
   },
@@ -701,6 +720,31 @@ export const COMMANDS = {
     permission: 'beneficiary:read',
     onlineOnly: false,
     transition: { from: ['active'], to: 'ended' },
+  }),
+  'referral_voucher.register': define({
+    name: 'referral_voucher.register',
+    entity: 'referral_voucher',
+    kind: 'append',
+    payloadSchema: referralVoucherPayload,
+    permission: 'beneficiary:read',
+    onlineOnly: false,
+  }),
+  'coverage.emergency_override': define({
+    name: 'coverage.emergency_override',
+    entity: 'coverage_exception',
+    kind: 'create',
+    payloadSchema: coverageExceptionPayload,
+    permission: 'beneficiary:read',
+    onlineOnly: false,
+  }),
+  'coverage_exception.regularize': define({
+    name: 'coverage_exception.regularize',
+    entity: 'coverage_exception',
+    kind: 'update',
+    payloadSchema: coverageRegularizePayload,
+    permission: 'beneficiary:read',
+    onlineOnly: false,
+    transition: { from: ['open'], to: 'regularized' },
   }),
   'discount.request': define({
     name: 'discount.request',

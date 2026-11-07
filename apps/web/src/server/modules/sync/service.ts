@@ -43,6 +43,8 @@ const READ_PERMISSION: Record<string, readonly string[]> = {
   discount_grant: ['invoice:read'],
   credit_note: ['invoice:read'],
   patient_coverage: ['beneficiary:read', 'invoice:read'],
+  referral_voucher: ['beneficiary:read', 'invoice:read'],
+  coverage_exception: ['beneficiary:read', 'invoice:read'],
   cash_session: ['cash_session:open', 'cash_session:review'],
   vital_sign: ['vital_sign:read', 'clinical_record:read'],
   stock_movement: ['stock:read'],

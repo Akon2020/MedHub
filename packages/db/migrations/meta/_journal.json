@@ -211,6 +211,13 @@
       "when": 1794004370706,
       "tag": "0029_s11_contracts",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1794009235770,
+      "tag": "0030_s11_coverage",
+      "breakpoints": true
     }
   ]
 }

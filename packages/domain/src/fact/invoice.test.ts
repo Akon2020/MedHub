@@ -17,7 +17,12 @@ describe('invoice rules', () => {
       { quantity: 1, unitPrice: null },
       { quantity: 1, unitPrice: 999, status: 'superseded' },
     ];
-    expect(invoiceTotals(lines)).toEqual({ gross: 1750, missingPrices: 1 });
+    expect(invoiceTotals(lines)).toEqual({
+      gross: 1750,
+      missingPrices: 1,
+      payer: 0,
+      patient: 1750,
+    });
     expect(canFinalize(lines)).toBe(false);
     expect(canFinalize(lines.slice(0, 2))).toBe(true);
     expect(canFinalize([])).toBe(false);

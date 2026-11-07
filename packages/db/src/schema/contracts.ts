@@ -12,7 +12,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { syncColumns, tenantColumns } from '../columns';
+import { appendOnlyColumns, syncColumns, tenantColumns } from '../columns';
 
 /** A third party that pays for patients (docs/modules/conv.md section 2). */
 export const payer = pgTable(
@@ -148,5 +148,54 @@ export const patientCoverage = pgTable(
   (t) => [
     index('patient_coverage_patient_idx').on(t.tenantId, t.patientId),
     check('patient_coverage_status_check', sql`${t.status} in ('active','ended')`),
+  ],
+);
+
+/** A signed referral voucher (bon d'envoi) presented by the beneficiary. */
+export const referralVoucher = pgTable(
+  'referral_voucher',
+  {
+    ...appendOnlyColumns(),
+    patientId: uuid('patient_id').notNull(),
+    contractId: uuid('contract_id').notNull(),
+    beneficiaryId: uuid('beneficiary_id').notNull(),
+    number: text('number').notNull(),
+    signatory: text('signatory').notNull(),
+    issuedOn: date('issued_on').notNull(),
+    validUntil: date('valid_until').notNull(),
+    encounterId: uuid('encounter_id'),
+    registeredAt: timestamp('registered_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    uniqueIndex('referral_voucher_number_uq').on(t.tenantId, t.contractId, t.number),
+    index('referral_voucher_patient_idx').on(t.tenantId, t.patientId),
+  ],
+);
+
+/**
+ * Emergency covered without voucher (service card shown): to regularise with
+ * a voucher within the delay of the plan; overdue ones are flagged.
+ */
+export const coverageException = pgTable(
+  'coverage_exception',
+  {
+    ...syncColumns(),
+    patientId: uuid('patient_id').notNull(),
+    contractId: uuid('contract_id').notNull(),
+    encounterId: uuid('encounter_id'),
+    reason: text('reason').notNull(),
+    recordedAt: timestamp('recorded_at', { withTimezone: true }).notNull(),
+    dueBy: timestamp('due_by', { withTimezone: true }).notNull(),
+    status: text('status').notNull().default('open'),
+    voucherId: uuid('voucher_id'),
+    fieldMeta: jsonb('field_meta')
+      .$type<Record<string, { hlc: string; v: number }>>()
+      .notNull()
+      .default({}),
+  },
+  (t) => [
+    index('coverage_exception_patient_idx').on(t.tenantId, t.patientId),
+    index('coverage_exception_due_idx').on(t.tenantId, t.status, t.dueBy),
+    check('coverage_exception_status_check', sql`${t.status} in ('open','regularized')`),
   ],
 );

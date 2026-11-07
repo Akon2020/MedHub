@@ -461,6 +461,9 @@ importers:
 
   packages/domain:
     dependencies:
+      '@medhub/conventions':
+        specifier: workspace:*
+        version: link:../conventions
       '@medhub/shared':
         specifier: workspace:*
         version: link:../shared

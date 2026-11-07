@@ -92,7 +92,7 @@ export function matchRule(
   return best;
 }
 
-function capApplies(cap: CapDefinition, line: CoverageInput['line']): boolean {
+export function capApplies(cap: CapDefinition, line: CoverageInput['line']): boolean {
   if (cap.serviceCodes?.length)
     return Boolean(line.serviceCode && cap.serviceCodes.includes(line.serviceCode));
   if (cap.categories?.length) return cap.categories.includes(line.category);

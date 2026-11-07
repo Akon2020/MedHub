@@ -827,7 +827,11 @@
     "CONV_IMPORT_VALUE": "invalid value (role or date)",
     "CONV_IMPORT_UNKNOWN_PLAN": "plan unknown in this contract",
     "CONV_IMPORT_DUPLICATE": "member number repeated",
-    "CONV_IMPORT_NO_HOLDER": "holder missing from the file"
+    "CONV_IMPORT_NO_HOLDER": "holder missing from the file",
+    "CONV_VOUCHER_NUMBER_TAKEN": "This voucher number is already recorded for this contract.",
+    "CONV_VOUCHER_DATES": "The end of validity is before the voucher date.",
+    "FACT_PAYER_SHARE_TOO_HIGH": "The payer share is above the amount of the line.",
+    "FACT_COVERAGE_WITHOUT_CONTRACT": "The patient is not linked to this contract."
   },
   "account": {
     "title": "My account",
@@ -2511,7 +2515,25 @@
       "reject": "Refuse",
       "ownRequest": "Your own request: another person must decide it."
     },
-    "approvalsLink": "Pending approvals"
+    "approvalsLink": "Pending approvals",
+    "coverage": {
+      "decisions": {
+        "covered": "Covered",
+        "partially_covered": "Partly covered",
+        "not_covered": "Not covered",
+        "blocked": "Blocked",
+        "needs_prior_authorization": "Prior authorization required"
+      },
+      "shares": "Payer {payer} · patient {patient}",
+      "requires": {
+        "voucher": "Referral voucher to provide",
+        "prior_authorization": "Prior authorization to obtain",
+        "justification": "Justification to enter"
+      },
+      "reevaluate": "Evaluate the coverage again",
+      "billToPatient": "Bill to the patient",
+      "payerTotal": "Owed by third parties"
+    }
   },
   "conventions": {
     "title": "Contracts and third-party payers",
@@ -2641,7 +2663,21 @@
       "pending": "Waiting for synchronisation",
       "end": "End the link",
       "reason": "Reason",
-      "confirmEnd": "Confirm"
+      "confirmEnd": "Confirm",
+      "voucher": "Record a referral voucher",
+      "voucherNumber": "Voucher number",
+      "signatory": "Signed by",
+      "issuedOn": "Voucher date",
+      "validUntil": "Valid until",
+      "saveVoucher": "Save the voucher",
+      "vouchers": "Referral vouchers",
+      "emergency": "Emergency coverage (service card)",
+      "emergencyReason": "Reason for the emergency (required)",
+      "saveEmergency": "Cover the emergency",
+      "openEmergency": "Emergency to regularise before {date}",
+      "overdue": "Regularisation late since {date}",
+      "regularize": "Regularise with this voucher",
+      "regularized": "Emergency regularised"
     }
   }
 }

@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { VoucherPanel } from './voucher-panel';
 
 /** Active coverage of a patient: link, contract, plan and member, from the local copy. */
 export function useCoverage(patientId: string) {
@@ -43,7 +44,13 @@ export function useCoverage(patientId: string) {
  * patient to a beneficiary of an active contract, offline included; the
  * coverage then applies at the cash desk.
  */
-export function CoverageCard({ patientId }: { patientId: string }) {
+export function CoverageCard({
+  patientId,
+  encounterId,
+}: {
+  patientId: string;
+  encounterId?: string | null;
+}) {
   const t = useTranslations('conventions.coverage');
   const tErr = useTranslations('errors');
   const { dispatch, catalogs, identity } = useRuntime();
@@ -97,6 +104,15 @@ export function CoverageCard({ patientId }: { patientId: string }) {
               {member?.isDayLaborer && <Badge variant="warning">{t('dayLaborer')}</Badge>}
               {link.version === 0 && <Badge variant="muted">{t('pending')}</Badge>}
             </p>
+            {contract && member && (
+              <VoucherPanel
+                patientId={patientId}
+                contractId={contract.id}
+                beneficiaryId={member.id}
+                planRules={plan?.rules}
+                encounterId={encounterId ?? null}
+              />
+            )}
             {!ending ? (
               <Button
                 size="sm"

@@ -24,8 +24,10 @@ import {
   beneficiaryMovement,
   contract,
   contractPlan,
+  coverageException,
   patientCoverage,
   payer,
+  referralVoucher,
   approvalThreshold,
   billingRule,
   creditNote,
@@ -311,6 +313,31 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       label: 'Paludisme simple',
       certainty: 'suspected',
       diagnosedAt: new Date(),
+    });
+  },
+  referral_voucher: async (tx, tenantId) => {
+    await tx.insert(referralVoucher).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      contractId: uuidv7(),
+      beneficiaryId: uuidv7(),
+      number: `BE-${uuidv7().slice(-8)}`,
+      signatory: 'Signataire de test',
+      issuedOn: '2026-11-01',
+      validUntil: '2026-11-30',
+      registeredAt: new Date(),
+    });
+  },
+  coverage_exception: async (tx, tenantId) => {
+    await tx.insert(coverageException).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      contractId: uuidv7(),
+      reason: 'Urgence de test',
+      recordedAt: new Date(),
+      dueBy: new Date(),
     });
   },
   payer: async (tx, tenantId) => {

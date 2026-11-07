@@ -14,6 +14,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@medhub/conventions": "workspace:*",
     "@medhub/shared": "workspace:*",
     "zod": "4.6.7"
   },
