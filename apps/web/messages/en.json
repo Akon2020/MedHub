@@ -831,7 +831,9 @@
     "CONV_VOUCHER_NUMBER_TAKEN": "This voucher number is already recorded for this contract.",
     "CONV_VOUCHER_DATES": "The end of validity is before the voucher date.",
     "FACT_PAYER_SHARE_TOO_HIGH": "The payer share is above the amount of the line.",
-    "FACT_COVERAGE_WITHOUT_CONTRACT": "The patient is not linked to this contract."
+    "FACT_COVERAGE_WITHOUT_CONTRACT": "The patient is not linked to this contract.",
+    "CONV_DECISION_INCOMPLETE": "An approval needs an amount and an end date; a rejection needs a reason.",
+    "CONV_GUARANTEE_TOO_HIGH": "The refund exceeds the guarantee held."
   },
   "account": {
     "title": "My account",
@@ -2533,7 +2535,8 @@
       "reevaluate": "Evaluate the coverage again",
       "billToPatient": "Bill to the patient",
       "payerTotal": "Owed by third parties"
-    }
+    },
+    "authorizationsLink": "Prior authorizations"
   },
   "conventions": {
     "title": "Contracts and third-party payers",
@@ -2678,6 +2681,53 @@
       "overdue": "Regularisation late since {date}",
       "regularize": "Regularise with this voucher",
       "regularized": "Emergency regularised"
+    },
+    "priorAuthorization": {
+      "title": "Prior authorizations",
+      "subtitle": "Requests sent by the cash desk. Enter the payer’s answer: it reaches the workstations at their next synchronisation.",
+      "offline": "This screen needs a connection. Requests made at the cash desk leave as soon as the network is back.",
+      "empty": "No prior authorization request.",
+      "request": "Request prior authorization",
+      "reason": "Medical reason for the request",
+      "send": "Send",
+      "cancel": "Cancel",
+      "again": "New request",
+      "pending": "Prior authorization requested on {date}, awaiting answer.",
+      "approved": "Prior authorization received: {amount} until {date}. Evaluate the line again.",
+      "rejected": "Prior authorization rejected: {note}",
+      "authorizedAmount": "Authorized amount ({currency})",
+      "validUntil": "Valid until",
+      "payerReference": "Payer reference",
+      "note": "Note (required for a rejection)",
+      "approve": "Approve",
+      "reject": "Reject",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      }
+    },
+    "guarantees": {
+      "title": "Guarantees",
+      "subtitle": "Guarantee per worker paid when the contract starts and refunded at termination.",
+      "held": "Guarantee held: {amount}",
+      "empty": "No guarantee recorded.",
+      "kind": "Movement",
+      "kinds": {
+        "receive": "Received",
+        "refund": "Refunded"
+      },
+      "memberNumber": "Member number (optional)",
+      "amount": "Amount ({currency})",
+      "method": "Method",
+      "methods": {
+        "transfer": "Transfer",
+        "cash": "Cash",
+        "cheque": "Cheque",
+        "mobile_money": "Mobile money"
+      },
+      "reference": "Reference",
+      "record": "Record"
     }
   }
 }

@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/select';
 import { useStepUp } from '@/features/auth/step-up';
+import { GuaranteesCard } from './guarantees-card';
 import { PlanEditor } from './plan-editor';
 
 type Payer = { id: string; code: string; name: string; kind: string };
@@ -623,6 +624,14 @@ export function ConventionsSettings() {
             )}
           </CardContent>
         </Card>
+      )}
+      {current && (
+        <GuaranteesCard
+          key={current.id}
+          contractId={current.id}
+          currency={current.currency}
+          guard={guard}
+        />
       )}
       {dialog}
     </div>

@@ -35,6 +35,7 @@ export type InvoiceLineView = {
   requires: string[];
   reasons: string[];
   contractId: string | null;
+  beneficiaryId: string | null;
 };
 
 const s = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 ? v : null);
@@ -82,6 +83,7 @@ export function toLineView(e: LocalEntity): InvoiceLineView {
     requires: Array.isArray(cov.requires) ? cov.requires.map(String) : [],
     reasons: Array.isArray(cov.reasons) ? cov.reasons.map(String) : [],
     contractId: s(d.contractId),
+    beneficiaryId: s(d.beneficiaryId),
   };
 }
 

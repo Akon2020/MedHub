@@ -24,6 +24,7 @@ import { breakGlassPayload } from './dpi/break-glass';
 import { clinicalNotePayload, diagnosisPayload } from './dpi/consultation';
 import { formResponseCompletePayload, formResponseSignPayload } from './dpi/form-responses';
 import { invoiceFinalizePayload, invoiceLinePayload, invoiceOpenPayload } from './fact/invoice';
+import { priorAuthorizationRequestPayload } from './conv/authorizations';
 import { patientCoverageEndPayload, patientCoverageLinkPayload } from './conv/contracts';
 import {
   coverageExceptionPayload,
@@ -95,7 +96,8 @@ export type EntityName =
   | 'credit_note'
   | 'patient_coverage'
   | 'referral_voucher'
-  | 'coverage_exception';
+  | 'coverage_exception'
+  | 'prior_authorization';
 
 export type EntityDefinition = {
   name: EntityName;
@@ -286,6 +288,12 @@ export const ENTITIES: Record<EntityName, EntityDefinition> = {
   },
   coverage_exception: {
     name: 'coverage_exception',
+    strategy: 'field_merge',
+    scopeKeys: (data) => [`patient:${String(data.patientId)}`],
+    patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
+  },
+  prior_authorization: {
+    name: 'prior_authorization',
     strategy: 'field_merge',
     scopeKeys: (data) => [`patient:${String(data.patientId)}`],
     patientIdOf: (data) => (typeof data.patientId === 'string' ? data.patientId : null),
@@ -745,6 +753,14 @@ export const COMMANDS = {
     permission: 'beneficiary:read',
     onlineOnly: false,
     transition: { from: ['open'], to: 'regularized' },
+  }),
+  'prior_authorization.request': define({
+    name: 'prior_authorization.request',
+    entity: 'prior_authorization',
+    kind: 'create',
+    payloadSchema: priorAuthorizationRequestPayload,
+    permission: 'prior_authorization:request',
+    onlineOnly: false,
   }),
   'discount.request': define({
     name: 'discount.request',

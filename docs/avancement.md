@@ -162,6 +162,18 @@ Décisions du porteur au lancement de S11 (« Démarre S11 ») :
 
 S11, tranche 1 (moteur) : `packages/conventions` (schéma des règles, moteur `evaluateCoverage` pur et déterministe, mois commencés dus, jour de génération), modèles de démonstration A à D, 12 jeux d'essai (acte inclus, exclu, accord préalable, plafond, dépassement d'hospitalisation, mois commencé, journalier, urgence sans bon d'envoi, ticket modérateur, bénéficiaire sorti).
 
+S11, tranche 2 (tiers, conventions, bénéficiaires) : migration `0029`, écran `/app/parametres/conventions` (tiers, conventions, éditeur de modèles en tableau publié par versions, activation, import CSV de la liste des bénéficiaires avec rapport des entrées, changements et sorties), rattachement du patient à son matricule sur la fiche.
+
+S11, tranche 3 (couverture des lignes) : migration `0030`, part du payeur et trace du moteur sur chaque ligne, bons d'envoi, prise en charge d'urgence avec motif et régularisation, ligne bloquée tant qu'elle n'est pas réévaluée ou facturée au patient.
+
+S11, tranche 4 (accords préalables et garanties) :
+- Migration `0031_s11_authorizations` : `prior_authorization` (garde : une demande décidée ne change plus) et `guarantee` (mouvements immuables), RLS et tests d'isolation (327 tests).
+- Commande `prior_authorization.request` : la caisse demande l'accord depuis la ligne bloquée, hors connexion compris ; le serveur refuse une demande sur une convention qui n'est pas active.
+- Décision en ligne par la Direction (`/app/caisse/accords`, second facteur) : accord avec montant, date limite et référence du payeur, ou refus avec motif. La décision part vers les postes par le journal des changements ; la ligne réévaluée prend alors le montant accordé.
+- Garanties par convention (fiche de la convention, permission `payer_invoice:record_payment`, second facteur) : versement, restitution jamais supérieure à la garantie détenue, solde par matricule.
+- Écart (à valider) : les garanties s'enregistrent en ligne depuis les paramètres et ne passent pas par la session de caisse ; elles concernent le tiers, pas un patient.
+- Tests : 6 tests de domaine, 2 tests d'intégration PostgreSQL (demande, refus sur convention inactive, décision unique, garde en base, garanties).
+
 ### 06/11/2026 (S10, fin)
 
 - Tranche 2, facture panier : `packages/domain/src/fact/invoice.ts`, migration `0026_s10_invoice` (`invoice` avec garde, `invoice_line`, `billing_rule`), facturation à l'ouverture de la visite (`features/billing/visit-billing.ts`), facture complémentaire créée par le serveur, écran `/app/caisse`.

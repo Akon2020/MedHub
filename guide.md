@@ -409,6 +409,13 @@ Menu **Paramètres** (permission `configuration:read`, administrateur de structu
 - **Réinitialiser** : la base actuelle est archivée (rien n'est supprimé), ses postes effacent leurs données de formation à leur prochain contact, et une nouvelle base est créée sous le même code avec la configuration du jour.
 - Aucun SMS ni courriel réel ne doit partir d'une base de formation : règle à appliquer par le module de notifications quand il arrivera (aucun envoi n'existe aujourd'hui).
 
+### Accords préalables et garanties (S11)
+
+- Une ligne de facture marquée « Accord préalable » (scanner, chirurgie, selon le modèle) bloque la finalisation. Sur la ligne, **Demander l'accord préalable**, avec le motif médical : la demande part à la synchronisation, hors connexion compris, et la ligne affiche « en attente de réponse ».
+- **Accords préalables** (lien sur l'écran Caisse, `/app/caisse/accords`, compte `direction`, en ligne, second facteur) : saisissez la réponse du payeur. Accord : montant accordé, date limite, référence du payeur. Refus : motif obligatoire. Une décision ne se modifie plus.
+- Après la synchronisation, à la caisse, **Réévaluer la couverture** : le montant accordé est pris en charge, le reste va au patient. Un refus laisse le choix de facturer l'acte au patient ou de faire une nouvelle demande.
+- **Garanties** (Paramètres, Conventions, en bas de la fiche de la convention, compte `direction`, second facteur) : enregistrez la garantie reçue par travailleur (matricule facultatif), puis sa restitution à la résiliation. Une restitution supérieure à la garantie détenue est refusée.
+
 ### Tarifs et devises (S10)
 
 - **Paramètres, Tarifs et devises** (en ligne, `price:read` ; modification `price:manage` avec second facteur) :

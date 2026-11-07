@@ -218,6 +218,13 @@
       "when": 1794009235770,
       "tag": "0030_s11_coverage",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1794010854723,
+      "tag": "0031_s11_authorizations",
+      "breakpoints": true
     }
   ]
 }

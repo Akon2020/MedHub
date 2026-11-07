@@ -836,7 +836,9 @@
     "CONV_VOUCHER_NUMBER_TAKEN": "Ce numéro de bon d’envoi est déjà enregistré pour cette convention.",
     "CONV_VOUCHER_DATES": "La fin de validité précède la date du bon.",
     "FACT_PAYER_SHARE_TOO_HIGH": "La part du tiers dépasse le montant de la ligne.",
-    "FACT_COVERAGE_WITHOUT_CONTRACT": "Le patient n’est pas rattaché à cette convention."
+    "FACT_COVERAGE_WITHOUT_CONTRACT": "Le patient n’est pas rattaché à cette convention.",
+    "CONV_DECISION_INCOMPLETE": "Un accord demande un montant et une date limite ; un refus demande un motif.",
+    "CONV_GUARANTEE_TOO_HIGH": "La restitution dépasse la garantie détenue."
   },
   "account": {
     "title": "Mon compte",
@@ -2538,7 +2540,8 @@
       "reevaluate": "Réévaluer la couverture",
       "billToPatient": "Facturer au patient",
       "payerTotal": "À la charge des tiers"
-    }
+    },
+    "authorizationsLink": "Accords préalables"
   },
   "conventions": {
     "title": "Conventions et tiers payants",
@@ -2683,6 +2686,53 @@
       "overdue": "Régularisation en retard depuis le {date}",
       "regularize": "Régulariser avec ce bon",
       "regularized": "Urgence régularisée"
+    },
+    "priorAuthorization": {
+      "title": "Accords préalables",
+      "subtitle": "Demandes envoyées par la caisse. Saisissez la réponse du payeur : elle parvient aux postes à la synchronisation suivante.",
+      "offline": "Cet écran demande une connexion. Les demandes faites à la caisse partiront dès le retour du réseau.",
+      "empty": "Aucune demande d’accord préalable.",
+      "request": "Demander l’accord préalable",
+      "reason": "Motif médical de la demande",
+      "send": "Envoyer",
+      "cancel": "Annuler",
+      "again": "Nouvelle demande",
+      "pending": "Accord préalable demandé le {date}, en attente de réponse.",
+      "approved": "Accord préalable reçu : {amount} jusqu’au {date}. Réévaluez la ligne.",
+      "rejected": "Accord préalable refusé : {note}",
+      "authorizedAmount": "Montant accordé ({currency})",
+      "validUntil": "Valable jusqu’au",
+      "payerReference": "Référence du payeur",
+      "note": "Note (obligatoire pour un refus)",
+      "approve": "Accorder",
+      "reject": "Refuser",
+      "status": {
+        "pending": "En attente",
+        "approved": "Accordé",
+        "rejected": "Refusé"
+      }
+    },
+    "guarantees": {
+      "title": "Garanties",
+      "subtitle": "Garantie par travailleur versée au début de la convention et restituée à la résiliation.",
+      "held": "Garantie détenue : {amount}",
+      "empty": "Aucune garantie enregistrée.",
+      "kind": "Mouvement",
+      "kinds": {
+        "receive": "Reçue",
+        "refund": "Restituée"
+      },
+      "memberNumber": "Matricule (facultatif)",
+      "amount": "Montant ({currency})",
+      "method": "Moyen",
+      "methods": {
+        "transfer": "Virement",
+        "cash": "Espèces",
+        "cheque": "Chèque",
+        "mobile_money": "Mobile money"
+      },
+      "reference": "Référence",
+      "record": "Enregistrer"
     }
   }
 }

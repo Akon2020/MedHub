@@ -41,3 +41,4 @@ export * from './fact/payment';
 export * from './fact/adjustments';
 export * from './conv/contracts';
 export * from './conv/coverage';
+export * from './conv/authorizations';

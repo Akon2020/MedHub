@@ -25,6 +25,8 @@ import {
   contract,
   contractPlan,
   coverageException,
+  guarantee,
+  priorAuthorization,
   patientCoverage,
   payer,
   referralVoucher,
@@ -313,6 +315,32 @@ export const FACTORIES: Record<string, (tx: Tx, tenantId: string) => Promise<voi
       label: 'Paludisme simple',
       certainty: 'suspected',
       diagnosedAt: new Date(),
+    });
+  },
+  prior_authorization: async (tx, tenantId) => {
+    await tx.insert(priorAuthorization).values({
+      id: uuidv7(),
+      tenantId,
+      patientId: uuidv7(),
+      contractId: uuidv7(),
+      beneficiaryId: uuidv7(),
+      label: 'Scanner',
+      currency: 'USD',
+      amountRequested: 15000,
+      reason: 'Demande de test',
+      requestedAt: new Date(),
+    });
+  },
+  guarantee: async (tx, tenantId) => {
+    await tx.insert(guarantee).values({
+      id: uuidv7(),
+      tenantId,
+      contractId: uuidv7(),
+      kind: 'receive',
+      amount: 7500,
+      currency: 'USD',
+      method: 'transfer',
+      recordedAt: new Date(),
     });
   },
   referral_voucher: async (tx, tenantId) => {

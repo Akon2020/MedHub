@@ -81,6 +81,14 @@ export function CashDeskHome() {
           {t('approvalsLink')}
         </Link>
       )}
+      {(identity?.permissions ?? []).includes('prior_authorization:read') && (
+        <Link
+          href="/app/caisse/accords"
+          className="mb-4 ml-4 inline-block text-sm text-primary hover:underline"
+        >
+          {t('authorizationsLink')}
+        </Link>
+      )}
       <Input
         aria-label={t('filter')}
         placeholder={t('filter')}

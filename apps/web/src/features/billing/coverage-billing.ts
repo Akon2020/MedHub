@@ -1,10 +1,12 @@
 'use client';
 
 import {
+  authorizationFor,
   capConsumption,
   coverLine,
   parsePlan,
   voucherValid,
+  type AuthorizationView,
   type CoverageContext,
   type CoveredLine,
   type LineDraft,
@@ -20,6 +22,7 @@ export type CoverageInputs = {
   emergency: boolean;
   byCap: Record<string, number>;
   hospitalDaysUsed: number;
+  authorizations: AuthorizationView[];
 };
 
 const s = (v: unknown) => (typeof v === 'string' ? v : '');
@@ -37,6 +40,7 @@ export async function coverageInputs(
   day: string,
 ): Promise<CoverageInputs> {
   const empty: CoverageInputs = {
+    authorizations: [],
     context: null,
     voucher: 'missing',
     emergency: false,
@@ -86,8 +90,26 @@ export async function coverageInputs(
           .map((e) => e.id),
       )
     : new Set<string>();
+  const authorizations: AuthorizationView[] = (
+    await store.readEntitiesByPatient('prior_authorization', patientId)
+  )
+    .filter((e) => !e.rejected && e.data.contractId === contract.id)
+    .map((e) => ({
+      serviceItemId: typeof e.data.serviceItemId === 'string' ? e.data.serviceItemId : null,
+      status:
+        e.data.status === 'approved'
+          ? 'approved'
+          : e.data.status === 'rejected'
+            ? 'rejected'
+            : 'pending',
+      authorizedAmount:
+        typeof e.data.authorizedAmount === 'number' ? e.data.authorizedAmount : null,
+      validUntil: typeof e.data.validUntil === 'string' ? e.data.validUntil : null,
+      requestedAt: s(e.data.requestedAt),
+    }));
   const rules = parsePlan(plan.rules);
   return {
+    authorizations,
     context: {
       contract: { id: contract.id, priceListId: contract.priceListId, currency: contract.currency },
       plan: { id: plan.id, version: plan.version, rules: plan.rules },
@@ -118,11 +140,12 @@ export function applyCoverage(
   finance: CatalogSnapshot['finance'] | undefined,
   day: string,
   department: string | null = null,
-  priorAuthorization: {
-    status: 'approved' | 'pending' | 'rejected' | 'none';
-    authorizedAmount?: number | null;
-  } = { status: 'none' },
 ): CoveredLine {
+  const priorAuthorization = authorizationFor(
+    inputs.authorizations,
+    line.serviceItemId ?? null,
+    day,
+  );
   return coverLine({
     line,
     serviceItemId: line.serviceItemId ?? null,

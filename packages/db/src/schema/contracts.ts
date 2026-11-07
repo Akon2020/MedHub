@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  bigint,
   boolean,
   check,
   date,
@@ -197,5 +198,71 @@ export const coverageException = pgTable(
     index('coverage_exception_patient_idx').on(t.tenantId, t.patientId),
     index('coverage_exception_due_idx').on(t.tenantId, t.status, t.dueBy),
     check('coverage_exception_status_check', sql`${t.status} in ('open','regularized')`),
+  ],
+);
+
+/**
+ * Prior authorization of an act (docs/modules/conv.md): asked at the cash
+ * desk, offline included, and the payer's decision recorded online. A decided
+ * request never changes (guard).
+ */
+export const priorAuthorization = pgTable(
+  'prior_authorization',
+  {
+    ...syncColumns(),
+    patientId: uuid('patient_id').notNull(),
+    contractId: uuid('contract_id').notNull(),
+    beneficiaryId: uuid('beneficiary_id').notNull(),
+    serviceItemId: uuid('service_item_id'),
+    serviceCode: text('service_code'),
+    label: text('label').notNull(),
+    currency: text('currency').notNull(),
+    amountRequested: bigint('amount_requested', { mode: 'number' }).notNull(),
+    reason: text('reason').notNull(),
+    requestedAt: timestamp('requested_at', { withTimezone: true }).notNull(),
+    status: text('status').notNull().default('pending'),
+    authorizedAmount: bigint('authorized_amount', { mode: 'number' }),
+    validUntil: date('valid_until'),
+    payerReference: text('payer_reference'),
+    decidedBy: uuid('decided_by'),
+    decidedAt: timestamp('decided_at', { withTimezone: true }),
+    decisionNote: text('decision_note'),
+    fieldMeta: jsonb('field_meta')
+      .$type<Record<string, { hlc: string; v: number }>>()
+      .notNull()
+      .default({}),
+  },
+  (t) => [
+    index('prior_authorization_patient_idx').on(t.tenantId, t.patientId),
+    index('prior_authorization_status_idx').on(t.tenantId, t.status, t.requestedAt),
+    check(
+      'prior_authorization_status_check',
+      sql`${t.status} in ('pending','approved','rejected')`,
+    ),
+    check('prior_authorization_amount_check', sql`${t.amountRequested} > 0`),
+  ],
+);
+
+/** Guarantee per worker held for a contract: received, then refunded at termination. */
+export const guarantee = pgTable(
+  'guarantee',
+  {
+    id: uuid('id').primaryKey(),
+    tenantId: uuid('tenant_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    createdBy: uuid('created_by'),
+    contractId: uuid('contract_id').notNull(),
+    memberNumber: text('member_number'),
+    kind: text('kind').notNull(),
+    amount: bigint('amount', { mode: 'number' }).notNull(),
+    currency: text('currency').notNull(),
+    method: text('method').notNull(),
+    reference: text('reference'),
+    recordedAt: timestamp('recorded_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    index('guarantee_contract_idx').on(t.tenantId, t.contractId),
+    check('guarantee_kind_check', sql`${t.kind} in ('receive','refund')`),
+    check('guarantee_amount_check', sql`${t.amount} > 0`),
   ],
 );

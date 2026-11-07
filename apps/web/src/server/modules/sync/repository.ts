@@ -1057,6 +1057,64 @@ const mappers = {
       };
     },
   },
+  prior_authorization: {
+    table: schema.priorAuthorization,
+    toState(row: typeof schema.priorAuthorization.$inferSelect): EntityState {
+      return {
+        id: row.id,
+        version: row.version,
+        data: compact({
+          patientId: row.patientId,
+          contractId: row.contractId,
+          beneficiaryId: row.beneficiaryId,
+          serviceItemId: row.serviceItemId,
+          serviceCode: row.serviceCode,
+          label: row.label,
+          currency: row.currency,
+          amountRequested: row.amountRequested,
+          reason: row.reason,
+          requestedAt: row.requestedAt.toISOString(),
+          status: row.status,
+          authorizedAmount: row.authorizedAmount,
+          validUntil: row.validUntil,
+          payerReference: row.payerReference,
+          decidedAt: row.decidedAt?.toISOString(),
+          decisionNote: row.decisionNote,
+        }),
+        fieldMeta: row.fieldMeta,
+        hlc: row.hlc ?? '',
+        opId: row.opId ?? '',
+        deviceId: row.deviceId ?? '',
+        createdBy: row.createdBy ?? '',
+      };
+    },
+    toRow(state: EntityState, ctx: Ctx): typeof schema.priorAuthorization.$inferInsert {
+      const d = state.data;
+      return {
+        id: state.id,
+        tenantId: ctx.tenantId,
+        version: state.version,
+        patientId: String(d.patientId),
+        contractId: String(d.contractId),
+        beneficiaryId: String(d.beneficiaryId),
+        serviceItemId: str(d.serviceItemId),
+        serviceCode: str(d.serviceCode),
+        label: String(d.label),
+        currency: String(d.currency),
+        amountRequested: Number(d.amountRequested),
+        reason: String(d.reason),
+        requestedAt: new Date(String(d.requestedAt)),
+        status: str(d.status) ?? 'pending',
+        fieldMeta: state.fieldMeta,
+        hlc: state.hlc,
+        opId: state.opId || null,
+        deviceId: state.deviceId || null,
+        createdBy: state.createdBy || null,
+        updatedAt: new Date(),
+        updatedBy: ctx.userId,
+      };
+    },
+  },
   referral_voucher: {
     table: schema.referralVoucher,
     toState(row: typeof schema.referralVoucher.$inferSelect): EntityState {
@@ -1748,6 +1806,14 @@ async function getEntity(tx: Tx, entity: EntityName, id: string): Promise<Entity
         .limit(1);
       return row ? mappers.credit_note.toState(row) : null;
     }
+    case 'prior_authorization': {
+      const [row] = await tx
+        .select()
+        .from(schema.priorAuthorization)
+        .where(eq(schema.priorAuthorization.id, id))
+        .limit(1);
+      return row ? mappers.prior_authorization.toState(row) : null;
+    }
     case 'referral_voucher': {
       const [row] = await tx
         .select()
@@ -1925,6 +1991,13 @@ async function getEntities(tx: Tx, entity: EntityName, ids: string[]): Promise<E
       return (
         await tx.select().from(schema.creditNote).where(inArray(schema.creditNote.id, ids))
       ).map((r) => mappers.credit_note.toState(r));
+    case 'prior_authorization':
+      return (
+        await tx
+          .select()
+          .from(schema.priorAuthorization)
+          .where(inArray(schema.priorAuthorization.id, ids))
+      ).map((r) => mappers.prior_authorization.toState(r));
     case 'referral_voucher':
       return (
         await tx
@@ -2002,6 +2075,14 @@ async function checkEntity(
   payload: Record<string, unknown>,
   permissions: ReadonlySet<string>,
 ): Promise<string | null> {
+  if (entity === 'prior_authorization') {
+    const [agreement] = await tx
+      .select({ status: schema.contract.status })
+      .from(schema.contract)
+      .where(eq(schema.contract.id, String(payload.contractId)))
+      .limit(1);
+    return agreement?.status === 'active' ? null : 'CONV_CONTRACT_NOT_ACTIVE';
+  }
   if (entity === 'referral_voucher') {
     const [dup] = await tx
       .select({ id: schema.referralVoucher.id })
@@ -2825,6 +2906,11 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
         case 'discount_grant':
         case 'credit_note':
           throw new Error(`${entity} rows are written by the server`);
+        case 'prior_authorization':
+          await tx
+            .insert(schema.priorAuthorization)
+            .values(mappers.prior_authorization.toRow(state, ctx));
+          return;
         case 'referral_voucher':
           await tx
             .insert(schema.referralVoucher)
@@ -3053,6 +3139,8 @@ function syncTx(tx: Tx, ctx: Ctx): ServerSyncTx {
           throw new Error('payment rows are immutable');
         case 'referral_voucher':
           throw new Error('referral_voucher rows are immutable');
+        case 'prior_authorization':
+          throw new Error('prior_authorization decisions are recorded on the server');
         case 'coverage_exception': {
           const {
             id: _id,
@@ -3491,6 +3579,10 @@ export async function patientBundles(
     .select()
     .from(schema.payment)
     .where(inArray(schema.payment.patientId, ids));
+  const authorizations = await tx
+    .select()
+    .from(schema.priorAuthorization)
+    .where(inArray(schema.priorAuthorization.patientId, ids));
   const vouchers = await tx
     .select()
     .from(schema.referralVoucher)
@@ -3547,6 +3639,10 @@ export async function patientBundles(
     ...prescriptions.map((state) => ({ entity: 'prescription' as const, state })),
     ...invoices.map((r) => ({ entity: 'invoice' as const, state: mappers.invoice.toState(r) })),
     ...payments.map((r) => ({ entity: 'payment' as const, state: mappers.payment.toState(r) })),
+    ...authorizations.map((r) => ({
+      entity: 'prior_authorization' as const,
+      state: mappers.prior_authorization.toState(r),
+    })),
     ...vouchers.map((r) => ({
       entity: 'referral_voucher' as const,
       state: mappers.referral_voucher.toState(r),

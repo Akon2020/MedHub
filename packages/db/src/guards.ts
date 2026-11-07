@@ -46,6 +46,8 @@ const NO_DELETE = [
   'patient_coverage',
   'referral_voucher',
   'coverage_exception',
+  'prior_authorization',
+  'guarantee',
 ];
 const NO_UPDATE = [
   'stock_movement',
@@ -64,6 +66,7 @@ const NO_UPDATE = [
   'discount_grant',
   'credit_note',
   'beneficiary_movement',
+  'guarantee',
 ];
 const STATUS_ONLY_UPDATE = [
   'vital_sign',
@@ -181,6 +184,20 @@ export async function ensureGuards(client: pg.ClientBase): Promise<void> {
       return new;
     end $$;
   `);
+  await client.query('drop trigger if exists medhub_approval_guard on "prior_authorization"');
+  await client.query(`
+    create or replace function medhub_decided_guard() returns trigger language plpgsql as $$
+    begin
+      if old.status <> 'pending' then
+        raise exception 'MEDHUB_IMMUTABLE_ROW: a decided request cannot change' using errcode = 'P0001';
+      end if;
+      return new;
+    end $$;
+  `);
+  await client.query('drop trigger if exists medhub_decided_guard on "prior_authorization"');
+  await client.query(
+    'create trigger medhub_decided_guard before update on "prior_authorization" for each row execute function medhub_decided_guard()',
+  );
   await client.query('drop trigger if exists medhub_approval_guard on "approval_request"');
   await client.query(
     'create trigger medhub_approval_guard before update on "approval_request" for each row execute function medhub_approval_guard()',

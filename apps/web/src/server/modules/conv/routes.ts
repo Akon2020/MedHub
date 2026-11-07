@@ -1,5 +1,16 @@
 import 'server-only';
-import { contractInput, payerInput } from '@medhub/domain';
+import {
+  contractInput,
+  guaranteeInput,
+  payerInput,
+  priorAuthorizationDecisionInput,
+} from '@medhub/domain';
+import {
+  decidePriorAuthorization,
+  listGuarantees,
+  listPriorAuthorizations,
+  recordGuarantee,
+} from './authorizations';
 import { AppError } from '@medhub/shared';
 import { z } from 'zod';
 import { clientIp, defineRoute, json } from '../../platform/http';
@@ -76,4 +87,34 @@ export const beneficiaryImportRoute = defineRoute({
   }),
   handler: async ({ request, body, ctx }) =>
     json(await importBeneficiaries(ctx, body, { ip: clientIp(request) })),
+});
+
+export const priorAuthorizationsRoute = defineRoute({
+  route: 'prior_authorizations.read',
+  handler: async ({ ctx }) => json(await listPriorAuthorizations(ctx)),
+});
+
+export const priorAuthorizationDecideRoute = defineRoute({
+  route: 'prior_authorizations.decide',
+  schema: priorAuthorizationDecisionInput,
+  handler: async ({ request, body, ctx }) => {
+    await decidePriorAuthorization(ctx, body, { ip: clientIp(request) });
+    return json({ ok: true });
+  },
+});
+
+export const guaranteesRoute = defineRoute({
+  route: 'guarantees.read',
+  handler: async ({ request, ctx }) => {
+    const id = z.uuid().safeParse(new URL(request.url).searchParams.get('contract'));
+    if (!id.success) throw new AppError('VALIDATION_FAILED', 400);
+    return json(await listGuarantees(ctx, id.data));
+  },
+});
+
+export const guaranteeRecordRoute = defineRoute({
+  route: 'guarantees.record',
+  schema: guaranteeInput,
+  handler: async ({ request, body, ctx }) =>
+    json(await recordGuarantee(ctx, body, { ip: clientIp(request) })),
 });

@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { PriorAuthorizationRequest } from '@/features/conventions/prior-authorization-request';
 import { localDay } from '@/features/visits/visit-helpers';
 import { totalsOf, type InvoiceLineView, type InvoiceView } from './billing-helpers';
 import { applyCoverage, coverageInputs } from './coverage-billing';
@@ -293,6 +294,13 @@ export function InvoiceCard({
                   {l.requires.map((r) => (
                     <span key={r}>{tc(`requires.${r}`)}</span>
                   ))}
+                  {l.requires.includes('prior_authorization') && invoice.status === 'open' && (
+                    <PriorAuthorizationRequest
+                      line={l}
+                      patientId={invoice.patientId}
+                      money={money}
+                    />
+                  )}
                   {invoice.status === 'open' && perms.includes('invoice:add_line') && (
                     <>
                       <Button

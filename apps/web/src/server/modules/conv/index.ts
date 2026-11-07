@@ -1,4 +1,8 @@
 export {
+  guaranteeRecordRoute,
+  guaranteesRoute,
+  priorAuthorizationDecideRoute,
+  priorAuthorizationsRoute,
   beneficiariesRoute,
   beneficiaryImportRoute,
   contractSaveRoute,
